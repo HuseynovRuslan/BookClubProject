@@ -13,6 +13,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
     public DbSet<BookGenre> BookGenres { get; set; }
     public DbSet<Shelf> Shelves { get; set; }
     public DbSet<BookShelf> BookShelves { get; set; }
+
     //public DbSet<AuthorClaimRequest> AuthorClaimRequests { get; set; }
     //public DbSet<Quote> Quotes { get; set; }
     //public DbSet<QuoteLike> QuoteLikes { get; set; }
