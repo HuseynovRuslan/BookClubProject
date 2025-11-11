@@ -22,36 +22,26 @@ internal class AuthorsSeeder(ApplicationDbContext dbContext) : ISeeder
     {
         var authors = new List<Author>
     {
-        new Author { Id = "1", Name = "نجيب محفوظ", Bio = "كاتب مصري حائز على جائزة نوبل في الأدب." },
-        new Author { Id = "2", Name = "طه حسين", Bio = "أديب ومفكر مصري بارز." },
-        new Author { Id = "3", Name = "أليفه رفعت", Bio = "كاتبة مصرية متخصصة في القصص القصيرة." },
-        new Author { Id = "4", Name = "غسان كنفاني", Bio = "كاتب وصحفي فلسطيني." },
-        new Author { Id = "5", Name = "جبر إبراهيم جبر", Bio = "روائي وشاعر فلسطيني عراقي." },
-        new Author { Id = "6", Name = "إلياس خوري", Bio = "روائي وناقد لبناني." },
-        new Author { Id = "7", Name = "نزار قباني", Bio = "شاعر وسفير سوري." },
-        new Author { Id = "8", Name = "محمود درويش", Bio = "شاعر وكاتب فلسطيني." },
-        new Author { Id = "9", Name = "صنع الله إبراهيم", Bio = "روائي وكاتب مصري." },
-        new Author { Id = "10", Name = "رضوى عاشور", Bio = "روائية وأكاديمية فلسطينية." },
-        new Author { Id = "11", Name = "توفيق الحكيم", Bio = "كاتب مسرحي وروائي مصري." },
-        new Author { Id = "12", Name = "يوسف إدريس", Bio = "كاتب مسرحي وروائي مصري." },
-        new Author { Id = "13", Name = "صلاح عبد الصبور", Bio = "شاعر ومسرحي مصري." },
-        new Author { Id = "14", Name = "إبراهيم نصر الله", Bio = "شاعر وروائي فلسطيني أردني." },
-        new Author { Id = "15", Name = "جمال الغيطاني", Bio = "روائي وصحفي مصري." },
-        new Author { Id = "16", Name = "عبد الرحمن منيف", Bio = "روائي سعودي معروف بأعماله عن العالم العربي." },
-        new Author { Id = "17", Name = "أحلام مستغانمي", Bio = "كاتبة وشاعرة جزائرية." },
-
-        new Author { Id = "18", Name = "William Shakespeare", Bio = "English playwright, poet, and actor." },
-        new Author { Id = "19", Name = "Jane Austen", Bio = "English novelist known for romantic fiction." },
-        new Author { Id = "20", Name = "Mark Twain", Bio = "American writer, humorist, and lecturer." },
-        new Author { Id = "21", Name = "Gabriel García Márquez", Bio = "Colombian novelist and Nobel laureate." },
-        new Author { Id = "22", Name = "Leo Tolstoy", Bio = "Russian author known for 'War and Peace'." },
-        new Author { Id = "23", Name = "Ernest Hemingway", Bio = "American novelist and short story writer." },
-        new Author { Id = "24", Name = "Virginia Woolf", Bio = "English writer and modernist pioneer." },
-        new Author { Id = "25", Name = "Franz Kafka", Bio = "German-speaking Bohemian writer." },
-        new Author { Id = "26", Name = "Haruki Murakami", Bio = "Contemporary Japanese novelist." },
-        new Author { Id = "27", Name = "Chinua Achebe", Bio = "Nigerian novelist and critic." }
+        new Author { Id = "1", Name = "F. Scott Fitzgerald", Bio = "American novelist and short story writer, known for depicting the Jazz Age." },
+        new Author { Id = "2", Name = "George Orwell", Bio = "English novelist and essayist, famous for dystopian works." },
+        new Author { Id = "3", Name = "J.K. Rowling", Bio = "British author, creator of the Harry Potter series." },
+        new Author { Id = "4", Name = "J.R.R. Tolkien", Bio = "English writer and philologist, author of The Lord of the Rings." },
+        new Author { Id = "5", Name = "Agatha Christie", Bio = "English writer known as the 'Queen of Mystery'." },
+        new Author { Id = "6", Name = "Harper Lee", Bio = "American novelist, best known for To Kill a Mockingbird." },
+        new Author { Id = "7", Name = "Stephen King", Bio = "American author of horror, supernatural fiction, and suspense." },
+        new Author { Id = "8", Name = "Dan Brown", Bio = "American author known for thriller novels." },
+        new Author { Id = "9", Name = "Paulo Coelho", Bio = "Brazilian lyricist and novelist, author of The Alchemist." },
+        new Author { Id = "10", Name = "Arthur Conan Doyle", Bio = "British writer, creator of Sherlock Holmes." },
+        new Author { Id = "11", Name = "William Shakespeare", Bio = "English playwright, poet, and actor, regarded as the greatest writer." },
+        new Author { Id = "12", Name = "Jane Austen", Bio = "English novelist known for romantic fiction and social commentary." },
+        new Author { Id = "13", Name = "Mark Twain", Bio = "American writer, humorist, and lecturer." },
+        new Author { Id = "14", Name = "Ernest Hemingway", Bio = "American novelist and short story writer, Nobel Prize winner." },
+        new Author { Id = "15", Name = "Leo Tolstoy", Bio = "Russian author, known for War and Peace and Anna Karenina." },
+        new Author { Id = "16", Name = "Fyodor Dostoevsky", Bio = "Russian novelist, philosopher, known for psychological depth." },
+        new Author { Id = "17", Name = "Gabriel García Márquez", Bio = "Colombian novelist, Nobel laureate, master of magical realism." },
+        new Author { Id = "18", Name = "Franz Kafka", Bio = "German-speaking Bohemian writer of novels and short stories." },
+        new Author { Id = "19", Name = "Haruki Murakami", Bio = "Contemporary Japanese novelist and translator." }
     };
-
         return authors;
     }
 
