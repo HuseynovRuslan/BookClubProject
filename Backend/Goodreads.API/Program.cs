@@ -1,36 +1,62 @@
+using Goodreads.API.Extensions;
+using Goodreads.Application;
+using Goodreads.Infrastructure;
+//using Goodreads.Infrastructure.Configurations;
+using Goodreads.Infrastructure.Persistence;
+//using Hangfire;
+//using HangfireBasicAuthenticationFilter;
+//using HealthChecks.UI.Client;
+//using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+//using Scalar.AspNetCore;
 
-namespace Goodreads.API
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services
+    .AddPresentation()
+    .AddApplication()
+    .AddInfrastructure(builder.Configuration);
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
 {
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
-
-            // Add services to the container.
-
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
-            var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
-        }
-    }
+    app.UseSwagger();
+    app.UseSwaggerUI();
+    //app.MapScalarApiReference(options =>
+    //{
+    //    options.Title = "Goodreads API";
+    //    options.OpenApiRoutePattern = "/swagger/v1/swagger.json";
+    //});
 }
+
+if (builder.Configuration.GetValue<bool>("RunMigrations"))
+{
+    await app.ApplyMigrationsAsync<ApplicationDbContext>();
+    await app.SeedDataAsync();
+}
+
+app.UseExceptionHandler();
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+//app.UseHangfireDashboard("/hangfire", new DashboardOptions
+//{
+//    Authorization = new[] { new HangfireCustomBasicAuthenticationFilter(){
+//        User = "admin",
+//        Pass = "admin"
+//    } },
+//});
+
+//HangfireJobsConfigurator.ConfigureRecurringJobs();
+
+//app.MapHealthChecks("/healthz", new HealthCheckOptions
+//{
+//    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+//});
+
+app.Run();
