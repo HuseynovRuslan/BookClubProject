@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Goodreads.Application\Goodreads.Application.csproj" />
+    <ProjectReference Include="..\Goodreads.Domain\Goodreads.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

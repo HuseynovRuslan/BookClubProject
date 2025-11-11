@@ -1,5 +1,5 @@
 ﻿using Goodreads.API.Common;
-using SharedKernel;
+using Goodreads.Application.Auth.Commands.LoginUser;
 using Goodreads.Application.Auth.Commands.RegisterUser;
 using Goodreads.Application.Common;
 using Goodreads.Application.Common.Responses;
@@ -7,6 +7,7 @@ using Goodreads.Application.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SharedKernel;
 
 namespace Goodreads.API.Controllers;
 
@@ -28,19 +29,23 @@ public class AuthController(IMediator mediator) : ControllerBase
         failure => CustomResults.Problem(failure));
     }
 
-    //[HttpPost("login")]
-    //[EndpointSummary("Login")]
-    //[ProducesResponseType(typeof(ApiResponse<AuthResultDto>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
-    //{
-    //    var result = await mediator.Send(command);
 
-    //    return result.Match(
-    //        success => Ok(ApiResponse<AuthResultDto>.Success(success, "Login successful")),
-    //        failure => CustomResults.Problem(failure));
-    //}
+
+
+
+    [HttpPost("login")]
+    [EndpointSummary("Login")]
+    [ProducesResponseType(typeof(ApiResponse<AuthResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        return result.Match(
+            success => Ok(ApiResponse<AuthResultDto>.Success(success, "Login successful")),
+            failure => CustomResults.Problem(failure));
+    }
 
     //[HttpPost("refresh")]
     //[EndpointSummary("Refresh user token")]
