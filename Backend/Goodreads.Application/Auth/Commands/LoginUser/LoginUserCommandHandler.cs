@@ -33,6 +33,13 @@ internal class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Resul
         if (!passwordValid)
             return Result<AuthResultDto>.Fail(AuthErrors.InvalidCredentials);
 
+        // Əgər user-in role-u yoxdursa, default "User" role-u ver
+        var userRoles = await _userManager.GetRolesAsync(user);
+        if (!userRoles.Any())
+        {
+            await _userManager.AddToRoleAsync(user, Roles.User);
+        }
+
         var accessToken = await _tokenProvider.GenerateAccessTokenAsync(user);
 
         var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
