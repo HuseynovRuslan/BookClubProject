@@ -6,6 +6,8 @@
 //using Goodreads.Application.Books.Commands.UpdateBook;
 //using Goodreads.Application.Books.Commands.UpdateBookStatus;
 using Goodreads.Application.Books.Queries.GetAllBooks;
+using Goodreads.Application.Books.Queries.GetBookById;
+
 //using Goodreads.Application.Books.Queries.GetBookById;
 //using Goodreads.Application.Books.Queries.GetBooksByGenre;
 using Goodreads.Application.Common;
@@ -33,19 +35,19 @@ public class BooksController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
-    //[HttpGet("{id}")]
-    //[EndpointSummary("Get book by ID")]
-    //[ProducesResponseType(typeof(ApiResponse<BookDetailDto>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> GetBookById(string id)
-    //{
-    //    var result = await mediator.Send(new GetBookByIdQuery(id));
+    [HttpGet("{id}")]
+    [EndpointSummary("Get book by ID")]
+    [ProducesResponseType(typeof(ApiResponse<BookDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<BookDto>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBookById(string id)
+    {
+        var result = await mediator.Send(new GetBookByIdQuery(id));
 
-    //    return result.Match(
-    //         book => Ok(ApiResponse<BookDetailDto>.Success(book)),
-    //         failure => CustomResults.Problem(failure)
-    //    );
-    //}
+        if (!result.IsSuccess)
+            return NotFound(result); 
+
+        return Ok(result);
+    }
 
     //[HttpPost]
     //[Authorize]
