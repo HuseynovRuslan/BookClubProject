@@ -50,7 +50,7 @@ public static class DependencyInjection
         services.AddScoped<AppSeeder>();
 
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-        //services.AddScoped<IUserFollowRepository, UserFollowRepository>();
+        services.AddScoped<IUserFollowRepository, UserFollowRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
