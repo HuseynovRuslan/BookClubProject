@@ -16,7 +16,7 @@ public class User : IdentityUser
 
     public ICollection<UserFollow> Followers { get; set; } = new List<UserFollow>();
     public ICollection<UserFollow> Following { get; set; } = new List<UserFollow>();
-    //public ICollection<QuoteLike> LikedQuotes { get; set; } = new List<QuoteLike>();
+    public ICollection<QuoteLike> LikedQuotes { get; set; } = new List<QuoteLike>();
 
     //public ICollection<BookReview> BookReviews { get; set; } = new List<BookReview>(); Sonra yazilacaq
 

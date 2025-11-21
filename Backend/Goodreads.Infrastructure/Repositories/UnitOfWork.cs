@@ -12,8 +12,8 @@ internal class UnitOfWork : IUnitOfWork
     private IRepository<Shelf>? _shelfRepository;
     private IRepository<BookShelf>? _bookShelfRepository;
     //private IRepository<AuthorClaimRequest>? _authorClaimRequestRepository;
-    //private IRepository<Quote>? _quoteRepository;
-    //private IRepository<QuoteLike>? _quoteLikeRepository;
+    private IRepository<Quote>? _quoteRepository;
+    private IRepository<QuoteLike>? _quoteLikeRepository;
     //private IRepository<ReadingProgress>? _readingProgressRepository;
     //private IRepository<UserYearChallenge>? _userYearChallengeRepository;
     private IRepository<BookReview>? _bookReviewRepository;
@@ -30,8 +30,8 @@ internal class UnitOfWork : IUnitOfWork
     public IRepository<BookShelf> BookShelves => _bookShelfRepository ??= new GenericRepository<BookShelf>(_context);
     //public IRepository<AuthorClaimRequest> AuthorClaimRequests => _authorClaimRequestRepository ??=
     //                                        new GenericRepository<AuthorClaimRequest>(_context);
-    //public IRepository<Quote> Quotes => _quoteRepository ??= new GenericRepository<Quote>(_context);
-    //public IRepository<QuoteLike> QuoteLikes => _quoteLikeRepository ??= new GenericRepository<QuoteLike>(_context);
+    public IRepository<Quote> Quotes => _quoteRepository ??= new GenericRepository<Quote>(_context);
+    public IRepository<QuoteLike> QuoteLikes => _quoteLikeRepository ??= new GenericRepository<QuoteLike>(_context);
     //public IRepository<ReadingProgress> ReadingProgresses => _readingProgressRepository ??= new GenericRepository<ReadingProgress>(_context);
     //public IRepository<UserYearChallenge> UserYearChallenges => _userYearChallengeRepository ??= new GenericRepository<UserYearChallenge>(_context);
     public IRepository<BookReview> BookReviews => _bookReviewRepository ??= new GenericRepository<BookReview>(_context);

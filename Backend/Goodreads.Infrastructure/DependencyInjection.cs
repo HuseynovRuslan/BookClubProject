@@ -1,7 +1,7 @@
 ﻿using Goodreads.Application.Common.Interfaces;
-//using Goodreads.Application.Common.Interfaces.Authorization;
+using Goodreads.Application.Common.Interfaces.Authorization;
 using Goodreads.Domain.Entities;
-//using Goodreads.Infrastructure.Authorization;
+using Goodreads.Infrastructure.Authorization;
 using Goodreads.Infrastructure.Identity;
 //using Goodreads.Infrastructure.Jobs;
 using Goodreads.Infrastructure.Persistence;
@@ -28,7 +28,7 @@ public static class DependencyInjection
             .AddPersistence(configuration)
             .AddIdentity()
             .AddAuthentication(configuration)
-            //.AddAuthorization()
+            .AddAuthorization()
             .AddEmailServices(configuration);
             //.AddBlobStorage(configuration)
             //.AddBackgroundJobs(configuration)
@@ -94,14 +94,14 @@ public static class DependencyInjection
         return services;
     }
 
-    //private static IServiceCollection AddAuthorization(this IServiceCollection services)
-    //{
-    //    services.AddScoped<IShelfAuthorizationService, ShelfAuthorizationService>();
-    //    services.AddScoped<IAuthorAuthorizationService, AuthorAuthorizationService>();
-    //    services.AddScoped<IQuoteAuthorizationService, QuoteAuthorizationService>();
-    //    services.AddScoped<IReviewAuthorizationService, ReviewAuthorizationService>();
-    //    return services;
-    //}
+    private static IServiceCollection AddAuthorization(this IServiceCollection services)
+    {
+        //services.AddScoped<IShelfAuthorizationService, ShelfAuthorizationService>();
+        //services.AddScoped<IAuthorAuthorizationService, AuthorAuthorizationService>();
+        services.AddScoped<IQuoteAuthorizationService, QuoteAuthorizationService>();
+        //services.AddScoped<IReviewAuthorizationService, ReviewAuthorizationService>();
+        return services;
+    }
 
     private static IServiceCollection AddEmailServices(this IServiceCollection services, IConfiguration configuration)
     {
