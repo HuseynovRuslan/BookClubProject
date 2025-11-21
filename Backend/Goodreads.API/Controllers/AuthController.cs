@@ -1,4 +1,5 @@
 ﻿using Goodreads.API.Common;
+using Goodreads.Application.Auth.Commands.ConfirmEmail;
 using Goodreads.Application.Auth.Commands.LoginUser;
 using Goodreads.Application.Auth.Commands.RegisterUser;
 using Goodreads.Application.Common;
@@ -73,18 +74,18 @@ public class AuthController(IMediator mediator) : ControllerBase
     //}
 
 
-    //[HttpPost("confirm-email")]
-    //[EndpointSummary("Confirm user email address")]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
-    //{
-    //    var result = await mediator.Send(new ConfirmEmailCommand(userId, token));
+    [HttpGet("confirm-email")]
+    [EndpointSummary("Confirm user email address")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
+    {
+        var result = await mediator.Send(new ConfirmEmailCommand(userId, token));
 
-    //    return result.Match(
-    //        success => Ok(ApiResponse.Success("Email confirmed successfully.")),
-    //        failure => CustomResults.Problem(failure));
-    //}
+        return result.Match(
+            success => Ok(ApiResponse.Success("Email confirmed successfully.")),
+            failure => CustomResults.Problem(failure));
+    }
 
     //[HttpPost("reset-confirmation-email")]
     //[EndpointSummary("Generate a new email confirmation link")]
