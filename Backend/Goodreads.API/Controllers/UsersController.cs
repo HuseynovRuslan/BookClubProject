@@ -7,8 +7,8 @@ using Goodreads.Application.Reviews.Queries.GetAllReviews;
 using Goodreads.Application.Shelves.Queries.GetUserShelves;
 //using Goodreads.Application.Users.Commands.ChangePassword;
 //using Goodreads.Application.Users.Commands.DeleteAccount;
-//using Goodreads.Application.Users.Commands.DeleteProfilePicture;
-//using Goodreads.Application.Users.Commands.UpdateProfilePicture;
+using Goodreads.Application.Users.Commands.DeleteProfilePicture;
+using Goodreads.Application.Users.Commands.UpdateProfilePicture;
 //using Goodreads.Application.Users.Commands.UpdateSocials;
 //using Goodreads.Application.Users.Commands.UpdateUserProfile;
 using Goodreads.Application.Users.Queries.GetAllUsers;
@@ -98,33 +98,33 @@ public class UsersController(IMediator mediator, IUserContext userContext) : Con
     //        failure => CustomResults.Problem(failure));
     //}
 
-    //[HttpPatch("me/profile-picture")]
-    //[Authorize]
-    //[EndpointSummary("Update current user profile picture")]
-    //[ProducesResponseType(StatusCodes.Status204NoContent)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> UpdateProfilePicture([FromForm] UpdateProfilePictureCommand command)
-    //{
-    //    var result = await mediator.Send(command);
-    //    return result.Match(
-    //        () => NoContent(),
-    //        failure => CustomResults.Problem(failure));
-    //}
+    [HttpPatch("me/profile-picture")]
+    [Authorize]
+    [EndpointSummary("Update current user profile picture")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProfilePicture([FromForm] UpdateProfilePictureCommand command)
+    {
+        var result = await mediator.Send(command);
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
 
-    //[HttpDelete("me/profile-picture")]
-    //[Authorize]
-    //[EndpointSummary("Delete current user profile picture")]
-    //[ProducesResponseType(StatusCodes.Status204NoContent)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> DeleteProfilePicture()
-    //{
-    //    var result = await mediator.Send(new DeleteProfilePictureCommand());
-    //    return result.Match(
-    //        () => NoContent(),
-    //        failure => CustomResults.Problem(failure));
-    //}
+    [HttpDelete("me/profile-picture")]
+    [Authorize]
+    [EndpointSummary("Delete current user profile picture")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteProfilePicture()
+    {
+        var result = await mediator.Send(new DeleteProfilePictureCommand());
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
 
     //[HttpPost("me/change-password")]
     //[Authorize]

@@ -39,6 +39,9 @@ if (builder.Configuration.GetValue<bool>("RunMigrations"))
 
 app.UseHttpsRedirection();
 
+// Enable static files for images
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
