@@ -31,7 +31,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
 
-        //modelBuilder.Entity<User>().OwnsOne(u => u.Social);
+        modelBuilder.Entity<User>().OwnsOne(u => u.Social);
     }
 
     public override int SaveChanges()

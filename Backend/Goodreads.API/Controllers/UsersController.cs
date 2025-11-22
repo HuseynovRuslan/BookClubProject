@@ -9,12 +9,12 @@ using Goodreads.Application.Shelves.Queries.GetUserShelves;
 //using Goodreads.Application.Users.Commands.DeleteAccount;
 using Goodreads.Application.Users.Commands.DeleteProfilePicture;
 using Goodreads.Application.Users.Commands.UpdateProfilePicture;
-//using Goodreads.Application.Users.Commands.UpdateSocials;
-//using Goodreads.Application.Users.Commands.UpdateUserProfile;
+using Goodreads.Application.Users.Commands.UpdateSocials;
+using Goodreads.Application.Users.Commands.UpdateUserProfile;
 using Goodreads.Application.Users.Queries.GetAllUsers;
-//using Goodreads.Application.Users.Queries.GetProfileByUsername;
+using Goodreads.Application.Users.Queries.GetProfileByUsername;
 using Goodreads.Application.Users.Queries.GetUserProfile;
-//using Goodreads.Application.Users.Queries.GetUserSocials;
+using Goodreads.Application.Users.Queries.GetUserSocials;
 //using Goodreads.Application.UserYearChallenges.Queries.GetAllUserYearChallenges;
 //using Goodreads.Application.UserYearChallenges.Queries.GetUserYearChallenge;
 using MediatR;
@@ -28,61 +28,60 @@ namespace Goodreads.API.Controllers;
 [Route("api/[controller]")]
 public class UsersController(IMediator mediator, IUserContext userContext) : ControllerBase
 {
-    //[HttpGet("me")]
-    //[Authorize]
-    //[EndpointSummary("Get current user profile")]
-    //[ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> GetCurrentUserProfile()
-    //{
-    //    var result = await mediator.Send(new GetUserProfileQuery());
+    [HttpGet("me")]
+    [Authorize]
+    [EndpointSummary("Get current user profile")]
+    [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCurrentUserProfile()
+    {
+        var result = await mediator.Send(new GetUserProfileQuery());
 
-    //    return result.Match(
-    //           profile => Ok(ApiResponse<UserProfileDto>.Success(profile)),
-    //           failure => CustomResults.Problem(failure));
-    //}
+        return result.Match(
+               profile => Ok(ApiResponse<UserProfileDto>.Success(profile)),
+               failure => CustomResults.Problem(failure));
+    }
 
-    //[HttpGet("me/socials")]
-    //[Authorize]
-    //[EndpointSummary("Get current user social links")]
-    //[ProducesResponseType(typeof(ApiResponse<SocialDto>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> GetUserSocialLinks()
-    //{
-    //    var result = await mediator.Send(new GetUserSocialsQuery());
-    //    return result.Match(
-    //        socials => Ok(ApiResponse<SocialDto>.Success(socials)),
-    //        failure => CustomResults.Problem(failure));
-    //}
+    [HttpGet("me/socials")]
+    [Authorize]
+    [EndpointSummary("Get current user social links")]
+    [ProducesResponseType(typeof(ApiResponse<SocialDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserSocialLinks()
+    {
+        var result = await mediator.Send(new GetUserSocialsQuery());
+        return result.Match(
+            socials => Ok(ApiResponse<SocialDto>.Success(socials)),
+            failure => CustomResults.Problem(failure));
+    }
 
-    //[HttpPut("me/socials")]
-    //[Authorize]
-    //[EndpointSummary("Update current user social links")]
-    //[ProducesResponseType(StatusCodes.Status204NoContent)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [HttpPut("me/socials")]
+    [Authorize]
+    [EndpointSummary("Update current user social links")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateSocialLinks([FromBody] UpdateSocialsCommand command)
+    {
+        var result = await mediator.Send(command);
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
 
-    //public async Task<IActionResult> UpdateSocialLinks([FromBody] UpdateSocialsCommand command)
-    //{
-    //    var result = await mediator.Send(command);
-    //    return result.Match(
-    //        () => NoContent(),
-    //        failure => CustomResults.Problem(failure));
-    //}
-
-    //[HttpPut("me")]
-    //[Authorize]
-    //[EndpointSummary("Update current user profile")]
-    //[ProducesResponseType(StatusCodes.Status204NoContent)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileCommand command)
-    //{
-    //    var result = await mediator.Send(command);
-    //    return result.Match(
-    //      () => NoContent(),
-    //      failure => CustomResults.Problem(failure));
-    //}
+    [HttpPut("me")]
+    [Authorize]
+    [EndpointSummary("Update current user profile")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileCommand command)
+    {
+        var result = await mediator.Send(command);
+        return result.Match(
+          () => NoContent(),
+          failure => CustomResults.Problem(failure));
+    }
 
     //[HttpDelete("me")]
     //[Authorize]
@@ -141,19 +140,19 @@ public class UsersController(IMediator mediator, IUserContext userContext) : Con
 
     //}
 
-    //[HttpGet("{username}")]
-    //[EndpointSummary("Get User Profile")]
-    //[ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> GetUserProfileByUsername(string username)
-    //{
-    //    var result = await mediator.Send(new GetProfileByUsernameQuery(username));
+    [HttpGet("{username}")]
+    [EndpointSummary("Get User Profile")]
+    [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserProfileByUsername(string username)
+    {
+        var result = await mediator.Send(new GetProfileByUsernameQuery(username));
 
-    //    return result.Match(
-    //       profile => Ok(ApiResponse<UserProfileDto>.Success(profile)),
-    //       failure => CustomResults.Problem(failure));
-    //}
+        return result.Match(
+           profile => Ok(ApiResponse<UserProfileDto>.Success(profile)),
+           failure => CustomResults.Problem(failure));
+    }
 
     [HttpGet("search")]
     [EndpointSummary("Get All Users with search")]
