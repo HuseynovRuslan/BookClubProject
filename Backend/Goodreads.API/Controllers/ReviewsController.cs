@@ -7,7 +7,7 @@ using Goodreads.Application.Reviews.Queries.GetReviewById;
     
     
 
-//using Goodreads.Application.Reviews.Commands.DeleteReview;
+using Goodreads.Application.Reviews.Commands.DeleteReview;
 using Goodreads.Application.Reviews.Commands.UpdateReview;
 using Goodreads.Domain.Constants;
 using MediatR;
@@ -64,18 +64,18 @@ public class ReviewsController(IMediator mediator) : ControllerBase
         );
     }
 
-    //[HttpDelete("{reviewId}")]
-    //[Authorize]
-    //[EndpointSummary("Delete a book review")]
-    //[ProducesResponseType(StatusCodes.Status200OK)]
-    //[ProducesResponseType(StatusCodes.Status404NotFound)]
-    //[ProducesResponseType(StatusCodes.Status403Forbidden)]
-    //public async Task<IActionResult> DeleteReview(string reviewId)
-    //{
-    //    var result = await mediator.Send(new DeleteReviewCommand(reviewId));
-    //    return result.Match(
-    //        () => NoContent(),
-    //        error => CustomResults.Problem(error));
-    //}
+    [HttpDelete("{reviewId}")]
+    [Authorize]
+    [EndpointSummary("Delete a book review")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteReview(string reviewId)
+    {
+        var result = await mediator.Send(new DeleteReviewCommand(reviewId));
+        return result.Match(
+            () => NoContent(),
+            error => CustomResults.Problem(error));
+    }
 
 }
