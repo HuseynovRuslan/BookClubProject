@@ -77,7 +77,9 @@ public class BooksController(IMediator mediator) : ControllerBase
     //        failure => CustomResults.Problem(failure));
     //}
     //[HttpDelete("{id}")]
-    //[Authorize(Roles = Roles.Admin)]
+    //[Authorize(Roles = Roles.
+    //
+    //)]
     //[EndpointSummary("Delete a book")]
     //[ProducesResponseType(StatusCodes.Status204NoContent)]
     //[ProducesResponseType(StatusCodes.Status404NotFound)]
