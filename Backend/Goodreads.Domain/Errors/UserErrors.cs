@@ -27,4 +27,12 @@ public static class UserErrors
     public static Error UpdateFailed(string userId) => Error.Failure(
         "Users.UpdateFailed",
         $"Failed to update user '{userId}'");
+
+    public static Error InvalidFileExtension() => Error.Validation(
+        "Users.InvalidFileExtension",
+        "Invalid file extension. Allowed extensions: .jpg, .jpeg, .png, .gif");
+
+    public static Error FileTooLarge() => Error.Validation(
+        "Users.FileTooLarge",
+        "File size exceeds the maximum allowed size of 5 MB.");
 }
