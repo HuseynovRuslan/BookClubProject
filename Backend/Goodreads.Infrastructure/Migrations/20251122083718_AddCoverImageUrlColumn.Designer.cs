@@ -4,6 +4,7 @@ using Goodreads.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Goodreads.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251122083718_AddCoverImageUrlColumn")]
+    partial class AddCoverImageUrlColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -76,7 +79,9 @@ namespace Goodreads.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CoverImageUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("CoverImageUrl");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -597,7 +602,7 @@ namespace Goodreads.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("Goodreads.Domain.Entities.User", "User")
-                        .WithMany("BookReviews")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -757,8 +762,6 @@ namespace Goodreads.Infrastructure.Migrations
 
             modelBuilder.Entity("Goodreads.Domain.Entities.User", b =>
                 {
-                    b.Navigation("BookReviews");
-
                     b.Navigation("Followers");
 
                     b.Navigation("Following");
