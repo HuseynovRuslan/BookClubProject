@@ -1,6 +1,7 @@
 ﻿using Goodreads.API.Common;
 using Goodreads.Application.Auth.Commands.ConfirmEmail;
 using Goodreads.Application.Auth.Commands.LoginUser;
+using Goodreads.Application.Auth.Commands.RefreshToken;
 using Goodreads.Application.Auth.Commands.RegisterUser;
 using Goodreads.Application.Common;
 using Goodreads.Application.Common.Responses;
@@ -48,17 +49,17 @@ public class AuthController(IMediator mediator) : ControllerBase
             failure => CustomResults.Problem(failure));
     }
 
-    //[HttpPost("refresh")]
-    //[EndpointSummary("Refresh user token")]
-    //[ProducesResponseType(typeof(ApiResponse<AuthResultDto>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command)
-    //{
-    //    var result = await mediator.Send(command);
-    //    return result.Match(
-    //        success => Ok(ApiResponse<AuthResultDto>.Success(success, "Token refreshed successfully")),
-    //        failure => CustomResults.Problem(failure));
-    //}
+    [HttpPost("refresh")]
+    [EndpointSummary("Refresh user token")]
+    [ProducesResponseType(typeof(ApiResponse<AuthResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command)
+    {
+        var result = await mediator.Send(command);
+        return result.Match(
+            success => Ok(ApiResponse<AuthResultDto>.Success(success, "Token refreshed successfully")),
+            failure => CustomResults.Problem(failure));
+    }
 
     //[HttpPost("logout")]
     //[Authorize]
