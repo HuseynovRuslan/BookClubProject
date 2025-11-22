@@ -8,10 +8,10 @@ public class User : IdentityUser
     public DateOnly? DateOfBirth { get; set; }
     public string? ProfilePictureUrl { get; set; } = default!;
     public string? ProfilePictureBlobName { get; set; } = default!;
-    //public string? Bio { get; set; } = default!;
-    //public string? WebsiteUrl { get; set; }
-    //public string? Country { get; set; } = default!;
-    //public Social Social { get; set; } = default!;
+    public string? Bio { get; set; } = default!;
+    public string? WebsiteUrl { get; set; }
+    public string? Country { get; set; } = default!;
+    public Social Social { get; set; } = default!;
     //public Author? ClaimedAuthorProfile { get; set; }
 
     public ICollection<UserFollow> Followers { get; set; } = new List<UserFollow>();

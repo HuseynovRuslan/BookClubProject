@@ -15,6 +15,6 @@ public class UserMappingProfile : Profile
                     ? "/images/default-profile.png" 
                     : src.ProfilePictureUrl));
 
-        //CreateMap<Social, SocialDto>();
+        CreateMap<Social, SocialDto>();
     }
 }
