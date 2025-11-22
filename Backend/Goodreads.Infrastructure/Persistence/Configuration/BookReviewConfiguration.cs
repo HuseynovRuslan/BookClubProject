@@ -15,10 +15,10 @@ public class BookReviewConfiguration : IEntityTypeConfiguration<BookReview>
         builder.Property(br => br.ReviewText)
                .HasMaxLength(2500);
 
-        //builder.HasOne(br => br.User)
-        //       .WithMany(u => u.BookReviews)
-        //       .HasForeignKey(br => br.UserId)
-        //       .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(br => br.User)
+               .WithMany(u => u.BookReviews)
+               .HasForeignKey(br => br.UserId)
+               .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(br => br.Book)
                .WithMany(b => b.BookReviews)

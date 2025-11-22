@@ -46,7 +46,9 @@ public static class DependencyInjection
         // Seeding
         services.AddScoped<ISeeder, RolesSeeder>();
         services.AddScoped<ISeeder, AuthorsSeeder>();
+        services.AddScoped<ISeeder, GenresSeeder>();
         services.AddScoped<ISeeder, BooksSeeder>();
+        services.AddScoped<ISeeder, BookGenresSeeder>();
         services.AddScoped<AppSeeder>();
 
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

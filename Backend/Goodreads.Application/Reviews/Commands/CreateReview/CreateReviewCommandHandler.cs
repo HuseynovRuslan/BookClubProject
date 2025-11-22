@@ -36,6 +36,19 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
 
         await _unitOfWork.BookReviews.AddAsync(review);
 
+        // Update book's average rating
+        var (allReviews, _) = await _unitOfWork.BookReviews.GetAllAsync(
+            r => r.BookId == request.BookId);
+        var reviewsList = allReviews.ToList();
+        reviewsList.Add(review); // Include the new review in calculation
+        
+        if (reviewsList.Any())
+        {
+            book.AverageRating = reviewsList.Average(r => r.Rating);
+            book.RatingCount = reviewsList.Count;
+            _unitOfWork.Books.Update(book);
+        }
+
         var readShelf = await _unitOfWork.Shelves.GetSingleOrDefaultAsync(
             s => s.UserId == userId && s.Name == DefaultShelves.Read && s.IsDefault,
             includes: new[] { "BookShelves" });
