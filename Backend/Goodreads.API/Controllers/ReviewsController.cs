@@ -8,7 +8,7 @@ using Goodreads.Application.Reviews.Queries.GetReviewById;
     
 
 //using Goodreads.Application.Reviews.Commands.DeleteReview;
-//using Goodreads.Application.Reviews.Commands.UpdateReview;
+using Goodreads.Application.Reviews.Commands.UpdateReview;
 using Goodreads.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -48,22 +48,21 @@ public class ReviewsController(IMediator mediator) : ControllerBase
         );
     }
 
-    //[HttpPut("{reviewId}")]
-    //[Authorize]
-    //[EndpointSummary("Update a book review")]
-    //[ProducesResponseType(StatusCodes.Status200OK)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //[ProducesResponseType(StatusCodes.Status404NotFound)]
-    //[ProducesResponseType(StatusCodes.Status403Forbidden)]
-    //public async Task<IActionResult> UpdateReview(string reviewId, [FromBody] UpdateReviewRequest request)
-    //{
-    //    var result = await mediator.Send(new UpdateReviewCommand(reviewId, request.Rating, request.ReviewText));
-    //    return result.Match(
-    //        () => NoContent(),
-    //        error => CustomResults.Problem(error)
-    //    );
-
-    //}
+    [HttpPut("{reviewId}")]
+    [Authorize]
+    [EndpointSummary("Update a book review")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateReview(string reviewId, [FromBody] UpdateReviewRequest request)
+    {
+        var result = await mediator.Send(new UpdateReviewCommand(reviewId, request.Rating, request.ReviewText));
+        return result.Match(
+            () => NoContent(),
+            error => CustomResults.Problem(error)
+        );
+    }
 
     //[HttpDelete("{reviewId}")]
     //[Authorize]
