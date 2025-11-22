@@ -11,7 +11,7 @@ using Goodreads.Application.Shelves.Queries.GetUserShelves;
 //using Goodreads.Application.Users.Commands.UpdateProfilePicture;
 //using Goodreads.Application.Users.Commands.UpdateSocials;
 //using Goodreads.Application.Users.Commands.UpdateUserProfile;
-//using Goodreads.Application.Users.Queries.GetAllUsers;
+using Goodreads.Application.Users.Queries.GetAllUsers;
 //using Goodreads.Application.Users.Queries.GetProfileByUsername;
 using Goodreads.Application.Users.Queries.GetUserProfile;
 //using Goodreads.Application.Users.Queries.GetUserSocials;
@@ -155,15 +155,15 @@ public class UsersController(IMediator mediator, IUserContext userContext) : Con
     //       failure => CustomResults.Problem(failure));
     //}
 
-    //[HttpGet("search")]
-    //[EndpointSummary("Get All Users with search")]
-    //[ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> GetAllUsers([FromQuery] QueryParameters parameters)
-    //{
-    //    var result = await mediator.Send(new GetAllUsersQuery(parameters));
-    //    return Ok(result);
-    //}
+    [HttpGet("search")]
+    [EndpointSummary("Get All Users with search")]
+    [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAllUsers([FromQuery] QueryParameters parameters)
+    {
+        var result = await mediator.Send(new GetAllUsersQuery(parameters));
+        return Ok(result);
+    }
 
     [HttpGet("me/shelves")]
     [Authorize]
