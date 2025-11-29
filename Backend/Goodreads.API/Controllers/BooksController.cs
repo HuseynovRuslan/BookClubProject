@@ -1,4 +1,8 @@
 ﻿using Goodreads.API.Common;
+using Goodreads.Application.Books.Commands.AddGenersToBook;
+using Goodreads.Application.Books.Commands.RemoveGenrerFromBook;
+
+
 //using Goodreads.Application.Books.Commands.AddGenresToBook;
 //using Goodreads.Application.Books.Commands.CreateBook;
 //using Goodreads.Application.Books.Commands.DeleteBook.DeleteBookCommand;
@@ -7,6 +11,8 @@
 using Goodreads.Application.Books.Commands.UpdateBookStatus;
 using Goodreads.Application.Books.Queries.GetAllBooks;
 using Goodreads.Application.Books.Queries.GetBookById;
+using Goodreads.Application.Books.Queries.GetBooksByGener;
+
 
 //using Goodreads.Application.Books.Queries.GetBookById;
 //using Goodreads.Application.Books.Queries.GetBooksByGenre;
@@ -91,46 +97,46 @@ public class BooksController(IMediator mediator) : ControllerBase
     //        failure => CustomResults.Problem(failure));
     //}
 
-    //[HttpPost("{bookId}/genres")]
-    //[Authorize]
-    //[EndpointSummary("Add genres to a book")]
-    //[ProducesResponseType(StatusCodes.Status200OK)]
-    //[ProducesResponseType(StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> AddGenresToBook(string bookId, [FromBody] List<string> GenreIds)
-    //{
-    //    var result = await mediator.Send(new AddGenresToBookCommand(bookId, GenreIds));
-    //    return result.Match(
-    //        () => Ok(),
-    //        failure => CustomResults.Problem(failure));
-    //}
-
-    //[HttpDelete("{bookId}/genres/{genreId}")]
-    //[Authorize]
-    //[EndpointSummary("Remove a genre from a book")]
-    //[ProducesResponseType(StatusCodes.Status204NoContent)]
-    //[ProducesResponseType(StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> RemoveGenreFromBook(string bookId, string genreId)
-    //{
-    //    var result = await mediator.Send(new RemoveGenreFromBookCommand(bookId, genreId));
-    //    return result.Match(
-    //        () => NoContent(),
-    //        failure => CustomResults.Problem(failure));
-    //}
-
-
-    //[HttpGet("by-genre")]
-    //[EndpointSummary("Get books by genre")]
-    //[ProducesResponseType(typeof(PagedResult<BookDto>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> GetBooksByGenre([FromQuery] QueryParameters parameters)
-    //{
-    //    var result = await mediator.Send(new GetBooksByGenreQuery(parameters));
-    //    return Ok(result);
-    //}
-
-
-    [HttpPost("{bookId}/status")]
     [Authorize]
+    [HttpPost("{bookId}/genres")]
+    [EndpointSummary("Add genres to a book")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddGenresToBook(string bookId, [FromBody] List<string> GenreIds)
+    {
+        var result = await mediator.Send(new AddGenersToBookCommand(bookId, GenreIds));
+        return result.Match(
+            () => Ok(),
+            failure => CustomResults.Problem(failure));
+    }
+
+    [Authorize]
+    [HttpDelete("{bookId}/genres/{genreId}")]
+    [EndpointSummary("Remove a genre from a book")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveGenreFromBook(string bookId, string genreId)
+    {
+        var result = await mediator.Send(new RemoveGenerFromBookCommand(bookId, genreId));
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
+
+
+    [HttpGet("by-genre")]
+    [EndpointSummary("Get books by genre")]
+    [ProducesResponseType(typeof(PagedResult<BookDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetBooksByGenre([FromQuery] QueryParameters parameters)
+    {
+        var result = await mediator.Send(new GetBooksByGenerQuery(parameters));
+        return Ok(result);
+    }
+
+
+    [Authorize]
+    [HttpPost("{bookId}/status")]
     [EndpointSummary("Update book status (default shelf)")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
