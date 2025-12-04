@@ -4,8 +4,8 @@ public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, Resul
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ILogger<CreateBookCommandHandler> _logger;
-    private readonly IBlobStorageService _blobStorageService;
-    public CreateBookCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CreateBookCommandHandler> logger, IBlobStorageService blobStorageService)
+    private readonly ILocalStorageService _blobStorageService;
+    public CreateBookCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CreateBookCommandHandler> logger, ILocalStorageService blobStorageService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
@@ -27,7 +27,7 @@ public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, Resul
         if (request.CoverImage != null)
         {
             using var stream = request.CoverImage.OpenReadStream();
-            var (url, blobName) = await _blobStorageService.UploadAsync(request.CoverImage.FileName, stream, BlobContainer.Books);
+            var (url, blobName) = await _blobStorageService.UploadAsync(request.CoverImage.FileName, stream, LocalContainer.Books);
             book.CoverImageUrl = url;
             book.CoverImageBlobName = blobName;
         }

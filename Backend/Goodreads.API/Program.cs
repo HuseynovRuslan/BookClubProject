@@ -9,7 +9,6 @@ using Goodreads.Infrastructure.Persistence;
 //using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 //using Scalar.AspNetCore;
 using Goodreads.Application.Common.Interfaces; // IBlobStorageService
-using Goodreads.Infrastructure.Services.Storage;
 using Goodreads.Infrastructure.Repositories;
 using Goodreads.Application.Common.Mappings; // AwsBlobStorageService
 
@@ -17,11 +16,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 // Bind BlobStorage settings (AWS)
-builder.Services.Configure<BlobStorageSettings>(
-    builder.Configuration.GetSection(BlobStorageSettings.Section)
+builder.Services.Configure<LocalStorageSettings>(
+    builder.Configuration.GetSection(LocalStorageSettings.Section)
 );
 
-builder.Services.AddScoped<IBlobStorageService, AwsBlobStorageService>();
+builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 
 // Register UnitOfWork and other services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();

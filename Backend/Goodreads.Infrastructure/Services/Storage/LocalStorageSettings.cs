@@ -1,4 +1,4 @@
-﻿public class BlobStorageSettings
+﻿public class LocalStorageSettings
 {
     public const string Section = "BlobStorageSettings";
     public string ConnectionString { get; set; } = default!;

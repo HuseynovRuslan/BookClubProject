@@ -2,7 +2,7 @@
 
 namespace Goodreads.Domain.Constants;
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum BlobContainer
+public enum LocalContainer
 {
     Users,
     Authors,
