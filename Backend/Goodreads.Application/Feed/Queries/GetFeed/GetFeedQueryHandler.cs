@@ -49,13 +49,13 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             );
         }
 
-        // Get quotes from following users
+        // Get quotes from following users (include Likes for LikesCount)
         var quotes = await _unitOfWork.Quotes
-            .GetAllAsync(filter: q => followingIds.Contains(q.CreatedByUserId));
+            .GetAllAsync(filter: q => followingIds.Contains(q.CreatedByUserId), includes: new[] { "Likes" });
 
-        // Get reviews from following users
+        // Get reviews from following users (include Book for BookTitle)
         var reviews = await _unitOfWork.BookReviews
-            .GetAllAsync(filter: r => followingIds.Contains(r.UserId));
+            .GetAllAsync(filter: r => followingIds.Contains(r.UserId), includes: new[] { "Book", "User" });
 
         // Get shelves from following users first
         var shelves = await _unitOfWork.Shelves

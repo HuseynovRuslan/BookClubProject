@@ -14,7 +14,7 @@ public class GetReviewByIdQueryHandler : IRequestHandler<GetReviewByIdQuery, Res
     {
         var review = await _unitOfWork.BookReviews.GetSingleOrDefaultAsync(
             r => r.Id == request.ReviewId, 
-            includes: new[] { "Book" });
+            includes: new[] { "Book", "User" });
 
         if (review is null)
             return Result<BookReviewDto>.Fail(Error.NotFound("BookReview.NotFound", "Review not found."));

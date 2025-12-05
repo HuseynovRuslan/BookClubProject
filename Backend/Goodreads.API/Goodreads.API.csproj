@@ -4,7 +4,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <EnablePrecompressedAssets>false</EnablePrecompressedAssets>
+    <_EnablePrecompressedAssets>false</_EnablePrecompressedAssets>
+    <_StaticWebAssetsCompressionTargetsImported>true</_StaticWebAssetsCompressionTargetsImported>
   </PropertyGroup>
+
+  <!-- Import custom targets BEFORE SDK targets to override compression -->
+  <Import Project="DisablePrecompressedAssets.targets" Condition="Exists('DisablePrecompressedAssets.targets')" />
+  
+  <!-- Additional override to ensure DiscoverPrecompressedAssets never runs -->
+  <Target Name="DiscoverPrecompressedAssets" BeforeTargets="ComputeFilesToPublish" Condition="false" />
 
   <ItemGroup>
     <ProjectReference Include="..\Goodreads.Application\Goodreads.Application.csproj" />
@@ -20,8 +29,5 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="wwwroot\books\" />
-  </ItemGroup>
 
 </Project>

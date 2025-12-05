@@ -61,6 +61,9 @@ if (builder.Configuration.GetValue<bool>("RunMigrations"))
 
 app.UseHttpsRedirection();
 
+// Enable CORS
+app.UseCors("AllowFrontend");
+
 // Enable static files for images
 app.UseStaticFiles();
 

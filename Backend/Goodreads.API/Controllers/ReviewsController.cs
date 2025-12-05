@@ -4,6 +4,7 @@ using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
 using Goodreads.Application.Reviews.Commands.CreateBookReview;
 using Goodreads.Application.Reviews.Queries.GetReviewById;
+using Goodreads.Application.Reviews.Queries.GetAllReviews;
     
     
 
@@ -21,6 +22,16 @@ namespace Goodreads.API.Controllers;
 [Route("api/[controller]")]
 public class ReviewsController(IMediator mediator) : ControllerBase
 {
+    [HttpGet]
+    [EndpointSummary("Get all reviews")]
+    [ProducesResponseType(typeof(PagedResult<BookReviewDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAllReviews([FromQuery] QueryParameters parameters, [FromQuery] string? userId = null, [FromQuery(Name = "bookId")] string? bookid = null)
+    {
+        var result = await mediator.Send(new GetAllReviewsQuery(parameters, userId, bookid));
+        return Ok(result);
+    }
+
     [HttpGet("{id}")]
     [EndpointSummary("Get a book review by ID")]
     [ProducesResponseType(typeof(ApiResponse<BookReviewDto>), StatusCodes.Status200OK)]
