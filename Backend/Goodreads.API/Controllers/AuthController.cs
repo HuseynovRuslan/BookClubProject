@@ -1,6 +1,7 @@
 ﻿using Goodreads.API.Common;
 using Goodreads.Application.Auth.Commands.ConfirmEmail;
 using Goodreads.Application.Auth.Commands.LoginUser;
+using Goodreads.Application.Auth.Commands.Logout;
 using Goodreads.Application.Auth.Commands.RefreshToken;
 using Goodreads.Application.Auth.Commands.RegisterUser;
 using Goodreads.Application.Common;
@@ -61,18 +62,18 @@ public class AuthController(IMediator mediator) : ControllerBase
             failure => CustomResults.Problem(failure));
     }
 
-    //[HttpPost("logout")]
-    //[Authorize]
-    //[EndpointSummary("Logout")]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    //public async Task<IActionResult> Logout()
-    //{
-    //    var result = await mediator.Send(new LogoutCommand());
-    //    return result.Match(
-    //        () => Ok(ApiResponse.Success("Logout successful")),
-    //        failure => CustomResults.Problem(failure));
-    //}
+    [HttpPost("logout")]
+    [Authorize]
+    [EndpointSummary("Logout")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Logout()
+    {
+        var result = await mediator.Send(new LogoutCommand());
+        return result.Match(
+            () => Ok(ApiResponse.Success("Logout successful")),
+            failure => CustomResults.Problem(failure));
+    }
 
 
     [HttpGet("confirm-email")]
