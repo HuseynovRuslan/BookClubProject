@@ -8,8 +8,30 @@ using Goodreads.Infrastructure.Persistence;
 //using HealthChecks.UI.Client;
 //using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 //using Scalar.AspNetCore;
+using Goodreads.Application.Common.Interfaces; // IBlobStorageService
+using Goodreads.Infrastructure.Repositories;
+using Goodreads.Application.Common.Mappings; // AwsBlobStorageService
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// Bind BlobStorage settings (AWS)
+builder.Services.Configure<LocalStorageSettings>(
+    builder.Configuration.GetSection(LocalStorageSettings.Section)
+);
+
+builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
+
+// Register UnitOfWork and other services
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+
+// MediatR handlers
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssemblyContaining<Goodreads.Application.Books.Commands.CreateBook.CreateBookCommandHandler>()
+);
 
 builder.Services
     .AddPresentation()

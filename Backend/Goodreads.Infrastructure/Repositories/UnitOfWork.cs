@@ -3,7 +3,7 @@ using Goodreads.Domain.Entities;
 using Goodreads.Infrastructure.Persistence;
 
 namespace Goodreads.Infrastructure.Repositories;
-internal class UnitOfWork : IUnitOfWork
+public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
     private IRepository<Author>? _authorsRepository;

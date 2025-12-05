@@ -1,6 +1,10 @@
 ﻿using Goodreads.API.Common;
 using Goodreads.Application.Books.Commands.AddGenersToBook;
+using Goodreads.Application.Books.Commands.CreateBook;
+using Goodreads.Application.Books.Commands.DeleteBook.DeleteBookCommand;
 using Goodreads.Application.Books.Commands.RemoveGenrerFromBook;
+using Goodreads.Application.Books.Commands.UpdateBook;
+
 
 
 //using Goodreads.Application.Books.Commands.AddGenresToBook;
@@ -56,46 +60,45 @@ public class BooksController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
-    //[HttpPost]
-    //[Authorize]
-    //[EndpointSummary("Create a new book")]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status201Created)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> CreateBook([FromForm] CreateBookCommand command)
-    //{
-    //    var result = await mediator.Send(command);
-    //    return result.Match(
-    //        id => CreatedAtAction(nameof(GetBookById), new { id }, ApiResponse.Success("Book created successfully")),
-    //        failure => CustomResults.Problem(failure));
-    //}
+    [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
+    [EndpointSummary("Create a new book")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateBook([FromForm] CreateBookCommand command)
+    {
+        var result = await mediator.Send(command);
+        return result.Match(
+            id => CreatedAtAction(nameof(GetBookById), new { id }, ApiResponse.Success("Book created successfully")),
+            failure => CustomResults.Problem(failure));
+    }
 
-    //[HttpPut]
-    //[Authorize]
-    //[EndpointSummary("Update a book")]
-    //[ProducesResponseType(StatusCodes.Status204NoContent)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //[ProducesResponseType(StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> UpdateBook([FromBody] UpdateBookCommand command)
-    //{
-    //    var result = await mediator.Send(command);
-    //    return result.Match(
-    //        () => NoContent(),
-    //        failure => CustomResults.Problem(failure));
-    //}
-    //[HttpDelete("{id}")]
-    //[Authorize(Roles = Roles.
-    //
-    //)]
-    //[EndpointSummary("Delete a book")]
-    //[ProducesResponseType(StatusCodes.Status204NoContent)]
-    //[ProducesResponseType(StatusCodes.Status404NotFound)]
-    //public async Task<IActionResult> DeleteBook(string id)
-    //{
-    //    var result = await mediator.Send(new DeleteBookCommand(id));
-    //    return result.Match(
-    //        () => NoContent(),
-    //        failure => CustomResults.Problem(failure));
-    //}
+    [HttpPut]
+    [Authorize(Roles = Roles.Admin)]
+    [EndpointSummary("Update a book")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateBook([FromBody] UpdateBookCommand command)
+    {
+        var result = await mediator.Send(command);
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = Roles.Admin)]
+    [EndpointSummary("Delete a book")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteBook(string id)
+    {
+        var result = await mediator.Send(new DeleteBookCommand(id));
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
 
     [Authorize]
     [HttpPost("{bookId}/genres")]
