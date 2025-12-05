@@ -20,7 +20,7 @@ public class GetAllReviewsQueryHandler : IRequestHandler<GetAllReviewsQuery, Pag
 
         var (items, count) = await _unitOfWork.BookReviews.GetAllAsync(
             filter: filter,
-            includes: new[] { "Book" },
+            includes: new[] { "Book", "User" },
             sortColumn: request.Parameters.SortColumn,
             sortOrder: request.Parameters.SortOrder,
             pageNumber: request.Parameters.PageNumber,
