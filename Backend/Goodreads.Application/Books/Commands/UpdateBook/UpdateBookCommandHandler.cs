@@ -1,15 +1,26 @@
-﻿namespace Goodreads.Application.Books.Commands.UpdateBook;
+﻿using Goodreads.Application.Common.Interfaces;
+using Goodreads.Domain.Constants;
+
+namespace Goodreads.Application.Books.Commands.UpdateBook;
 internal class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Result>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<UpdateBookCommandHandler> _logger;
     private readonly IMapper _mapper;
-    public UpdateBookCommandHandler(IUnitOfWork unitOfWork, ILogger<UpdateBookCommandHandler> logger, IMapper mapper)
+    private readonly ILocalStorageService _localStorageService;
+
+    public UpdateBookCommandHandler(
+        IUnitOfWork unitOfWork, 
+        ILogger<UpdateBookCommandHandler> logger, 
+        IMapper mapper,
+        ILocalStorageService localStorageService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
         _mapper = mapper;
+        _localStorageService = localStorageService;
     }
+
     public async Task<Result> Handle(UpdateBookCommand request, CancellationToken cancellationToken)
     {
         var book = await _unitOfWork.Books.GetByIdAsync(request.Id, "Author", "BookGenres");
@@ -31,13 +42,30 @@ internal class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Res
             if (author == null)
             {
                 _logger.LogWarning("Author with ID: {AuthorId} not found", request.AuthorId);
-                return Result<string>.Fail(AuthorErrors.NotFound(request.AuthorId));
+                return Result.Fail(AuthorErrors.NotFound(request.AuthorId));
             }
             book.Author = author;
         }
 
-        await _unitOfWork.SaveChangesAsync();
-        return Result.Ok();
+        // Update cover image if provided
+        if (request.CoverImage != null)
+        {
+            // Delete old cover image if exists
+            if (!string.IsNullOrEmpty(book.CoverImageBlobName))
+            {
+                await _localStorageService.DeleteAsync(LocalContainer.Books, book.CoverImageBlobName);
+            }
 
+            // Upload new cover image
+            using var stream = request.CoverImage.OpenReadStream();
+            var (url, blobName) = await _localStorageService.UploadAsync(request.CoverImage.FileName, stream, LocalContainer.Books);
+            book.CoverImageUrl = url;
+            book.CoverImageBlobName = blobName;
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+        
+        _logger.LogInformation("Book with ID: {BookId} updated successfully", request.Id);
+        return Result.Ok();
     }
 }

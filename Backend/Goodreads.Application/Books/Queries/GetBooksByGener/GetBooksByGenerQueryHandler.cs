@@ -1,5 +1,4 @@
 ﻿using System.Linq.Expressions;
-using Goodreads.Application.Books.Queries.GetBooksByGener;
 
 namespace Goodreads.Application.Books.Queries.GetBooksByGener;
 internal class GetBooksByGenerQueryHandelr : IRequestHandler<GetBooksByGenerQuery, PagedResult<BookDto>>
@@ -18,9 +17,17 @@ internal class GetBooksByGenerQueryHandelr : IRequestHandler<GetBooksByGenerQuer
     public async Task<PagedResult<BookDto>> Handle(GetBooksByGenerQuery request, CancellationToken cancellationToken)
     {
         var p = request.Parameters;
-        _logger.LogInformation("Getting All Book for Genre {Genre}", p.Query);
+        _logger.LogInformation("Getting All Books for Genre: {Genre}", p.Query);
 
-        Expression<Func<Book, bool>> filter = b => b.BookGenres.Any(bg => bg.Genre.Name == p.Query.ToLower());
+        if (string.IsNullOrWhiteSpace(p.Query))
+        {
+            _logger.LogWarning("Genre query parameter is empty");
+            return PagedResult<BookDto>.Create(new List<BookDto>(), p.PageNumber, p.PageSize, 0);
+        }
+
+        // Case-insensitive genre name filter
+        var genreQuery = p.Query.ToLower().Trim();
+        Expression<Func<Book, bool>> filter = b => b.BookGenres.Any(bg => bg.Genre.Name.ToLower() == genreQuery);
 
         string[] includes = new[] { "Author", "BookGenres.Genre" };
 
@@ -37,6 +44,7 @@ internal class GetBooksByGenerQueryHandelr : IRequestHandler<GetBooksByGenerQuer
 
         var pagedResult = PagedResult<BookDto>.Create(bookDtos, p.PageNumber, p.PageSize, totalCount);
 
+        _logger.LogInformation("Found {Count} books for genre: {Genre}", totalCount, p.Query);
         return pagedResult;
     }
 }

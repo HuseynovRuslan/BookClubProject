@@ -31,6 +31,7 @@ internal class RemoveGenerFromBookCommandHandler : IRequestHandler<RemoveGenerFr
         book.BookGenres.Remove(bookGenre);
         await _unitOfWork.SaveChangesAsync();
 
+        _logger.LogInformation("Successfully removed genre {GenreId} from book {BookId}", request.GenreId, request.BookId);
         return Result.Ok();
     }
 }

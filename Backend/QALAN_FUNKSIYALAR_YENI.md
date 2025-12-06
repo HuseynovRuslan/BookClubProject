@@ -1,12 +1,6 @@
-# BookClubProject vs Goodreads-Clone Müqayisəsi
+# 📋 QALAN FUNKSİYALAR - YENİLƏNMİŞ SİYAHI
 
-## 📋 ÜMUMİ BAXIŞ
-
-Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı fərqləri göstərir.
-
----
-
-## ❌ TAMAMEN QALAN FUNKSİYALAR
+## ❌ TAMAMEN QALAN CONTROLLER-LƏR (3)
 
 ### 1. **ReadingProgressController** - YOXDUR
 **Endpoint-lər:**
@@ -14,7 +8,7 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 - ❌ GET /api/reading-progress (İstifadəçinin oxuma proqreslərini gətir)
 
 **Lazım olan komponentlər:**
-- ✅ Entity: `ReadingProgress` (Configuration var, amma Entity yoxdur)
+- ❌ Entity: `ReadingProgress` (Configuration var, amma Entity yoxdur)
 - ❌ DTO: `ReadingProgressDto`
 - ❌ Commands: `UpdateReadingProgress`
 - ❌ Queries: `GetReadingProgresses`
@@ -31,7 +25,7 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 - ❌ POST /api/user-year-challenge/upsert (Challenge yarat və ya yenilə)
 
 **Lazım olan komponentlər:**
-- ✅ Entity: `UserYearChallenge` (Configuration var, amma Entity yoxdur)
+- ❌ Entity: `UserYearChallenge` (Configuration var, amma Entity yoxdur)
 - ❌ DTOs: `UserYearChallengeDto`, `UserYearChallengeDetailsDto`, `ChallengeBookDto`
 - ❌ Commands: `UpsertUserYearChallenge`
 - ❌ Queries: `GetUserYearChallenge`, `GetAllUserYearChallenges`
@@ -76,18 +70,39 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 
 ---
 
-### 5. **DTO-lar**
+### 5. **AuthorizationBehavior** - YOXDUR
+**Lazım olan:**
+- ❌ `AuthorizationBehavior.cs` - MediatR pipeline behavior
+- ❌ Authorization interfeysləri:
+  - `IAuthorAuthorizationService` və implementasiyası
+  - `IShelfAuthorizationService` və implementasiyası
+  - `IReviewAuthorizationService` və implementasiyası
+  - `IRequireAuthorAuthorization` interface
+  - `IRequireBookAuthorization` interface
+  - `IRequireShelfAuthorization` interface
+  - `IRequireReviewAuthorization` interface
+
+**Hal-hazırda:**
+- ✅ `IQuoteAuthorizationService` var
+- ✅ `IRequireQuoteAuthorization` var
+- ❌ Digər authorization interfeysləri yoxdur
+
+---
+
+### 6. **DTO-lar** (5 qalan)
 **Qalan DTO-lar:**
-- ✅ `BookDetailDto` - **LAZIM DEYİL** (BookDto-ya lazımi məlumatlar əlavə edildi)
 - ❌ `ReadingProgressDto` - Oxuma proqresi üçün
 - ❌ `UserYearChallengeDto` - İllik challenge üçün
 - ❌ `UserYearChallengeDetailsDto` - Challenge detalları üçün
 - ❌ `ChallengeBookDto` - Challenge-dəki kitablar üçün
 - ❌ `AuthorClaimRequestDto` - Müəllif iddiası üçün
 
+**✅ Həll edildi:**
+- ✅ `BookDetailDto` - **LAZIM DEYİL** (BookDto-ya lazımi məlumatlar əlavə edildi)
+
 ---
 
-### 6. **BooksController - Qalan Endpoint** (1 qalan)
+### 7. **BooksController - Qalan Endpoint** (1 qalan)
 **Comment-də olan endpoint:**
 - ❌ GET /api/books/{bookId}/reviews (GetBookReviews)
 
@@ -101,7 +116,7 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 
 ---
 
-### 7. **UsersController - Qalan Endpoint-lər** (5 qalan)
+### 8. **UsersController - Qalan Endpoint-lər** (5 qalan)
 **Comment-də olan endpoint-lər:**
 - ❌ DELETE /api/users/me (DeleteAccount)
 - ❌ POST /api/users/me/change-password (ChangePassword)
@@ -115,7 +130,7 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 
 ---
 
-### 8. **AuthController - Qalan Endpoint-lər**
+### 9. **AuthController - Qalan Endpoint-lər** (3 qalan)
 **Comment-də olan endpoint-lər:**
 - ❌ POST /api/auth/reset-confirmation-email (ResetEmailConfirmation)
 - ❌ POST /api/auth/forgot-password (ForgotPassword - yazılıb, amma comment-dədir)
@@ -123,34 +138,30 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 
 ---
 
-## 📊 STATİSTİKA
+## 📊 ÜMUMİ STATİSTİKA
 
 ### Controller-lər:
 - **Tam olan:** 10 controller (Auth, Authors, Books, Feed, Genres, Quotes, Reviews, Shelves, UserFollows, Users)
 - **Tamamən qalan:** 3 controller (AuthorClaimRequests, ReadingProgress, UserYearChallenge)
 
 ### Entity-lər:
+- **Mövcud:** 13 entity
 - **Qalan:** 3 entity (AuthorClaimRequest, ReadingProgress, UserYearChallenge)
 
 ### DTO-lar:
+- **Mövcud:** 12 DTO
 - **Qalan:** 5 DTO (ReadingProgressDto, UserYearChallengeDto, UserYearChallengeDetailsDto, ChallengeBookDto, AuthorClaimRequestDto)
-- **✅ Həll edildi:** BookDetailDto lazım deyil - BookDto-ya lazımi məlumatlar əlavə edildi
 
 ### Middleware-lər:
 - **Qalan:** 3 middleware (GlobalExceptionHandler, ValidationExceptionHandler, AuthorizationExceptionHandler)
 
 ### Behavior-lər:
+- **Mövcud:** 1 behavior (ValidationBehavior)
 - **Qalan:** 1 behavior (AuthorizationBehavior)
 
 ### Authorization Interface-lər:
-- **Qalan:** 
-  - `IAuthorAuthorizationService` və implementasiyası
-  - `IShelfAuthorizationService` və implementasiyası
-  - `IReviewAuthorizationService` və implementasiyası
-  - `IRequireAuthorAuthorization` interface
-  - `IRequireBookAuthorization` interface
-  - `IRequireShelfAuthorization` interface
-  - `IRequireReviewAuthorization` interface
+- **Mövcud:** 2 interface (IQuoteAuthorizationService, IRequireQuoteAuthorization)
+- **Qalan:** 6 interface və implementasiyaları
 
 ### Endpoint-lər:
 - **Tam olan:** ~50+ endpoint
@@ -159,20 +170,21 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 
 ---
 
-## 🎯 NÖVBƏTİ ADDIMLAR
+## 🎯 NÖVBƏTİ ADDIMLAR (Prioritet sırası ilə)
 
 ### Prioritet 1: Əsas Funksiyalar
 1. **ReadingProgressController** - Oxuma proqresi funksionallığı
 2. **UserYearChallengeController** - İllik challenge funksionallığı
 3. **AuthorClaimRequestsController** - Müəllif iddiası funksionallığı
 
-### Prioritet 2: Middleware-lər
-4. Exception Handler Middleware-ləri aktivləşdirmək
+### Prioritet 2: Middleware və Authorization
+4. Exception Handler Middleware-ləri yaratmaq və aktivləşdirmək
+5. AuthorizationBehavior və authorization interfeyslərini yaratmaq
 
 ### Prioritet 3: Qalan Endpoint-lər
-5. BooksController-dəki comment-də olan endpoint-ləri aktivləşdirmək
-6. UsersController-dəki comment-də olan endpoint-ləri aktivləşdirmək
-7. AuthController-dəki comment-də olan endpoint-ləri aktivləşdirmək
+6. BooksController-dəki GetBookReviews endpoint-ini aktivləşdirmək
+7. UsersController-dəki comment-də olan endpoint-ləri aktivləşdirmək
+8. AuthController-dəki comment-də olan endpoint-ləri aktivləşdirmək
 
 ---
 
