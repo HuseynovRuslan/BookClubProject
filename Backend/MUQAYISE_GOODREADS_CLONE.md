@@ -67,16 +67,18 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 - ❌ `GlobalExceptionHandler.cs` - Ümumi xəta idarəetməsi
 - ❌ `ValidationExceptionHandler.cs` - Validasiya xəta idarəetməsi
 - ❌ `AuthorizationExceptionHandler.cs` - İcazə xəta idarəetməsi
-- ❌ Program.cs-də middleware-ləri aktivləşdirmək
+- ❌ Program.cs-də `app.UseExceptionHandler()` aktivləşdirmək
+- ❌ DependencyInjection.cs-də middleware-ləri qeydiyyata almaq
 
 **Hal-hazırda:**
 - Middleware-lər comment-dədir DependencyInjection.cs-də
+- Program.cs-də `app.UseExceptionHandler()` comment-dədir
 
 ---
 
 ### 5. **DTO-lar**
 **Qalan DTO-lar:**
-- ❌ `BookDetailDto` - Kitabın detallı məlumatları üçün
+- ✅ `BookDetailDto` - **LAZIM DEYİL** (BookDto-ya lazımi məlumatlar əlavə edildi)
 - ❌ `ReadingProgressDto` - Oxuma proqresi üçün
 - ❌ `UserYearChallengeDto` - İllik challenge üçün
 - ❌ `UserYearChallengeDetailsDto` - Challenge detalları üçün
@@ -127,10 +129,24 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 - **Qalan:** 3 entity (AuthorClaimRequest, ReadingProgress, UserYearChallenge)
 
 ### DTO-lar:
-- **Qalan:** 6 DTO (BookDetailDto, ReadingProgressDto, UserYearChallengeDto, UserYearChallengeDetailsDto, ChallengeBookDto, AuthorClaimRequestDto)
+- **Qalan:** 5 DTO (ReadingProgressDto, UserYearChallengeDto, UserYearChallengeDetailsDto, ChallengeBookDto, AuthorClaimRequestDto)
+- **✅ Həll edildi:** BookDetailDto lazım deyil - BookDto-ya lazımi məlumatlar əlavə edildi
 
 ### Middleware-lər:
 - **Qalan:** 3 middleware (GlobalExceptionHandler, ValidationExceptionHandler, AuthorizationExceptionHandler)
+
+### Behavior-lər:
+- **Qalan:** 1 behavior (AuthorizationBehavior)
+
+### Authorization Interface-lər:
+- **Qalan:** 
+  - `IAuthorAuthorizationService` və implementasiyası
+  - `IShelfAuthorizationService` və implementasiyası
+  - `IReviewAuthorizationService` və implementasiyası
+  - `IRequireAuthorAuthorization` interface
+  - `IRequireBookAuthorization` interface
+  - `IRequireShelfAuthorization` interface
+  - `IRequireReviewAuthorization` interface
 
 ### Endpoint-lər:
 - **Tam olan:** ~45 endpoint
@@ -161,4 +177,5 @@ Bu sənəd BookClubProject və goodreads-clone-master layihələri arasındakı 
 - BookClubProject-də `FeedController` var, amma goodreads-clone-də yoxdur (bu BookClubProject-ə xas funksiyadır)
 - BookClubProject-də `FeedItemDto` var, amma goodreads-clone-də yoxdur
 - Bəzi configuration faylları var (ReadingProgressConfiguration, UserYearChallengeConfiguration), amma entity-lər və controller-lər yoxdur
+- BookClubProject-də `ILocalStorageService` istifadə olunur, goodreads-clone-də isə `IBlobStorageService` (AWS S3) istifadə olunur - bu fərqli implementasiya seçimidir, hər ikisi də düzgündür
 
