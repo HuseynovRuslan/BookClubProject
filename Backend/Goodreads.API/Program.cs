@@ -57,7 +57,7 @@ if (builder.Configuration.GetValue<bool>("RunMigrations"))
     await app.SeedDataAsync();
 }
 
-//app.UseExceptionHandler();
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 

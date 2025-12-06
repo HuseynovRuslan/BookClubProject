@@ -1,4 +1,5 @@
-﻿
+﻿using Goodreads.API.Middlewares;
+
 namespace Goodreads.API.Extensions;
 
 public static class DependencyInjection
@@ -7,9 +8,9 @@ public static class DependencyInjection
     {
         services.AddControllers();
         services.AddSwaggerWithAuth();
-        //services.AddExceptionHandler<AuthorizationExceptionHandler>();
-        //services.AddExceptionHandler<ValidationExceptionHandler>();
-        //services.AddExceptionHandler<GlobalExceptionHandler>();
+        services.AddExceptionHandler<AuthorizationExceptionHandler>();
+        services.AddExceptionHandler<ValidationExceptionHandler>();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
         // CORS configuration
