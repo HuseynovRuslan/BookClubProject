@@ -1,4 +1,7 @@
-﻿namespace Goodreads.Application.Books.Commands.UpdateBook;
+﻿using Goodreads.Application.Common.Attributes;
+using Microsoft.AspNetCore.Http;
+
+namespace Goodreads.Application.Books.Commands.UpdateBook;
 public class UpdateBookCommand : IRequest<Result>
 {
     public string Id { get; set; }
@@ -9,6 +12,9 @@ public class UpdateBookCommand : IRequest<Result>
     public string? Language { get; set; }
     public int? PageCount { get; set; }
     public string? Publisher { get; set; }
-
     public string? AuthorId { get; set; }
+
+    [AllowedExtensions(ExtensionGroup.Image)]
+    [MaxFileSize(AppConstants.MaxFileSizeInBytes)]
+    public IFormFile? CoverImage { get; set; }
 }

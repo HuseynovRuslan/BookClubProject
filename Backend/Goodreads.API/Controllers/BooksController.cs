@@ -79,7 +79,7 @@ public class BooksController(IMediator mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateBook([FromBody] UpdateBookCommand command)
+    public async Task<IActionResult> UpdateBook([FromForm] UpdateBookCommand command)
     {
         var result = await mediator.Send(command);
         return result.Match(

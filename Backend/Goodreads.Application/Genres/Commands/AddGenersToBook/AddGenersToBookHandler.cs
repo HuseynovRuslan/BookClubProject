@@ -1,6 +1,7 @@
 ﻿using Goodreads.Application.Books.Commands.AddGenersToBook;
 
-internal class AddGenersToBookCommandHandler : IRequestHandler<AddGenersToBookCommand, Result<string>>
+namespace Goodreads.Application.Books.Commands.AddGenersToBook;
+internal class AddGenersToBookCommandHandler : IRequestHandler<AddGenersToBookCommand, Result>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<AddGenersToBookCommandHandler> _logger;
@@ -11,27 +12,27 @@ internal class AddGenersToBookCommandHandler : IRequestHandler<AddGenersToBookCo
         _logger = logger;
     }
 
-    public async Task<Result<string>> Handle(AddGenersToBookCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(AddGenersToBookCommand request, CancellationToken cancellationToken)
     {
         var book = await _unitOfWork.Books.GetByIdAsync(request.BookId, "BookGenres");
         if (book == null)
         {
             _logger.LogWarning("Book with ID: {BookId} not found", request.BookId);
-            return Result<string>.Fail(BookErrors.NotFound(request.BookId)); 
+            return Result.Fail(BookErrors.NotFound(request.BookId)); 
         }
 
         var existingGenreIds = book.BookGenres.Select(bg => bg.GenreId).ToList();
         var newGenreIds = request.GenreIds.Except(existingGenreIds).Distinct().ToList();
 
         if (!newGenreIds.Any())
-            return Result<string>.Ok("");
+            return Result.Ok();
 
         var genres = await _unitOfWork.Genres.GetAllAsync(filter: g => newGenreIds.Contains(g.Id));
         if (genres.Count != newGenreIds.Count)
         {
             var missingGenres = newGenreIds.Except(genres.Items.Select(g => g.Id)).ToList();
             _logger.LogWarning("Genres with IDs: {MissingGenres} not found", string.Join(", ", missingGenres));
-            return Result<string>.Fail(GenreErrors.NotFound(missingGenres));
+            return Result.Fail(GenreErrors.NotFound(missingGenres));
         }
 
         foreach (var genre in genres.Items)
@@ -40,6 +41,8 @@ internal class AddGenersToBookCommandHandler : IRequestHandler<AddGenersToBookCo
         }
 
         await _unitOfWork.SaveChangesAsync();
-        return Result<string>.Ok("");
+        
+        _logger.LogInformation("Successfully added {Count} genres to book with ID: {BookId}", newGenreIds.Count, request.BookId);
+        return Result.Ok();
     }
 }
