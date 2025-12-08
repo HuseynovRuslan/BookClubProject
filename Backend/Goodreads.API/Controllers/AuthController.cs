@@ -102,32 +102,32 @@ public class AuthController(IMediator mediator) : ControllerBase
     //        failure => CustomResults.Problem(failure));
     //}
 
-    //[HttpPost("forgot-password")]
-    //[EndpointSummary("Request password reset link")]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [HttpPost("forgot-password")]
+    [EndpointSummary("Request password reset link")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
 
-    //public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
-    //{
-    //    var result = await mediator.Send(command);
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
+    {
+        var result = await mediator.Send(command);
 
-    //    return result.Match(
-    //        resetLink => Ok(ApiResponse<string>.Success(resetLink, "password reset link sent.")),
-    //        onFailure => CustomResults.Problem(onFailure));
-    //}
+        return result.Match(
+            resetLink => Ok(ApiResponse<string>.Success(resetLink, "password reset link sent.")),
+            onFailure => CustomResults.Problem(onFailure));
+    }
 
 
-    //[HttpPost("reset-password")]
-    //[EndpointSummary("Reset user password")]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> ResetPassword([FromQuery] string userId, [FromQuery] string token, [FromBody] string NewPassword)
-    //{
-    //    var result = await mediator.Send(new ResetPasswordCommand(userId, token, NewPassword));
-    //    return result.Match(
-    //        () => Ok(ApiResponse.Success("password reset successfully.")),
-    //        onFailure => CustomResults.Problem(onFailure));
-    //}
+    [HttpPost("reset-password")]
+    [EndpointSummary("Reset user password")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromQuery] string userId, [FromQuery] string token, [FromBody] string NewPassword)
+    {
+        var result = await mediator.Send(new ResetPasswordCommand(userId, token, NewPassword));
+        return result.Match(
+            () => Ok(ApiResponse.Success("password reset successfully.")),
+            onFailure => CustomResults.Problem(onFailure));
+    }
 
 
 }
