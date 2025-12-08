@@ -17,14 +17,14 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ShelvesController(ISender sender) : ControllerBase
+public class ShelvesController : BaseController
 {
     [HttpGet("get-shelf-by-id/{id}")]
 
 
     public async Task<IActionResult> GetShelfById(string id)
     {
-        var result = await sender.Send(new GetShelfByIdQuery(id));
+        var result = await Sender.Send(new GetShelfByIdQuery(id));
         return result.Match(
             shelf => Ok(ApiResponse<ShelfDto>.Success(shelf)),
             failure => CustomResults.Problem(failure));
@@ -36,7 +36,7 @@ public class ShelvesController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> CreateShelf([FromBody] CreateShelfCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             id => CreatedAtAction(nameof(GetShelfById), new { id }, ApiResponse.Success("Shelf created successfully")),
             failure => CustomResults.Problem(failure));
@@ -48,7 +48,7 @@ public class ShelvesController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> UpdateShelf([FromBody] UpdateShelfCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -60,7 +60,7 @@ public class ShelvesController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> DeleteShelf(string id)
     {
-        var result = await sender.Send(new DeleteShelfCommand(id));
+        var result = await Sender.Send(new DeleteShelfCommand(id));
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -75,7 +75,7 @@ public class ShelvesController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> AddBookToShelf(string shelfId, string bookId)
     {
-        var result = await sender.Send(new AddBookToShelfCommand(shelfId, bookId));
+        var result = await Sender.Send(new AddBookToShelfCommand(shelfId, bookId));
         return result.Match(
             () => Ok(),
             failure => CustomResults.Problem(failure));
@@ -88,7 +88,7 @@ public class ShelvesController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> RemoveBookFromShelf(string shelfId, string bookId)
     {
-        var result = await sender.Send(new RemoveBookFromShelfCommand(shelfId, bookId));
+        var result = await Sender.Send(new RemoveBookFromShelfCommand(shelfId, bookId));
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));

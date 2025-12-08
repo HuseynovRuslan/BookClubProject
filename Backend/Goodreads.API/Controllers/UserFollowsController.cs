@@ -14,7 +14,7 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserFollowsController(ISender sender) : ControllerBase
+public class UserFollowsController : BaseController
 {
     [HttpPost("follow")]
     [Authorize]
@@ -22,7 +22,7 @@ public class UserFollowsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> Follow([FromBody] FollowUserCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
 
         return result.Match(
             () => Ok(ApiResponse.Success("User followed successfully.")),
@@ -35,7 +35,7 @@ public class UserFollowsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> Unfollow([FromBody] UnfollowUserCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
 
         return result.Match(
             () => Ok(ApiResponse.Success("User unfollowed successfully.")),
@@ -48,7 +48,7 @@ public class UserFollowsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> GetFollowers(int? pageNumber, int? pageSize)
     {
-        var result = await sender.Send(new GetFollowersQuery(pageNumber, pageSize));
+        var result = await Sender.Send(new GetFollowersQuery(pageNumber, pageSize));
 
         return result.Match(
             followers => Ok(followers),
@@ -61,7 +61,7 @@ public class UserFollowsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> GetFollowing(int? pageNumber, int? pageSize)
     {
-        var result = await sender.Send(new GetFollowingQuery(pageNumber, pageSize));
+        var result = await Sender.Send(new GetFollowingQuery(pageNumber, pageSize));
 
         return result.Match(
           following => Ok(following),

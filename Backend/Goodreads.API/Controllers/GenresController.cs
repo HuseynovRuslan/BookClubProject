@@ -17,14 +17,14 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GenresController(ISender sender) : ControllerBase
+public class GenresController : BaseController
 {
     [HttpGet("get-all-genres")]
 
 
     public async Task<IActionResult> GetAllGenres([FromQuery] QueryParameters parameters)
     {
-        var result = await sender.Send(new GetAllGenresQuery(parameters));
+        var result = await Sender.Send(new GetAllGenresQuery(parameters));
         return Ok(result);
     }
 
@@ -33,7 +33,7 @@ public class GenresController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> GetGenreById(string id)
     {
-        var result = await sender.Send(new GetGenreByIdQuery(id));
+        var result = await Sender.Send(new GetGenreByIdQuery(id));
         return result.Match(
             genre => Ok(ApiResponse<GenreDto>.Success(genre)),
             failure => CustomResults.Problem(failure));
@@ -45,7 +45,7 @@ public class GenresController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> CreateGenre([FromBody] CreateGenreCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             id => CreatedAtAction(nameof(GetGenreById), new { id }, ApiResponse.Success("Genre created successfully")),
             failure => CustomResults.Problem(failure));
@@ -57,7 +57,7 @@ public class GenresController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> UpdateGenre([FromBody] UpdateGenreCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -69,7 +69,7 @@ public class GenresController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> DeleteGenre(string id)
     {
-        var result = await sender.Send(new DeleteGenreCommand(id));
+        var result = await Sender.Send(new DeleteGenreCommand(id));
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));

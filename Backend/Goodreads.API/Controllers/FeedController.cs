@@ -12,14 +12,14 @@ namespace Goodreads.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class FeedController(ISender sender) : ControllerBase
+public class FeedController : BaseController
 {
     [HttpGet("get-feed")]
 
 
     public async Task<IActionResult> GetFeed(int? pageNumber, int? pageSize)
     {
-        var result = await sender.Send(new GetFeedQuery(pageNumber, pageSize));
+        var result = await Sender.Send(new GetFeedQuery(pageNumber, pageSize));
         return Ok(result);
     }
 }

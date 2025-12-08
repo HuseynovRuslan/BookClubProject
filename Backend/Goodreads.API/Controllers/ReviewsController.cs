@@ -20,14 +20,14 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ReviewsController(ISender sender) : ControllerBase
+public class ReviewsController : BaseController
 {
     [HttpGet("get-all-reviews")]
 
 
     public async Task<IActionResult> GetAllReviews([FromQuery] QueryParameters parameters, [FromQuery] string? userId = null, [FromQuery(Name = "bookId")] string? bookid = null)
     {
-        var result = await sender.Send(new GetAllReviewsQuery(parameters, userId, bookid));
+        var result = await Sender.Send(new GetAllReviewsQuery(parameters, userId, bookid));
         return Ok(result);
     }
 
@@ -36,7 +36,7 @@ public class ReviewsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> GetReviewById(string id)
     {
-        var result = await sender.Send(new GetReviewByIdQuery(id));
+        var result = await Sender.Send(new GetReviewByIdQuery(id));
         return result.Match(
             review => Ok(ApiResponse<BookReviewDto>.Success(review)),
             error => CustomResults.Problem(error)
@@ -49,7 +49,7 @@ public class ReviewsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> CreateBookReview([FromBody] CreateReviewCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             reviewId => CreatedAtAction(nameof(GetReviewById), new { id = reviewId }, ApiResponse<string>.Success(reviewId)),
             error => CustomResults.Problem(error)
@@ -62,7 +62,7 @@ public class ReviewsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> UpdateReview(string reviewId, [FromBody] UpdateReviewRequest request)
     {
-        var result = await sender.Send(new UpdateReviewCommand(reviewId, request.Rating, request.ReviewText));
+        var result = await Sender.Send(new UpdateReviewCommand(reviewId, request.Rating, request.ReviewText));
         return result.Match(
             () => NoContent(),
             error => CustomResults.Problem(error)
@@ -75,7 +75,7 @@ public class ReviewsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> DeleteReview(string reviewId)
     {
-        var result = await sender.Send(new DeleteReviewCommand(reviewId));
+        var result = await Sender.Send(new DeleteReviewCommand(reviewId));
         return result.Match(
             () => NoContent(),
             error => CustomResults.Problem(error));
