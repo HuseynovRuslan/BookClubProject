@@ -12,14 +12,14 @@ namespace Goodreads.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class FeedController(IMediator mediator) : ControllerBase
+public class FeedController(ISender sender) : ControllerBase
 {
-    [HttpGet]
-    [EndpointSummary("Get social feed")]
-    [ProducesResponseType(typeof(PagedResult<FeedItemDto>), StatusCodes.Status200OK)]
+    [HttpGet("get-feed")]
+
+
     public async Task<IActionResult> GetFeed(int? pageNumber, int? pageSize)
     {
-        var result = await mediator.Send(new GetFeedQuery(pageNumber, pageSize));
+        var result = await sender.Send(new GetFeedQuery(pageNumber, pageSize));
         return Ok(result);
     }
 }

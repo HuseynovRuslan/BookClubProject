@@ -1,15 +1,4 @@
 <Project>
-  <!-- 
-    This target is imported AFTER the SDK targets (unlike Directory.Build.props), 
-    so it can effectively override targets defined by the SDK.
-  -->
-  <Target Name="DiscoverPrecompressedAssets" 
-          BeforeTargets="ComputeFilesToPublish;BeforeBuild;Build" 
-          Condition="false">
-    <!-- This target never executes because Condition="false" -->
-  </Target>
-
-  <!-- Also disable the internal target just in case -->
+  <Target Name="DiscoverPrecompressedAssets" Condition="false" />
   <Target Name="_DiscoverPrecompressedAssets" Condition="false" />
-
 </Project>

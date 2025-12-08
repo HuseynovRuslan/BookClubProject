@@ -15,16 +15,15 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IMediator mediator) : ControllerBase
+public class AuthController(ISender sender) : ControllerBase
 {
 
     [HttpPost("register")]
-    [EndpointSummary("Register a new user")]
-    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+
+
     public async Task<IActionResult> Register([FromBody] RegisterUserCommand command)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
 
         return result.Match(
         success => Ok(ApiResponse<string>.Success(success, "Registration successful! Please check your email to confirm your account.")),
@@ -36,13 +35,11 @@ public class AuthController(IMediator mediator) : ControllerBase
 
 
     [HttpPost("login")]
-    [EndpointSummary("Login")]
-    [ProducesResponseType(typeof(ApiResponse<AuthResultDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+
+
     public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
 
         return result.Match(
             success => Ok(ApiResponse<AuthResultDto>.Success(success, "Login successful")),
@@ -50,12 +47,11 @@ public class AuthController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("refresh")]
-    [EndpointSummary("Refresh user token")]
-    [ProducesResponseType(typeof(ApiResponse<AuthResultDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+
+
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
         return result.Match(
             success => Ok(ApiResponse<AuthResultDto>.Success(success, "Token refreshed successfully")),
             failure => CustomResults.Problem(failure));
@@ -63,12 +59,11 @@ public class AuthController(IMediator mediator) : ControllerBase
 
     [HttpPost("logout")]
     [Authorize]
-    [EndpointSummary("Logout")]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+
+
     public async Task<IActionResult> Logout()
     {
-        var result = await mediator.Send(new LogoutCommand());
+        var result = await sender.Send(new LogoutCommand());
         return result.Match(
             () => Ok(ApiResponse.Success("Logout successful")),
             failure => CustomResults.Problem(failure));
@@ -76,12 +71,11 @@ public class AuthController(IMediator mediator) : ControllerBase
 
 
     [HttpGet("confirm-email")]
-    [EndpointSummary("Confirm user email address")]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+
+
     public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
     {
-        var result = await mediator.Send(new ConfirmEmailCommand(userId, token));
+        var result = await sender.Send(new ConfirmEmailCommand(userId, token));
 
         return result.Match(
             success => Ok(ApiResponse.Success("Email confirmed successfully.")),

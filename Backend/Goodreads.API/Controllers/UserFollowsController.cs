@@ -14,18 +14,15 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserFollowsController(IMediator mediator) : ControllerBase
+public class UserFollowsController(ISender sender) : ControllerBase
 {
     [HttpPost("follow")]
     [Authorize]
-    [EndpointSummary("Follow a user")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
-    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ProblemDetails))]
+
+
     public async Task<IActionResult> Follow([FromBody] FollowUserCommand command)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
 
         return result.Match(
             () => Ok(ApiResponse.Success("User followed successfully.")),
@@ -34,14 +31,11 @@ public class UserFollowsController(IMediator mediator) : ControllerBase
 
     [HttpPost("unfollow")]
     [Authorize]
-    [EndpointSummary("Follow a user")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
-    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ProblemDetails))]
+
+
     public async Task<IActionResult> Unfollow([FromBody] UnfollowUserCommand command)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
 
         return result.Match(
             () => Ok(ApiResponse.Success("User unfollowed successfully.")),
@@ -50,13 +44,11 @@ public class UserFollowsController(IMediator mediator) : ControllerBase
 
     [HttpGet("followers")]
     [Authorize]
-    [EndpointSummary("Get followers of a user")]
-    [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+
+
     public async Task<IActionResult> GetFollowers(int? pageNumber, int? pageSize)
     {
-        var result = await mediator.Send(new GetFollowersQuery(pageNumber, pageSize));
+        var result = await sender.Send(new GetFollowersQuery(pageNumber, pageSize));
 
         return result.Match(
             followers => Ok(followers),
@@ -65,13 +57,11 @@ public class UserFollowsController(IMediator mediator) : ControllerBase
 
     [HttpGet("following")]
     [Authorize]
-    [EndpointSummary("Get following of a user")]
-    [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+
+
     public async Task<IActionResult> GetFollowing(int? pageNumber, int? pageSize)
     {
-        var result = await mediator.Send(new GetFollowingQuery(pageNumber, pageSize));
+        var result = await sender.Send(new GetFollowingQuery(pageNumber, pageSize));
 
         return result.Match(
           following => Ok(following),
