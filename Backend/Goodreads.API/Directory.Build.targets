@@ -1,0 +1,4 @@
+<Project>
+  <Target Name="DiscoverPrecompressedAssets" Condition="false" />
+  <Target Name="_DiscoverPrecompressedAssets" Condition="false" />
+</Project>
