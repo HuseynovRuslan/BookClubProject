@@ -34,25 +34,23 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BooksController(IMediator mediator) : ControllerBase
+public class BooksController(ISender sender) : ControllerBase
 {
-    [HttpGet]
-    [EndpointSummary("Get all books")]
-    [ProducesResponseType(typeof(PagedResult<BookDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HttpGet("get-all-books")]
+
+
     public async Task<IActionResult> GetAllBooks([FromQuery] QueryParameters parameters)
     {
-        var result = await mediator.Send(new GetAllBooksQuery(parameters));
+        var result = await sender.Send(new GetAllBooksQuery(parameters));
         return Ok(result);
     }
 
-    [HttpGet("{id}")]
-    [EndpointSummary("Get book by ID")]
-    [ProducesResponseType(typeof(ApiResponse<BookDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<BookDto>), StatusCodes.Status404NotFound)]
+    [HttpGet("get-book-by-id/{id}")]
+
+
     public async Task<IActionResult> GetBookById(string id)
     {
-        var result = await mediator.Send(new GetBookByIdQuery(id));
+        var result = await sender.Send(new GetBookByIdQuery(id));
 
         if (!result.IsSuccess)
             return NotFound(result); 
@@ -60,41 +58,37 @@ public class BooksController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost]
+    [HttpPost("create-book")]
     [Authorize(Roles = Roles.Admin)]
-    [EndpointSummary("Create a new book")]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+
+
     public async Task<IActionResult> CreateBook([FromForm] CreateBookCommand command)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
         return result.Match(
             id => CreatedAtAction(nameof(GetBookById), new { id }, ApiResponse.Success("Book created successfully")),
             failure => CustomResults.Problem(failure));
     }
 
-    [HttpPut]
+    [HttpPut("update-book")]
     [Authorize(Roles = Roles.Admin)]
-    [EndpointSummary("Update a book")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+
+
     public async Task<IActionResult> UpdateBook([FromForm] UpdateBookCommand command)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("delete-book/{id}")]
     [Authorize(Roles = Roles.Admin)]
-    [EndpointSummary("Delete a book")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+
+
     public async Task<IActionResult> DeleteBook(string id)
     {
-        var result = await mediator.Send(new DeleteBookCommand(id));
+        var result = await sender.Send(new DeleteBookCommand(id));
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -102,12 +96,11 @@ public class BooksController(IMediator mediator) : ControllerBase
 
     [Authorize]
     [HttpPost("{bookId}/genres")]
-    [EndpointSummary("Add genres to a book")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+
+
     public async Task<IActionResult> AddGenresToBook(string bookId, [FromBody] List<string> GenreIds)
     {
-        var result = await mediator.Send(new AddGenersToBookCommand(bookId, GenreIds));
+        var result = await sender.Send(new AddGenersToBookCommand(bookId, GenreIds));
         return result.Match(
             () => Ok(),
             failure => CustomResults.Problem(failure));
@@ -115,12 +108,11 @@ public class BooksController(IMediator mediator) : ControllerBase
 
     [Authorize]
     [HttpDelete("{bookId}/genres/{genreId}")]
-    [EndpointSummary("Remove a genre from a book")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+
+
     public async Task<IActionResult> RemoveGenreFromBook(string bookId, string genreId)
     {
-        var result = await mediator.Send(new RemoveGenerFromBookCommand(bookId, genreId));
+        var result = await sender.Send(new RemoveGenerFromBookCommand(bookId, genreId));
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -128,26 +120,24 @@ public class BooksController(IMediator mediator) : ControllerBase
 
 
     [HttpGet("by-genre")]
-    [EndpointSummary("Get books by genre")]
-    [ProducesResponseType(typeof(PagedResult<BookDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+
+
     public async Task<IActionResult> GetBooksByGenre([FromQuery] QueryParameters parameters)
     {
-        var result = await mediator.Send(new GetBooksByGenerQuery(parameters));
+        var result = await sender.Send(new GetBooksByGenerQuery(parameters));
         return Ok(result);
     }
 
 
     [Authorize]
     [HttpPost("{bookId}/status")]
-    [EndpointSummary("Update book status (default shelf)")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+
+
+
     public async Task<IActionResult> UpdateBookStatus(string bookId, [FromQuery] string? targetShelfName)
     {
         var command = new UpdateBookStatusCommand(bookId, targetShelfName);
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
 
         return result.Match(
              () => NoContent(),

@@ -17,64 +17,60 @@ using SharedKernel;
 namespace Goodreads.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class AuthorsController(IMediator mediator) : ControllerBase
+[Route("api/[controller]/action")]
+public class AuthorsController(ISender sender) : ControllerBase
 {
-    [HttpGet]
-    [EndpointSummary("Get all authors")]
-    [ProducesResponseType(typeof(PagedResult<AuthorDto>), StatusCodes.Status200OK)]
+    [HttpGet("get-all-authors")]
+
+
     public async Task<IActionResult> GetAuthors([FromQuery] QueryParameters parameters)
     {
-        var result = await mediator.Send(new GetAllAuthorsQuery(parameters));
+        var result = await sender.Send(new GetAllAuthorsQuery(parameters));
         return Ok(result);
     }
 
-    [HttpGet("{id}")]
-    [EndpointSummary("Get author by ID")]
-    [ProducesResponseType(typeof(ApiResponse<AuthorDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HttpGet("get-author-by-id/{id}")]
+
+
     public async Task<IActionResult> GetAuthorById(string id)
     {
-        var result = await mediator.Send(new GetAuthorByIdQuery(id));
+        var result = await sender.Send(new GetAuthorByIdQuery(id));
         return result.Match(
             author => Ok(ApiResponse<AuthorDto>.Success(author)),
             failure => CustomResults.Problem(failure));
     }
 
-    [HttpPost]
+    [HttpPost("create-author")]
     [Authorize(Roles = Roles.Admin)]
-    [EndpointSummary("Create a new author")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+
+
     public async Task<IActionResult> CreateAuthor([FromForm] CreateAuthorCommand command)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
         return result.Match(
             id => CreatedAtAction(nameof(GetAuthorById), new { id }, ApiResponse.Success("Author created successfully")),
             failure => CustomResults.Problem(failure));
     }
 
-    [HttpPut]
+    [HttpPut("update-author")]
     [Authorize(Roles = Roles.Admin)]
-    [EndpointSummary("Update an author")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+
+
     public async Task<IActionResult> UpdateAuthor([FromForm] UpdateAuthorCommand command)
     {
-        var result = await mediator.Send(command);
+        var result = await sender.Send(command);
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("delete-author/{id}")]
     [Authorize(Roles = Roles.Admin)]
-    [EndpointSummary("Delete an author")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+
+
     public async Task<IActionResult> DeleteAuthor(string id)
     {
-        var result = await mediator.Send(new DeleteAuthorCommand(id));
+        var result = await sender.Send(new DeleteAuthorCommand(id));
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -85,7 +81,7 @@ public class AuthorsController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(PagedResult<BookDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBooksByAuthor(string authorId, [FromQuery] QueryParameters parameters)
     {
-        var result = await mediator.Send(new GetBooksByAuthorQuery(authorId, parameters));
+        var result = await sender.Send(new GetBooksByAuthorQuery(authorId, parameters));
         return Ok(result);
     }
 }
