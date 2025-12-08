@@ -18,14 +18,14 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]/action")]
-public class AuthorsController(ISender sender) : ControllerBase
+public class AuthorsController : BaseController
 {
     [HttpGet("get-all-authors")]
 
 
     public async Task<IActionResult> GetAuthors([FromQuery] QueryParameters parameters)
     {
-        var result = await sender.Send(new GetAllAuthorsQuery(parameters));
+        var result = await Sender.Send(new GetAllAuthorsQuery(parameters));
         return Ok(result);
     }
 
@@ -34,7 +34,7 @@ public class AuthorsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> GetAuthorById(string id)
     {
-        var result = await sender.Send(new GetAuthorByIdQuery(id));
+        var result = await Sender.Send(new GetAuthorByIdQuery(id));
         return result.Match(
             author => Ok(ApiResponse<AuthorDto>.Success(author)),
             failure => CustomResults.Problem(failure));
@@ -46,7 +46,7 @@ public class AuthorsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> CreateAuthor([FromForm] CreateAuthorCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             id => CreatedAtAction(nameof(GetAuthorById), new { id }, ApiResponse.Success("Author created successfully")),
             failure => CustomResults.Problem(failure));
@@ -58,7 +58,7 @@ public class AuthorsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> UpdateAuthor([FromForm] UpdateAuthorCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -70,7 +70,7 @@ public class AuthorsController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> DeleteAuthor(string id)
     {
-        var result = await sender.Send(new DeleteAuthorCommand(id));
+        var result = await Sender.Send(new DeleteAuthorCommand(id));
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -81,7 +81,7 @@ public class AuthorsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(PagedResult<BookDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBooksByAuthor(string authorId, [FromQuery] QueryParameters parameters)
     {
-        var result = await sender.Send(new GetBooksByAuthorQuery(authorId, parameters));
+        var result = await Sender.Send(new GetBooksByAuthorQuery(authorId, parameters));
         return Ok(result);
     }
 }

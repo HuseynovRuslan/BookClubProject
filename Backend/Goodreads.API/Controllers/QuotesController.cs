@@ -18,14 +18,14 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class QuotesController(ISender sender, IUserContext userContext) : ControllerBase
+public class QuotesController(IUserContext userContext) : BaseController
 {
     [HttpGet("get-all-quotes")]
 
 
     public async Task<IActionResult> GetAllQuotes([FromQuery] QueryParameters parameters, string? Tag, string? UserId, string? AuthorId, string? BookId)
     {
-        var result = await sender.Send(new GetAllQuotesQuery(parameters, Tag, UserId, AuthorId, BookId));
+        var result = await Sender.Send(new GetAllQuotesQuery(parameters, Tag, UserId, AuthorId, BookId));
         return Ok(result);
     }
 
@@ -39,7 +39,7 @@ public class QuotesController(ISender sender, IUserContext userContext) : Contro
         if (userId == null)
             return Unauthorized();
 
-        var result = await sender.Send(new GetAllQuotesQuery(parameters, Tag, userId, AuthorId, BookId));
+        var result = await Sender.Send(new GetAllQuotesQuery(parameters, Tag, userId, AuthorId, BookId));
 
         return Ok(result);
     }
@@ -50,7 +50,7 @@ public class QuotesController(ISender sender, IUserContext userContext) : Contro
 
     public async Task<IActionResult> GetQuoteById(string id)
     {
-        var result = await sender.Send(new GetQuoteByIdQuery(id));
+        var result = await Sender.Send(new GetQuoteByIdQuery(id));
         return result.Match(
             quote => Ok(ApiResponse<QuoteDto>.Success(quote)),
             failure => CustomResults.Problem(failure));
@@ -62,7 +62,7 @@ public class QuotesController(ISender sender, IUserContext userContext) : Contro
 
     public async Task<IActionResult> CreateQuote([FromBody] CreateQuoteCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             id => CreatedAtAction(nameof(GetQuoteById), new { id }, ApiResponse.Success("Quote created successfully")),
             failure => CustomResults.Problem(failure));
@@ -75,7 +75,7 @@ public class QuotesController(ISender sender, IUserContext userContext) : Contro
 
     public async Task<IActionResult> ToggleLike(string id)
     {
-        var result = await sender.Send(new ToggleQuoteLikeCommand(id));
+        var result = await Sender.Send(new ToggleQuoteLikeCommand(id));
         return result.Match(
             liked => Ok(ApiResponse<bool>.Success(liked)),
             failure => CustomResults.Problem(failure));
@@ -89,7 +89,7 @@ public class QuotesController(ISender sender, IUserContext userContext) : Contro
     public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateQuoteRequest request)
     {
         var command = new UpdateQuoteCommand(id, request.Text, request.Tags);
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
 
         return result.Match(
             () => NoContent(),
@@ -102,7 +102,7 @@ public class QuotesController(ISender sender, IUserContext userContext) : Contro
 
     public async Task<IActionResult> Delete(string id)
     {
-        var result = await sender.Send(new DeleteQuoteCommand(id));
+        var result = await Sender.Send(new DeleteQuoteCommand(id));
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));

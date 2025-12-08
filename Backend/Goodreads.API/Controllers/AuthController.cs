@@ -15,7 +15,7 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(ISender sender) : ControllerBase
+public class AuthController : BaseController
 {
 
     [HttpPost("register")]
@@ -23,7 +23,7 @@ public class AuthController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> Register([FromBody] RegisterUserCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
 
         return result.Match(
         success => Ok(ApiResponse<string>.Success(success, "Registration successful! Please check your email to confirm your account.")),
@@ -39,7 +39,7 @@ public class AuthController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
 
         return result.Match(
             success => Ok(ApiResponse<AuthResultDto>.Success(success, "Login successful")),
@@ -51,7 +51,7 @@ public class AuthController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             success => Ok(ApiResponse<AuthResultDto>.Success(success, "Token refreshed successfully")),
             failure => CustomResults.Problem(failure));
@@ -63,7 +63,7 @@ public class AuthController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> Logout()
     {
-        var result = await sender.Send(new LogoutCommand());
+        var result = await Sender.Send(new LogoutCommand());
         return result.Match(
             () => Ok(ApiResponse.Success("Logout successful")),
             failure => CustomResults.Problem(failure));
@@ -75,7 +75,7 @@ public class AuthController(ISender sender) : ControllerBase
 
     public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
     {
-        var result = await sender.Send(new ConfirmEmailCommand(userId, token));
+        var result = await Sender.Send(new ConfirmEmailCommand(userId, token));
 
         return result.Match(
             success => Ok(ApiResponse.Success("Email confirmed successfully.")),

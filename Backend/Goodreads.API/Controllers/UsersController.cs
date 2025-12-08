@@ -26,14 +26,14 @@ namespace Goodreads.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController(ISender sender, IUserContext userContext) : ControllerBase
+public class UsersController(IUserContext userContext) : BaseController
 {
     [HttpGet("get-current-user-profile")]
     [Authorize]
 
     public async Task<IActionResult> GetCurrentUserProfile()
     {
-        var result = await sender.Send(new GetUserProfileQuery());
+        var result = await Sender.Send(new GetUserProfileQuery());
 
         return result.Match(
                profile => Ok(ApiResponse<UserProfileDto>.Success(profile)),
@@ -45,7 +45,7 @@ public class UsersController(ISender sender, IUserContext userContext) : Control
 
     public async Task<IActionResult> GetUserSocialLinks()
     {
-        var result = await sender.Send(new GetUserSocialsQuery());
+        var result = await Sender.Send(new GetUserSocialsQuery());
         return result.Match(
             socials => Ok(ApiResponse<SocialDto>.Success(socials)),
             failure => CustomResults.Problem(failure));
@@ -56,7 +56,7 @@ public class UsersController(ISender sender, IUserContext userContext) : Control
 
     public async Task<IActionResult> UpdateUserSocialLinks([FromBody] UpdateSocialsCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -67,7 +67,7 @@ public class UsersController(ISender sender, IUserContext userContext) : Control
 
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
           () => NoContent(),
           failure => CustomResults.Problem(failure));
@@ -89,7 +89,7 @@ public class UsersController(ISender sender, IUserContext userContext) : Control
 
     public async Task<IActionResult> UpdateProfilePicture([FromForm] UpdateProfilePictureCommand command)
     {
-        var result = await sender.Send(command);
+        var result = await Sender.Send(command);
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -100,7 +100,7 @@ public class UsersController(ISender sender, IUserContext userContext) : Control
 
     public async Task<IActionResult> DeleteProfilePicture()
     {
-        var result = await sender.Send(new DeleteProfilePictureCommand());
+        var result = await Sender.Send(new DeleteProfilePictureCommand());
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));
@@ -122,7 +122,7 @@ public class UsersController(ISender sender, IUserContext userContext) : Control
 
     public async Task<IActionResult> GetUserProfileByUsername(string username)
     {
-        var result = await sender.Send(new GetProfileByUsernameQuery(username));
+        var result = await Sender.Send(new GetProfileByUsernameQuery(username));
 
         return result.Match(
            profile => Ok(ApiResponse<UserProfileDto>.Success(profile)),
@@ -133,7 +133,7 @@ public class UsersController(ISender sender, IUserContext userContext) : Control
 
     public async Task<IActionResult> GetAllUsers([FromQuery] QueryParameters parameters)
     {
-        var result = await sender.Send(new GetAllUsersQuery(parameters));
+        var result = await Sender.Send(new GetAllUsersQuery(parameters));
         return Ok(result);
     }
 
@@ -146,7 +146,7 @@ public class UsersController(ISender sender, IUserContext userContext) : Control
         if (userId is null)
             return Unauthorized();
 
-        var result = await sender.Send(new GetUserShelvesQuery(userId, parameters, Shelf));
+        var result = await Sender.Send(new GetUserShelvesQuery(userId, parameters, Shelf));
         return Ok(result);
     }
 
@@ -198,7 +198,7 @@ public class UsersController(ISender sender, IUserContext userContext) : Control
         var userId = userContext.UserId;
         if (userId is null)
             return Unauthorized();
-        var result = await sender.Send(new GetAllReviewsQuery(parameters, userId, null));
+        var result = await Sender.Send(new GetAllReviewsQuery(parameters, userId, null));
         return Ok(result);
     }
 
