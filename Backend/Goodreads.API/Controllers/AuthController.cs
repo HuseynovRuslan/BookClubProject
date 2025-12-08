@@ -4,7 +4,6 @@ using Goodreads.Application.Auth.Commands.LoginUser;
 using Goodreads.Application.Auth.Commands.Logout;
 using Goodreads.Application.Auth.Commands.RefreshToken;
 using Goodreads.Application.Auth.Commands.RegisterUser;
-using Goodreads.Application.Common;
 using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
 using MediatR;

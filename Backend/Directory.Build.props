@@ -5,18 +5,4 @@
     <_EnablePrecompressedAssets>false</_EnablePrecompressedAssets>
     <_StaticWebAssetsCompressionTargetsImported>true</_StaticWebAssetsCompressionTargetsImported>
   </PropertyGroup>
-  
-  <!-- Override DiscoverPrecompressedAssets target to prevent execution -->
-  <!-- This must be defined BEFORE SDK imports compression targets -->
-  <Target Name="DiscoverPrecompressedAssets" Condition="false">
-    <!-- This target never executes because Condition="false" -->
-  </Target>
-  <Target Name="_DiscoverPrecompressedAssets" Condition="false" />
-  
-  <!-- Clear precompressed assets items before they're processed -->
-  <Target Name="ClearPrecompressedAssets" BeforeTargets="Build;BeforeBuild;ComputeFilesToPublish;PrepareForPublish;DiscoverPrecompressedAssets">
-    <ItemGroup>
-      <_PrecompressedAssets Remove="@(_PrecompressedAssets)" />
-    </ItemGroup>
-  </Target>
 </Project>

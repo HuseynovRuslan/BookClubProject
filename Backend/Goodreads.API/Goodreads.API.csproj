@@ -9,12 +9,6 @@
     <_StaticWebAssetsCompressionTargetsImported>true</_StaticWebAssetsCompressionTargetsImported>
   </PropertyGroup>
 
-  <!-- Import custom targets BEFORE SDK targets to override compression -->
-  <Import Project="DisablePrecompressedAssets.targets" Condition="Exists('DisablePrecompressedAssets.targets')" />
-  
-  <!-- Additional override to ensure DiscoverPrecompressedAssets never runs -->
-  <Target Name="DiscoverPrecompressedAssets" BeforeTargets="ComputeFilesToPublish" Condition="false" />
-
   <ItemGroup>
     <ProjectReference Include="..\Goodreads.Application\Goodreads.Application.csproj" />
     <ProjectReference Include="..\Goodreads.Infrastructure\Goodreads.Infrastructure.csproj" />
