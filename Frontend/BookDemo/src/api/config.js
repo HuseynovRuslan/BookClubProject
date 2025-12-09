@@ -39,24 +39,24 @@ export function getEmailFromToken() {
   try {
     const token = getAccessToken();
     if (!token) return null;
-
+    
     // JWT has 3 parts separated by dots
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-
+    
     // Decode the payload (second part)
     // Base64URL decoding (replace - with +, _ with /, add padding if needed)
     let payload = parts[1];
     payload = payload.replace(/-/g, '+').replace(/_/g, '/');
-
+    
     // Add padding if needed
     while (payload.length % 4) {
       payload += '=';
     }
-
+    
     // Decode base64
     const decodedPayload = JSON.parse(atob(payload));
-
+    
     // Extract email from claims (JWT standard uses 'email' claim)
     return decodedPayload.email || decodedPayload.Email || null;
   } catch (error) {
@@ -101,8 +101,8 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
   const requestBody = isFormData
     ? body
     : body !== undefined
-      ? JSON.stringify(body)
-      : undefined;
+    ? JSON.stringify(body)
+    : undefined;
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method,
@@ -184,17 +184,17 @@ export function getImageUrl(url) {
   if (!url || url.trim() === "" || url === "null" || url === "undefined") {
     return null; // Return null to trigger placeholder
   }
-
+  
   // Əgər tam URL-dirsə (http/https), olduğu kimi qaytar
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
-
+  
   // Əgər relative path-dirsə (/images/...), backend URL-i əlavə et
   if (url.startsWith("/")) {
     return `${API_BASE_URL}${url}`;
   }
-
+  
   // Əgər sadə path-dirsə (images/...), backend URL-i əlavə et
   return `${API_BASE_URL}/${url}`;
 }
