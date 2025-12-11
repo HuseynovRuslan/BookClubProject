@@ -32,14 +32,64 @@ function normalizeProfileDto(dto) {
     profileData = dto.data;
   }
   
+  console.log("normalizeProfileDto - raw profileData:", profileData);
+  
   // Build full name from FirstName and LastName (handle both camelCase and PascalCase)
   const firstName = profileData.firstName || profileData.FirstName || "";
-  const lastName = profileData.lastName || profileData.LastName || "";
+  const lastName = profileData.lastName || profileData.LastName || profileData.surname || profileData.Surname || "";
   const fullName = `${firstName}${lastName ? ` ${lastName}` : ""}`.trim();
+  
+  // Extract username - try all possible field names
+  const username = profileData.username || 
+                   profileData.Username || 
+                   profileData.userName || 
+                   profileData.UserName ||
+                   profileData.user_name ||
+                   profileData.User_Name ||
+                   (profileData.email ? profileData.email.split("@")[0] : "") ||
+                   "";
+  
+  console.log("normalizeProfileDto - extracted username:", username, "from fields:", {
+    username: profileData.username,
+    Username: profileData.Username,
+    userName: profileData.userName,
+    UserName: profileData.UserName,
+    email: profileData.email
+  });
+  
+  // Get name field - prioritize username, then fullName, then profileData.name, then email prefix
+  let name = "";
+  
+  // First priority: username (e.g., "9alii")
+  if (username && username.trim() !== "" && username !== "User") {
+    name = username;
+  }
+  // Second priority: fullName (firstName + lastName)
+  else if (fullName && fullName.trim() !== "") {
+    name = fullName;
+  }
+  // Third priority: existing name (if not "User")
+  else if (profileData.name && profileData.name.trim() !== "" && profileData.name !== "User") {
+    name = profileData.name;
+  }
+  // Fourth priority: Name (PascalCase)
+  else if (profileData.Name && profileData.Name.trim() !== "" && profileData.Name !== "User") {
+    name = profileData.Name;
+  }
+  // Fifth priority: email prefix
+  else if (profileData.email && profileData.email.trim() !== "") {
+    name = profileData.email.split("@")[0];
+  }
+  // Final fallback
+  else {
+    name = "User";
+  }
+  
+  console.log("normalizeProfileDto - final name:", name);
   
   return {
     id: profileData.id || profileData.Id || "",
-    name: fullName || profileData.name || "",
+    name: name,
     firstName: firstName,
     surname: lastName,
     email: profileData.email || profileData.Email || "",
@@ -47,6 +97,7 @@ function normalizeProfileDto(dto) {
     bio: profileData.bio || profileData.Bio || "",
     avatarUrl: profileData.avatarUrl || profileData.AvatarUrl || 
                profileData.profilePictureUrl || profileData.ProfilePictureUrl || null,
+    username: username || (profileData.email ? profileData.email.split("@")[0] : "") || "",
   };
 }
 
@@ -161,26 +212,136 @@ export async function getUserByUsername(username) {
     }
     throw new Error("Mock user not found");
   }
-  return apiRequest(`/api/Users/get-user-profile-by-username/${encodeURIComponent(username)}`, {
-    method: "GET",
-  });
+  
+  try {
+    const response = await apiRequest(`/api/Users/get-user-profile-by-username/${encodeURIComponent(username)}`, {
+      method: "GET",
+    });
+    // rawRequest now returns null for 404 on user profile endpoints
+    if (response === null) {
+      return null;
+    }
+    return normalizeProfileDto(response);
+  } catch (err) {
+    // If endpoint doesn't exist (404), return null instead of throwing
+    // Don't log 404 errors - they're expected when user doesn't exist
+    if (err.status === 404) {
+      // Endpoint doesn't exist or user not found - return null silently
+      return null;
+    }
+    // For other errors, log and throw
+    console.error("Error getting user by username:", err);
+    throw err;
+  }
+}
+
+export async function getUserById(userId) {
+  if (USE_API_MOCKS) {
+    await delay(200);
+    const account = loadMockAccount();
+    if (account.id === userId || account.id?.toString() === userId?.toString()) {
+      return accountToProfile(account);
+    }
+    throw new Error("Mock user not found");
+  }
+  
+  // Try different possible endpoint names
+  try {
+    const response = await apiRequest(`/api/Users/get-user-profile-by-id/${encodeURIComponent(userId)}`, {
+      method: "GET",
+    });
+    // rawRequest now returns null for 404 on user profile endpoints
+    if (response === null) {
+      return null;
+    }
+    return normalizeProfileDto(response);
+  } catch (err) {
+    // If endpoint doesn't exist (404), return null instead of throwing
+    // Don't log 404 errors - they're expected when user doesn't exist
+    if (err.status === 404) {
+      // Endpoint doesn't exist or user not found - return null silently
+      return null;
+    }
+    // For other errors, log and throw
+    console.error("Error getting user by ID:", err);
+    throw err;
+  }
 }
 
 export async function searchUsers(query) {
+  // Query boş olsa, heç bir nəticə qaytarmayın
+  if (!query || !query.trim()) {
+    return [];
+  }
+  
   if (USE_API_MOCKS) {
     await delay(150);
     const account = loadMockAccount();
+    const searchLower = query.toLowerCase();
     const matches =
-      !query ||
-        account.name.toLowerCase().includes(query.toLowerCase()) ||
-        account.email.toLowerCase().includes(query.toLowerCase())
+      account.name.toLowerCase().includes(searchLower) ||
+      account.email.toLowerCase().includes(searchLower) ||
+      (account.email?.split("@")[0] || "").toLowerCase().includes(searchLower)
         ? [accountToProfile(account)]
         : [];
     return matches;
   }
-  return apiRequest(`/api/Users/get-all-users?seachTerm=${encodeURIComponent(query)}`, {
+  
+  const response = await apiRequest(`/api/Users/get-all-users?searchTerm=${encodeURIComponent(query.trim())}`, {
     method: "GET",
   });
+  
+  console.log("searchUsers API response:", response);
+  
+  // Handle different response formats
+  let users = [];
+  if (response) {
+    // Check if it's a PagedResult format
+    if (response.items && Array.isArray(response.items)) {
+      users = response.items;
+    } else if (response.Items && Array.isArray(response.Items)) {
+      users = response.Items;
+    } else if (Array.isArray(response)) {
+      users = response;
+    } else if (response.data && Array.isArray(response.data)) {
+      users = response.data;
+    } else if (response.Data && Array.isArray(response.Data)) {
+      users = response.Data;
+    }
+  }
+  
+  console.log("Extracted users array:", users);
+  
+  const searchLower = query.trim().toLowerCase();
+  
+  // Normalize each user to consistent format and filter by username/name
+  return users
+    .map(user => {
+      const firstName = user.firstName || user.FirstName || "";
+      const lastName = user.lastName || user.LastName || user.surname || user.Surname || "";
+      const fullName = `${firstName}${lastName ? ` ${lastName}` : ""}`.trim();
+      const username = user.username || user.Username || user.userName || user.UserName || user.email?.split("@")[0] || "";
+      const name = fullName || user.name || user.Name || "";
+      
+      return {
+        id: user.id || user.Id || user.userId || user.UserId,
+        username: username,
+        name: name,
+        firstName: firstName,
+        lastName: lastName,
+        surname: lastName,
+        email: user.email || user.Email || "",
+        bio: user.bio || user.Bio || "",
+        avatarUrl: user.avatarUrl || user.AvatarUrl || user.profilePictureUrl || user.ProfilePictureUrl || null,
+        role: user.role || user.Role || "reader",
+      };
+    })
+    .filter(user => {
+      // Filter: yalnız username və ya name-ə görə match edən userləri göstər
+      const usernameMatch = user.username.toLowerCase().includes(searchLower);
+      const nameMatch = user.name.toLowerCase().includes(searchLower);
+      return usernameMatch || nameMatch;
+    });
 }
 
 export async function getMyShelves() {

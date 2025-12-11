@@ -83,10 +83,56 @@ export async function register(payload) {
   if (USE_API_MOCKS) {
     return mockRegister(payload);
   }
-  return apiRequest("/api/Auth/register", {
-    method: "POST",
-    body: payload,
-  });
+  
+  // Backend may expect FirstName/LastName (PascalCase) or firstName/lastName (camelCase)
+  // Try PascalCase first (most common in .NET backends)
+  const firstName = payload.firstName || payload.name || "";
+  const lastName = payload.lastName || payload.surname || "";
+  
+  // Ensure fields are not null or empty
+  if (!firstName || firstName.trim() === "") {
+    throw new Error("First name is required");
+  }
+  if (!lastName || lastName.trim() === "") {
+    throw new Error("Last name is required");
+  }
+  
+  const backendPayload = {
+    Username: payload.username || "",
+    FirstName: firstName.trim(),
+    LastName: lastName.trim(),
+    Email: payload.email || "",
+    Password: payload.password || "",
+    Role: payload.role || "reader",
+  };
+  
+  console.log("Register payload to backend:", backendPayload);
+  
+  try {
+    return await apiRequest("/api/Auth/register", {
+      method: "POST",
+      body: backendPayload,
+    });
+  } catch (err) {
+    // If PascalCase fails with 400, try camelCase
+    if (err.status === 400) {
+      console.log("PascalCase failed, trying camelCase:", err);
+      const camelCasePayload = {
+        username: payload.username || "",
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: payload.email || "",
+        password: payload.password || "",
+        role: payload.role || "reader",
+      };
+      console.log("Register payload (camelCase) to backend:", camelCasePayload);
+      return await apiRequest("/api/Auth/register", {
+        method: "POST",
+        body: camelCasePayload,
+      });
+    }
+    throw err;
+  }
 }
 
 export async function login({ email, password }) {

@@ -104,11 +104,20 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
     ? JSON.stringify(body)
     : undefined;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: finalHeaders,
-    body: requestBody,
-  });
+  // Check if this is a user profile endpoint that might return 404
+  const isUserProfileEndpoint = path.includes('/get-user-profile-by-id/') || path.includes('/get-user-profile-by-username/');
+  
+  let res;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: finalHeaders,
+      body: requestBody,
+    });
+  } catch (networkError) {
+    // Network errors should still be thrown
+    throw networkError;
+  }
 
   // Handle 204 No Content response
   if (res.status === 204) {
@@ -133,6 +142,13 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
   }
 
   if (!res.ok) {
+    // For 404 errors on user profile endpoints, return null silently instead of throwing
+    // This prevents console errors for expected "user not found" cases
+    if (res.status === 404 && isUserProfileEndpoint) {
+      // Return null instead of throwing - this will be handled by getUserById/getUserByUsername
+      return null;
+    }
+    
     // Backend ApiResponse formatında error-lar: { isSuccess: false, message, errorMessages: [] }
     let errorMessage = "Request failed with error";
     if (data) {
