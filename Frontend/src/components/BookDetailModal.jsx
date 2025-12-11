@@ -354,7 +354,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
 
               <button
                 onClick={handleAddToReadingList}
-                className={`flex items-center gap-2 px-6 py-3 text-white rounded-lg transition-all shadow-md hover:shadow-lg font-medium ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-900 hover:bg-gray-800'}`}
+                className={`flex items-center gap-2 px-6 py-3 text-white rounded-lg transition-all shadow-md hover:shadow-lg font-medium ${isDarkMode ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-900 hover:bg-gray-800'}`}
               >
                 <span className="text-xl">+</span>
                 <span>Add to Reading List</span>
@@ -413,7 +413,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
                     className={`rounded-xl p-5 border hover:shadow-md transition-shadow ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
                   >
                     <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
                         {getInitials(review.username)}
                       </div>
 
@@ -434,7 +434,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
                           {user && review.userId && String(review.userId) === String(user.id || user._id) && (
                             <button
                               onClick={() => setEditingReview(review)}
-                              className={`px-3 py-1 rounded text-sm ${isDarkMode ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
+                              className={`px-3 py-1 rounded text-sm ${isDarkMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
                             >
                               Edit
                             </button>

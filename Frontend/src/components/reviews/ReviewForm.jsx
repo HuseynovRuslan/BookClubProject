@@ -91,14 +91,14 @@ export default function ReviewForm({
   const showBookSelect = !providedBooks || providedBooks.length === 0 || providedBooks.length > 1;
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-800 dark:bg-gray-800 rounded-lg p-4 space-y-4">
+    <form onSubmit={handleSubmit} className="bg-white dark:bg-white rounded-xl p-6 space-y-4 border-2 border-gray-200 dark:border-gray-200 shadow-lg">
       {showBookSelect && (
         <div>
-          <label className="block text-sm text-gray-300 mb-1">Kitab</label>
+          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-900 mb-2">Kitab</label>
           <select
             value={formValues.bookId}
             onChange={(e) => handleChange("bookId", e.target.value)}
-            className="w-full bg-gray-700 text-white p-2 rounded"
+            className="w-full bg-gray-50 dark:bg-gray-50 text-gray-900 dark:text-gray-900 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all"
           >
             <option value="">Kitab seç</option>
             {bookSelectOptions.map((book) => (
@@ -111,15 +111,17 @@ export default function ReviewForm({
       )}
 
       <div>
-        <label className="block text-sm text-gray-300 mb-1">Reytinq</label>
+        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-900 mb-2">Reytinq</label>
         <div className="flex gap-2">
           {RATING_OPTIONS.map((rating) => (
             <button
               type="button"
               key={rating}
               onClick={() => handleChange("rating", rating)}
-              className={`flex-1 py-2 rounded ${
-                formValues.rating === rating ? "bg-purple-600" : "bg-gray-700"
+              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
+                formValues.rating === rating 
+                  ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md" 
+                  : "bg-gray-100 dark:bg-gray-100 text-gray-700 dark:text-gray-700 hover:bg-gray-200 dark:hover:bg-gray-200"
               }`}
             >
               {rating} ⭐
@@ -129,21 +131,21 @@ export default function ReviewForm({
       </div>
 
       <div>
-        <label className="block text-sm text-gray-300 mb-1">Review mətni</label>
+        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-900 mb-2">Review mətni</label>
         <textarea
           rows={4}
           value={formValues.text}
           onChange={(e) => handleChange("text", e.target.value)}
-          className="w-full bg-gray-700 text-white p-2 rounded resize-none"
+          className="w-full bg-gray-50 dark:bg-gray-50 text-gray-900 dark:text-gray-900 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all resize-none"
           placeholder="Fikir və təəssüratlarını paylaş..."
         />
       </div>
 
       {error && (
-        <div className="text-sm text-red-400 bg-red-900/30 p-2 rounded">{error}</div>
+        <div className="text-sm text-red-700 dark:text-red-700 bg-red-50 dark:bg-red-50 border-2 border-red-200 dark:border-red-200 p-3 rounded-lg font-semibold">{error}</div>
       )}
       {success && (
-        <div className="text-sm text-green-400 bg-green-900/20 p-2 rounded">
+        <div className="text-sm text-green-700 dark:text-green-700 bg-green-50 dark:bg-green-50 border-2 border-green-200 dark:border-green-200 p-3 rounded-lg font-semibold">
           {success}
         </div>
       )}
@@ -153,7 +155,7 @@ export default function ReviewForm({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
+            className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-100 hover:bg-gray-200 dark:hover:bg-gray-200 text-gray-900 dark:text-gray-900 font-semibold transition-all"
           >
             Ləğv et
           </button>
@@ -161,7 +163,7 @@ export default function ReviewForm({
         <button
           type="submit"
           disabled={submitting}
-          className="px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+          className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Göndərilir..." : "Review yaz"}
         </button>
