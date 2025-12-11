@@ -4,6 +4,7 @@ using Goodreads.Application.Auth.Commands.LoginUser;
 using Goodreads.Application.Auth.Commands.Logout;
 using Goodreads.Application.Auth.Commands.RefreshToken;
 using Goodreads.Application.Auth.Commands.RegisterUser;
+using Goodreads.Application.Auth.Commands.ResetEmailConfirmation;
 using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
 using MediatR;
@@ -82,18 +83,15 @@ public class AuthController : BaseController
             failure => CustomResults.Problem(failure));
     }
 
-    //[HttpPost("reset-confirmation-email")]
-    //[EndpointSummary("Generate a new email confirmation link")]
-    //[ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> ResetEmailConfirmation([FromBody] ResetEmailConfirmationCommand command)
-    //{
-    //    var result = await mediator.Send(command);
+    [HttpPost("reset-confirmation-email")]
+    public async Task<IActionResult> ResetEmailConfirmation([FromBody] ResetEmailConfirmationCommand command)
+    {
+        var result = await Sender.Send(command);
 
-    //    return result.Match(
-    //        success => Ok(ApiResponse<string>.Success(success, "New confirmation email link generated.")),
-    //        failure => CustomResults.Problem(failure));
-    //}
+        return result.Match(
+            success => Ok(ApiResponse<string>.Success(success, "New confirmation email link generated.")),
+            failure => CustomResults.Problem(failure));
+    }
 
     //[HttpPost("forgot-password")]
     //[EndpointSummary("Request password reset link")]

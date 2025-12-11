@@ -25,85 +25,103 @@ export default function LoginPage({ onSwitchToSignUp }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4 text-white">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-50 dark:via-orange-50 dark:to-red-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        {/* Header Section - Ultra Modern Design */}
+        <div className="mb-6 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 rounded-2xl shadow-2xl mb-4 transform hover:scale-110 transition-transform duration-300">
             <span className="text-3xl">📚</span>
           </div>
-          <h1 className="mb-2 text-xl font-bold">Welcome to BookVerse</h1>
-          <p className="text-gray-400">Sign in to continue your reading journey</p>
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <span className="text-amber-600 text-2xl font-bold">BookVerse</span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-tight mb-2 drop-shadow-lg">
+            Welcome Back
+          </h1>
+          <p className="text-lg text-gray-700 dark:text-gray-700 font-semibold">
+            Sign in to continue your reading journey
+          </p>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Form Card */}
+        <div className="bg-white dark:bg-white rounded-3xl p-8 shadow-2xl border-2 border-white/50 backdrop-blur-xl">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium">
-                Email
+              <label htmlFor="email" className="block text-sm font-black text-gray-900 dark:text-gray-900">
+                Email Address
               </label>
-              <input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full p-2 rounded bg-gray-700 text-white focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full p-4 rounded-2xl bg-gradient-to-br from-gray-50 to-amber-50/30 dark:from-gray-50 dark:to-amber-50/30 text-gray-900 dark:text-gray-900 border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-300 dark:focus:ring-amber-300 focus:border-amber-500 dark:focus:border-amber-500 transition-all shadow-md hover:shadow-lg"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium">
+              <label htmlFor="password" className="block text-sm font-black text-gray-900 dark:text-gray-900">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full p-2 rounded bg-gray-700 text-white focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full p-4 rounded-2xl bg-gradient-to-br from-gray-50 to-amber-50/30 dark:from-gray-50 dark:to-amber-50/30 text-gray-900 dark:text-gray-900 border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-300 dark:focus:ring-amber-300 focus:border-amber-500 dark:focus:border-amber-500 transition-all shadow-md hover:shadow-lg"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4"
-              />
-              <label
-                htmlFor="remember"
-                className="text-sm text-gray-400 cursor-pointer"
-              >
-                Remember me
-              </label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <input
+                  id="remember"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded-lg border-2 border-gray-300 dark:border-gray-300 text-amber-600 focus:ring-amber-300 focus:ring-2 shadow-sm"
+                />
+                <label
+                  htmlFor="remember"
+                  className="text-sm font-bold text-gray-700 dark:text-gray-700 cursor-pointer"
+                >
+                  Remember me
+                </label>
+              </div>
             </div>
 
             {error && (
-              <p className="text-sm text-red-400 bg-red-900/30 p-3 rounded-lg">
-                {error}
-              </p>
+              <div className="p-4 bg-gradient-to-r from-red-50 via-orange-50 to-red-50 dark:from-red-50 dark:via-orange-50 dark:to-red-50 border-2 border-red-300 dark:border-red-300 rounded-2xl shadow-xl">
+                <p className="text-sm font-bold text-red-700 dark:text-red-700">
+                  {error}
+                </p>
+              </div>
             )}
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-black text-base transition-all shadow-2xl hover:shadow-amber-500/50 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group"
             >
-              {isSubmitting ? "Signing in..." : "Sign In"}
+              <span className="relative z-10">{isSubmitting ? "Signing in..." : "Sign In"}</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-400">
+          <div className="mt-6 text-center pt-5 border-t-2 border-gray-100 dark:border-gray-100">
+            <p className="text-sm font-bold text-gray-700 dark:text-gray-700">
               Don't have an account?{" "}
               <button
                 onClick={onSwitchToSignUp}
-                className="text-purple-400 hover:underline"
+                className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 font-black transition-all"
               >
                 Sign Up
               </button>

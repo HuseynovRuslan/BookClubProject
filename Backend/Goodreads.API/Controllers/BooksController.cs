@@ -23,7 +23,7 @@ using Goodreads.Application.Books.Queries.GetBooksByGener;
 using Goodreads.Application.Common;
 using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
-//using Goodreads.Application.Reviews.Queries.GetAllReviews;
+using Goodreads.Application.Reviews.Queries.GetAllReviews;
 using Goodreads.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -46,16 +46,17 @@ public class BooksController : BaseController
     }
 
     [HttpGet("get-book-by-id/{id}")]
-
-
+    [EndpointSummary("Get book by ID")]
+    [ProducesResponseType(typeof(ApiResponse<BookDetailDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBookById(string id)
     {
         var result = await Sender.Send(new GetBookByIdQuery(id));
 
-        if (!result.IsSuccess)
-            return NotFound(result); 
-
-        return Ok(result);
+        return result.Match(
+            book => Ok(ApiResponse<BookDetailDto>.Success(book)),
+            failure => CustomResults.Problem(failure)
+        );
     }
 
     [HttpPost("create-book")]
@@ -144,14 +145,14 @@ public class BooksController : BaseController
              failure => CustomResults.Problem(failure));
     }
 
-    //[HttpGet("{bookId}/reviews")]
-    //[EndpointSummary("Get reviews for a book")]
-    //[ProducesResponseType(typeof(PagedResult<BookReviewDto>), StatusCodes.Status200OK)]
-    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> GetBookReviews(string bookId, [FromQuery] QueryParameters parameters)
-    //{
-    //    var result = await mediator.Send(new GetAllReviewsQuery(parameters, null, bookId));
-    //    return Ok(result);
-    //}
+    [HttpGet("{bookId}/reviews")]
+    [EndpointSummary("Get reviews for a book")]
+    [ProducesResponseType(typeof(PagedResult<BookReviewDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetBookReviews(string bookId, [FromQuery] QueryParameters parameters)
+    {
+        var result = await Sender.Send(new GetAllReviewsQuery(parameters, null, bookId));
+        return Ok(result);
+    }
 
 }

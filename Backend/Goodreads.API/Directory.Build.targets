@@ -1,4 +1,16 @@
 <Project>
-  <Target Name="DiscoverPrecompressedAssets" Condition="false" />
-  <Target Name="_DiscoverPrecompressedAssets" Condition="false" />
+  <!-- Completely disable precompressed assets discovery to prevent duplicate key errors -->
+  <PropertyGroup>
+    <EnablePrecompressedAssets>false</EnablePrecompressedAssets>
+    <_EnablePrecompressedAssets>false</_EnablePrecompressedAssets>
+  </PropertyGroup>
+  
+  <!-- Override the DiscoverPrecompressedAssets target to prevent it from running -->
+  <Target Name="DiscoverPrecompressedAssets" BeforeTargets="Build" Condition="false" />
+  <Target Name="_DiscoverPrecompressedAssets" BeforeTargets="Build" Condition="false" />
+  
+  <!-- Prevent the compression targets from being imported -->
+  <PropertyGroup>
+    <_StaticWebAssetsCompressionTargetsImported>true</_StaticWebAssetsCompressionTargetsImported>
+  </PropertyGroup>
 </Project>

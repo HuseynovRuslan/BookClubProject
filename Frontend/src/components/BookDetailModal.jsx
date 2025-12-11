@@ -217,7 +217,23 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
     bookDetails?.image
   );
   
-  const authorName = bookDetails?.author || bookDetails?.authorName || "Unknown author";
+  // Handle Author object from backend (BookDetailDto has Author as AuthorDto object)
+  let authorName = "Unknown author";
+  if (bookDetails?.author) {
+    if (typeof bookDetails.author === 'string') {
+      authorName = bookDetails.author;
+    } else if (bookDetails.author?.name || bookDetails.author?.Name) {
+      authorName = bookDetails.author.name || bookDetails.author.Name;
+    }
+  } else if (bookDetails?.authorName) {
+    authorName = bookDetails.authorName;
+  } else if (bookDetails?.Author) {
+    if (typeof bookDetails.Author === 'string') {
+      authorName = bookDetails.Author;
+    } else if (bookDetails.Author?.name || bookDetails.Author?.Name) {
+      authorName = bookDetails.Author.name || bookDetails.Author.Name;
+    }
+  }
   let genre = null;
   if (bookDetails?.genre) {
     genre = typeof bookDetails.genre === 'string' ? bookDetails.genre : (bookDetails.genre.name || bookDetails.genre);

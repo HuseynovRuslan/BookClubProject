@@ -53,10 +53,20 @@ export async function getBookById(id) {
     }
     return book;
   }
-  // Backend ApiResponse<BookDto> qaytarır: { isSuccess, message, data: { ... } }
+  // Backend ApiResponse<BookDetailDto> qaytarır: { isSuccess, message, data: { ... } }
   const response = await apiRequest(`/api/Books/get-book-by-id/${encodeURIComponent(id)}`, { method: "GET" });
   // ApiResponse wrapper-dan data-nı çıxar
-  return response.data || response;
+  // Handle both ApiResponse format (data property) and direct object
+  const bookData = response?.data || response?.Data || response;
+  
+  // Normalize Author object to string if needed (for backward compatibility)
+  if (bookData && bookData.author && typeof bookData.author === 'object') {
+    bookData.authorName = bookData.author.name || bookData.author.Name || bookData.authorName;
+  } else if (bookData && bookData.Author && typeof bookData.Author === 'object') {
+    bookData.authorName = bookData.Author.name || bookData.Author.Name || bookData.authorName;
+  }
+  
+  return bookData;
 }
 
 export async function updateBookStatus(bookId, targetShelfName) {

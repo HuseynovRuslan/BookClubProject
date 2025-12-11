@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useShelves } from "../context/ShelvesContext.jsx";
 import { updateBookStatus } from "../api/books";
-import BookCard from "./BookCard";
+import { getImageUrl } from "../api/config";
 
 export default function ReadingListPage() {
   const {
@@ -88,128 +88,211 @@ export default function ReadingListPage() {
   };
 
   return (
-    <div className="max-w-7xl xl:max-w-[1600px] mx-auto px-4 xl:px-8 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white">Reading Shelves</h1>
+    <div className="max-w-7xl xl:max-w-[1600px] mx-auto px-4 xl:px-8 py-8 bg-white dark:bg-white min-h-screen">
+      {/* Modern Header Section */}
+      <div className="mb-10 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-50 dark:via-blue-50 dark:to-indigo-50 rounded-3xl -z-10 backdrop-blur-sm"></div>
+        <div className="px-8 py-10 relative z-10">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-1.5 h-16 bg-gradient-to-b from-purple-500 via-blue-500 to-indigo-600 rounded-full shadow-lg"></div>
+            <div>
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent leading-tight">
+                My Reading List
+              </h1>
+              <p className="text-gray-600 dark:text-gray-600 text-lg sm:text-xl mt-2 font-semibold">
+                Organize your books by shelves
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {actionMessage && (
-        <div className="mb-4 text-sm text-purple-700 dark:text-purple-200 bg-purple-100 dark:bg-purple-900/40 p-3 rounded">
+        <div className="mb-6 text-sm text-purple-700 dark:text-purple-700 bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-100 dark:to-blue-100 border border-purple-200 dark:border-purple-200 p-4 rounded-xl shadow-md">
           {actionMessage}
         </div>
       )}
 
       {loading && (
-        <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded text-center text-gray-700 dark:text-gray-300">
-          Shelflər yüklənir...
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-50 dark:to-gray-100 p-8 rounded-2xl text-center border-2 border-gray-200 dark:border-gray-200 shadow-lg">
+          <div className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-700">
+            <div className="w-6 h-6 border-3 border-gray-300 dark:border-gray-300 border-t-purple-600 dark:border-t-purple-600 rounded-full animate-spin"></div>
+            <span className="text-lg font-semibold">Shelflər yüklənir...</span>
+          </div>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-200 p-4 rounded">
-          {error}
+        <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-50 dark:to-pink-50 border-2 border-red-200 dark:border-red-200 text-red-700 dark:text-red-700 p-6 rounded-2xl shadow-lg">
+          <p className="font-semibold">{error}</p>
         </div>
       )}
 
       {!loading && !error && sortedShelves.length === 0 && (
-        <div className="bg-gray-100 dark:bg-gray-800 p-8 text-center rounded text-gray-600 dark:text-gray-400">
-          Hələ heç bir shelf yoxdur.
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-50 dark:to-gray-100 p-12 text-center rounded-2xl border-2 border-gray-200 dark:border-gray-200 shadow-lg">
+          <p className="text-gray-600 dark:text-gray-600 text-xl font-semibold">Hələ heç bir shelf yoxdur.</p>
         </div>
       )}
 
-      <div className="space-y-8">
+      <div className="space-y-10">
         {sortedShelves.map((shelf) => {
           const isWantToRead = shelf.name === "Want to Read";
           
           return (
-          <div key={shelf.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
+          <div key={shelf.id} className="bg-white dark:bg-white border-2 border-gray-100 dark:border-gray-200 rounded-3xl p-8 space-y-6 shadow-xl hover:shadow-2xl transition-all duration-500">
+            {/* Shelf Header - Modern Design */}
+            <div className="flex items-center justify-between pb-6 border-b-2 border-gray-100 dark:border-gray-200">
               {editingShelfId === shelf.id ? (
-                <form className="flex gap-2" onSubmit={handleShelfRename}>
+                <form className="flex gap-3 flex-1" onSubmit={handleShelfRename}>
                   <input
                     value={editingShelfName}
                     onChange={(e) => setEditingShelfName(e.target.value)}
-                    className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded px-3 py-2 text-sm border border-gray-300 dark:border-gray-600"
+                    className="flex-1 bg-gray-50 dark:bg-gray-50 text-gray-900 dark:text-gray-900 rounded-xl px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-200 focus:border-purple-400 dark:focus:border-purple-400 focus:outline-none transition-colors font-semibold"
+                    autoFocus
                   />
-                  <button className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+                  <button className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105">
                     Saxla
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingShelfId(null)}
-                    className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded"
+                    className="px-6 py-3 bg-gray-200 dark:bg-gray-200 hover:bg-gray-300 dark:hover:bg-gray-300 text-gray-900 dark:text-gray-900 rounded-xl font-bold transition-all transform hover:scale-105"
                   >
                     Ləğv et
                   </button>
                 </form>
               ) : (
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{shelf.name}</h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    {shelf.books?.length || 0} kitab
-                  </p>
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="w-1.5 h-12 bg-gradient-to-b from-purple-500 via-blue-500 to-indigo-600 rounded-full shadow-md"></div>
+                  <div>
+                    <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-900 mb-1">{shelf.name}</h2>
+                    <p className="text-gray-600 dark:text-gray-600 text-base font-semibold">
+                      {shelf.books?.length || 0} {shelf.books?.length === 1 ? 'kitab' : 'kitab'}
+                    </p>
+                  </div>
                 </div>
               )}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => startRename(shelf)}
-                  className="px-3 py-2 rounded bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                >
-                  Yenilə
-                </button>
-                {shelf.type !== "default" && (
+              {editingShelfId !== shelf.id && (
+                <div className="flex gap-3">
                   <button
-                    onClick={() => deleteShelf(shelf.id)}
-                    className="px-3 py-2 rounded bg-red-600 hover:bg-red-700 text-white text-sm"
+                    onClick={() => startRename(shelf)}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 text-gray-900 dark:text-gray-900 text-sm font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
                   >
-                    Sil
+                    Yenilə
                   </button>
-                )}
-              </div>
+                  {shelf.type !== "default" && (
+                    <button
+                      onClick={() => deleteShelf(shelf.id)}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
+                    >
+                      Sil
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {shelf.books?.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 xl:gap-6">
-                {shelf.books.map((book) => (
-                  <div
-                    key={book.id}
-                    className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 flex flex-col gap-2"
-                  >
-                    <BookCard
-                      book={book}
-                      onClick={() => {}}
-                      enableShelfControls={false}
-                    />
-                    {isWantToRead ? (
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => handleMoveBook(book, "Currently Reading")}
-                          className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                        >
-                          Currently Reading
-                        </button>
-                        <button
-                          onClick={() => handleMoveBook(book, "Read")}
-                          className="px-2 py-1 rounded bg-green-600 hover:bg-green-700 text-white text-xs"
-                        >
-                          Read
-                        </button>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-5 xl:gap-6">
+                {shelf.books.map((book) => {
+                  const coverImage = getImageUrl(
+                    book.coverImageUrl ||
+                    book.cover ||
+                    book.coverImage ||
+                    book.coverUrl ||
+                    book.image
+                  );
+                  
+                  const rating = book.rating || book.averageRating || book.avgRating || 0;
+                  
+                  return (
+                    <div
+                      key={book.id}
+                      className="bg-white dark:bg-white rounded-2xl p-4 flex flex-col gap-3 border-2 border-gray-100 dark:border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group"
+                    >
+                      {/* Book Cover Image */}
+                      <div className="aspect-[3/4] bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-50 dark:via-blue-50 dark:to-indigo-50 rounded-xl overflow-hidden mb-2 relative">
+                        {coverImage ? (
+                          <>
+                            <img
+                              src={coverImage}
+                              alt={book.title || "Book cover"}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                            {/* Shine effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"></div>
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-400">
+                            <svg
+                              className="w-16 h-16 opacity-40"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                              />
+                            </svg>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <button
-                        onClick={() => removeBookFromShelf(shelf.id, book.id)}
-                        className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs"
-                      >
-                        Sil
-                      </button>
-                    )}
-                  </div>
-                ))}
+                      
+                      {/* Book Title */}
+                      <h3 className="font-bold text-sm text-gray-900 dark:text-gray-900 line-clamp-2 leading-tight group-hover:text-purple-600 dark:group-hover:text-purple-600 transition-colors">
+                        {book.title}
+                      </h3>
+                      
+                      {/* Rating Star - Always Visible */}
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-50 dark:to-amber-50 px-2.5 py-1 rounded-full border border-yellow-200 dark:border-yellow-200">
+                          <span className="text-xs text-yellow-500">★</span>
+                          <span className="text-xs font-bold text-gray-800 dark:text-gray-800 ml-1">
+                            {rating > 0 ? rating.toFixed(1) : '0.0'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      {isWantToRead ? (
+                        <div className="flex flex-col gap-2 mt-1">
+                          <button
+                            onClick={() => handleMoveBook(book, "Currently Reading")}
+                            className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
+                          >
+                            Currently Reading
+                          </button>
+                          <button
+                            onClick={() => handleMoveBook(book, "Read")}
+                            className="px-3 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
+                          >
+                            Read
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => removeBookFromShelf(shelf.id, book.id)}
+                          className="px-3 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105 mt-1"
+                        >
+                          Sil
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <div className="text-gray-600 dark:text-gray-400 text-sm">
-                Bu shelf boşdur. Home Page və ya All Books-dan kitab əlavə edə
-                bilərsən.
+              <div className="text-center py-12 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-50 dark:to-gray-100 rounded-2xl border-2 border-gray-200 dark:border-gray-200">
+                <p className="text-gray-600 dark:text-gray-600 text-base font-semibold">
+                  Bu shelf boşdur. Home Page və ya All Books-dan kitab əlavə edə bilərsən.
+                </p>
               </div>
             )}
           </div>

@@ -5,8 +5,8 @@ using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
 using Goodreads.Application.Reviews.Queries.GetAllReviews;
 using Goodreads.Application.Shelves.Queries.GetUserShelves;
-//using Goodreads.Application.Users.Commands.ChangePassword;
-//using Goodreads.Application.Users.Commands.DeleteAccount;
+using Goodreads.Application.Users.Commands.ChangePassword;
+using Goodreads.Application.Users.Commands.DeleteAccount;
 using Goodreads.Application.Users.Commands.DeleteProfilePicture;
 using Goodreads.Application.Users.Commands.UpdateProfilePicture;
 using Goodreads.Application.Users.Commands.UpdateSocials;
@@ -15,8 +15,8 @@ using Goodreads.Application.Users.Queries.GetAllUsers;
 using Goodreads.Application.Users.Queries.GetProfileByUsername;
 using Goodreads.Application.Users.Queries.GetUserProfile;
 using Goodreads.Application.Users.Queries.GetUserSocials;
-//using Goodreads.Application.UserYearChallenges.Queries.GetAllUserYearChallenges;
-//using Goodreads.Application.UserYearChallenges.Queries.GetUserYearChallenge;
+using Goodreads.Application.UserYearChallenges.Queries.GetAllUserYearChallenges;
+using Goodreads.Application.UserYearChallenges.Queries.GetUserYearChallenge;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -73,16 +73,15 @@ public class UsersController(IUserContext userContext) : BaseController
           failure => CustomResults.Problem(failure));
     }
 
-    //[HttpDelete("me")]
-    //[Authorize]
-    //[EndpointSummary("Delete current user account")]
-    //public async Task<IActionResult> DeleteAccount()
-    //{
-    //    var result = await sender.Send(new DeleteAccountCommand());
-    //    return result.Match(
-    //        () => NoContent(),
-    //        failure => CustomResults.Problem(failure));
-    //}
+    [HttpDelete("delete-account")]
+    [Authorize]
+    public async Task<IActionResult> DeleteAccount()
+    {
+        var result = await Sender.Send(new DeleteAccountCommand());
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
 
     [HttpPatch("update-profile-picture")]
     [Authorize]
@@ -106,17 +105,15 @@ public class UsersController(IUserContext userContext) : BaseController
             failure => CustomResults.Problem(failure));
     }
 
-    //[HttpPost("me/change-password")]
-    //[Authorize]
-    //[EndpointSummary("Change current user password")]
-    //public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
-    //{
-    //    var result = await sender.Send(command);
-    //    return result.Match(
-    //        () => NoContent(),
-    //        failure => CustomResults.Problem(failure));
-    //    
-    //}
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
+    {
+        var result = await Sender.Send(command);
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
 
     [HttpGet("get-user-profile-by-username/{username}")]
 
@@ -150,45 +147,52 @@ public class UsersController(IUserContext userContext) : BaseController
         return Ok(result);
     }
 
-    //[HttpGet("{userId}/shelves")]
-    //[EndpointSummary("Get shelves for a specific user by ID")]
-    //public async Task<IActionResult> GetUserShelves(string userId, [FromQuery] QueryParameters parameters, string? Shelf)
-    //{
-    //    var result = await sender.Send(new GetUserShelvesQuery(userId, parameters, Shelf));
-    //    return Ok(result);
-    //}
+    [HttpGet("{userId}/shelves")]
+    [EndpointSummary("Get shelves for a specific user by ID")]
+    [ProducesResponseType(typeof(PagedResult<ShelfDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUserShelves(string userId, [FromQuery] QueryParameters parameters, string? Shelf)
+    {
+        var result = await Sender.Send(new GetUserShelvesQuery(userId, parameters, Shelf));
+        return Ok(result);
+    }
 
+    [HttpGet("me/yearlychallenges")]
+    [Authorize]
+    [EndpointSummary("Get current user's yearly challenges")]
+    [ProducesResponseType(typeof(PagedResult<UserYearChallengeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMyYearlyChallenges([FromQuery] QueryParameters parameters, [FromQuery] int? year)
+    {
+        var userId = userContext.UserId;
+        var result = await Sender.Send(new GetAllUserYearChallengesQuery(userId, parameters, year));
+        return Ok(result);
+    }
 
-    //[HttpGet("me/yearlychallenges")]
-    //[Authorize]
-    //[EndpointSummary("Get current user's yearly challenges")]
-    //public async Task<IActionResult> GetMyYearlyChallenges([FromQuery] QueryParameters parameters, [FromQuery] int? year)
-    //{
-    //    var userId = userContext.UserId;
-    //    var result = await sender.Send(new GetAllUserYearChallengesQuery(userId, parameters, year));
-    //    return Ok(result);
-    //}
+    [HttpGet("me/yearlychallenges/{year:int}")]
+    [Authorize]
+    [EndpointSummary("Get details of a specific yearly")]
+    [ProducesResponseType(typeof(ApiResponse<UserYearChallengeDetailsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMyYearlyChallengeDetails(int year)
+    {
+        var userId = userContext.UserId;
+        var result = await Sender.Send(new GetUserYearChallengeQuery(userId, year));
+        return result.Match(
+            challenge => Ok(ApiResponse<UserYearChallengeDetailsDto>.Success(challenge)),
+            failure => CustomResults.Problem(failure)
+        );
+    }
 
-    //[HttpGet("me/yearlychallenges/{year:int}")]
-    //[Authorize]
-    //[EndpointSummary("Get details of a specific yearly")]
-    //public async Task<IActionResult> GetMyYearlyChallengeDetails(int year)
-    //{
-    //    var userId = userContext.UserId;
-    //    var result = await sender.Send(new GetUserYearChallengeQuery(userId, year));
-    //    return result.Match(
-    //        challenge => Ok(ApiResponse<UserYearChallengeDetailsDto>.Success(challenge)),
-    //        failure => CustomResults.Problem(failure)
-    //    );
-    //}
-
-    //[HttpGet("{userId}/reviews/")]
-    //[EndpointSummary("Get reviews for a user")]
-    //public async Task<IActionResult> GetUserReviews(string userId, [FromQuery] QueryParameters parameters)
-    //{
-    //    var result = await sender.Send(new GetAllReviewsQuery(parameters, userId, null));
-    //    return Ok(result);
-    //}
+    [HttpGet("{userId}/reviews/")]
+    [EndpointSummary("Get reviews for a user")]
+    [ProducesResponseType(typeof(PagedResult<BookReviewDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetUserReviews(string userId, [FromQuery] QueryParameters parameters)
+    {
+        var result = await Sender.Send(new GetAllReviewsQuery(parameters, userId, null));
+        return Ok(result);
+    }
 
     [HttpGet("get-current-user-reviews")]
     [Authorize]

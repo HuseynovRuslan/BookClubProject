@@ -338,34 +338,44 @@ export default function CreatePostModal({ onClose, onCreate }) {
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
         <div
           ref={modalRef}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 animate-slideUp"
+          className="bg-white dark:bg-white rounded-3xl shadow-2xl w-full max-w-3xl mx-4 animate-slideUp border-2 border-gray-100 dark:border-gray-200"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create Post</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            </button>
+          {/* Modern Header */}
+          <div className="relative p-8 border-b-2 border-gray-100 dark:border-gray-200">
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-red-500/5 rounded-t-3xl"></div>
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-5">
+                <div className="relative">
+                  <div className="w-2 h-12 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-lg"></div>
+                  <div className="absolute top-0 left-0 w-2 h-12 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-md opacity-50"></div>
+                </div>
+                <h2 className="text-4xl font-black text-gray-900 dark:text-gray-900 tracking-tight">Create Post</h2>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-2xl transition-all hover:scale-110"
+              >
+                <X className="w-6 h-6 text-gray-600 dark:text-gray-600" />
+              </button>
+            </div>
           </div>
 
-          <div className="p-6">
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Choose a post type:</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="p-8">
+            <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mb-8">Choose a post type:</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
               {POST_TYPES.map((type) => {
                 const Icon = type.icon;
                 return (
                   <button
                     key={type.id}
                     onClick={() => setSelectedType(type.id)}
-                    className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 group"
+                    className="flex flex-col items-center gap-4 p-6 rounded-2xl border-2 border-gray-200 dark:border-gray-200 hover:border-amber-400 dark:hover:border-amber-400 bg-white dark:bg-white hover:bg-gradient-to-br hover:from-amber-50 hover:via-orange-50 hover:to-red-50 dark:hover:from-amber-50 dark:hover:via-orange-50 dark:hover:to-red-50 transition-all duration-300 group shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                   >
-                    <div className={`p-3 rounded-full bg-${type.color}-100 dark:bg-${type.color}-900/30 group-hover:bg-${type.color}-200 dark:group-hover:bg-${type.color}-800/50 transition-colors`}>
-                      <Icon className={`w-6 h-6 text-${type.color}-600 dark:text-${type.color}-400`} />
+                    <div className={`p-4 rounded-2xl bg-gradient-to-br from-${type.color}-100 to-${type.color}-200 dark:from-${type.color}-100 dark:to-${type.color}-200 group-hover:scale-110 transition-transform duration-300 shadow-md`}>
+                      <Icon className={`w-8 h-8 text-${type.color}-600 dark:text-${type.color}-600`} />
                     </div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white text-center">
+                    <span className="text-sm font-bold text-gray-900 dark:text-gray-900 text-center">
                       {type.label}
                     </span>
                   </button>
@@ -385,31 +395,35 @@ export default function CreatePostModal({ onClose, onCreate }) {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn overflow-y-auto py-4">
       <div
         ref={modalRef}
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 my-4 animate-slideUp max-h-[90vh] flex flex-col"
+        className="bg-white dark:bg-white rounded-3xl shadow-2xl w-full max-w-3xl mx-4 my-4 animate-slideUp max-h-[90vh] flex flex-col border-2 border-gray-100 dark:border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
+        {/* Modern Header */}
+        <div className="relative p-6 border-b-2 border-gray-100 dark:border-gray-200 flex items-center justify-between flex-shrink-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-red-500/5 rounded-t-3xl"></div>
+          <div className="relative flex items-center gap-4">
             <button
               onClick={handleBack}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              className="p-3 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-2xl transition-all hover:scale-110"
             >
-              <X className="w-5 h-5 text-gray-600 dark:text-gray-400 rotate-45" />
+              <X className="w-5 h-5 text-gray-600 dark:text-gray-600 rotate-45" />
             </button>
-            <div className="flex items-center gap-2">
-              <Icon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedTypeInfo?.label}</h2>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100">
+                <Icon className="w-6 h-6 text-amber-600 dark:text-amber-600" />
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-gray-900">{selectedTypeInfo?.label}</h2>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            className="relative p-3 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-2xl transition-all hover:scale-110"
           >
-            <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <X className="w-6 h-6 text-gray-600 dark:text-gray-600" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1">
           {/* Write Review */}
           {selectedType === "review" && (
             <>
@@ -474,7 +488,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Select Book *
                 </label>
                 {loadingBooks ? (
@@ -499,7 +513,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                         setReviewText("");
                       }
                     }}
-                    className="w-full p-2.5 text-sm rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                    className="w-full p-4 text-base rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                     required
                   >
                     <option value="">Choose a book...</option>
@@ -523,7 +537,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Rating *
                 </label>
                 <div className="flex gap-1.5">
@@ -532,8 +546,8 @@ export default function CreatePostModal({ onClose, onCreate }) {
                       key={value}
                       type="button"
                       onClick={() => handleStarClick(value)}
-                      className={`text-2xl transition-transform hover:scale-110 ${
-                        value <= rating ? "text-yellow-400" : "text-gray-300 dark:text-gray-600"
+                      className={`text-3xl transition-all hover:scale-125 ${
+                        value <= rating ? "text-yellow-500 drop-shadow-lg" : "text-gray-300 dark:text-gray-300"
                       }`}
                     >
                       ★
@@ -544,7 +558,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Review * {editingReview && <span className="text-xs text-blue-600 dark:text-blue-400">(Editing)</span>}
                 </label>
                 <textarea
@@ -563,7 +577,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
           {selectedType === "quote" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Select Book *
                 </label>
                 {loadingBooks ? (
@@ -575,7 +589,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                       const book = books.find((b) => (b.id || b.Id) === e.target.value);
                       setSelectedBook(book);
                     }}
-                    className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                    className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                     required
                   >
                     <option value="">Choose a book...</option>
@@ -589,28 +603,28 @@ export default function CreatePostModal({ onClose, onCreate }) {
               </div>
 
           <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Quote Text *
                 </label>
                 <textarea
                   value={quoteText}
                   onChange={(e) => setQuoteText(e.target.value)}
                   rows={4}
-                  className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white resize-none"
+                  className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 resize-none focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                   placeholder="Enter the quote..."
                   required
             />
           </div>
 
           <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Tag (Optional)
                 </label>
             <input
               type="text"
                   value={quoteTag}
                   onChange={(e) => setQuoteTag(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                   placeholder="e.g., inspiration, motivation"
                 />
                 <p className="text-xs text-gray-500 mt-1">Add a tag to categorize this quote</p>
@@ -622,7 +636,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
           {selectedType === "status" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Reading Status *
                 </label>
                 <div className="grid grid-cols-3 gap-3">
@@ -631,10 +645,10 @@ export default function CreatePostModal({ onClose, onCreate }) {
                       key={status.id}
                       type="button"
                       onClick={() => setReadingStatus(status.id)}
-                      className={`p-4 rounded-lg border-2 transition-all ${
+                      className={`p-5 rounded-xl border-2 transition-all font-semibold ${
                         readingStatus === status.id
-                          ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300"
-                          : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-purple-300"
+                          ? "border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 text-amber-700 dark:text-amber-700 shadow-lg scale-105"
+                          : "border-gray-200 dark:border-gray-200 bg-white dark:bg-white text-gray-700 dark:text-gray-700 hover:border-amber-300 dark:hover:border-amber-300 hover:bg-gray-50 dark:hover:bg-gray-50 shadow-sm hover:shadow-md"
                       }`}
                     >
                       {status.label}
@@ -644,7 +658,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Book (Optional)
                 </label>
                 {loadingBooks ? (
@@ -656,7 +670,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                       const book = books.find((b) => (b.id || b.Id) === e.target.value);
                       setSelectedBook(book || null);
                     }}
-                    className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                    className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                   >
                     <option value="">No book selected</option>
                     {books.map((book) => (
@@ -674,27 +688,27 @@ export default function CreatePostModal({ onClose, onCreate }) {
           {selectedType === "post" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Post Text
                 </label>
                 <textarea
                   value={postText}
                   onChange={(e) => setPostText(e.target.value)}
                   rows={5}
-                  className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white resize-none"
+                  className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 resize-none focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                   placeholder="What's on your mind?"
             />
           </div>
 
           <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Image (Optional)
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setPostImage(e.target.files?.[0] || null)}
-                  className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                 />
                 {postImage && (
                   <div className="mt-2">
@@ -773,7 +787,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Select Book *
                 </label>
                 {loadingBooks ? (
@@ -796,7 +810,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                         setQuickComment("");
                       }
                     }}
-                    className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                    className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                     required
                   >
                     <option value="">Choose a book...</option>
@@ -815,7 +829,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Rating *
                 </label>
                 <div className="flex gap-2">
@@ -824,8 +838,8 @@ export default function CreatePostModal({ onClose, onCreate }) {
                       key={value}
                       type="button"
                       onClick={() => handleStarClick(value)}
-                      className={`text-3xl transition-transform hover:scale-110 ${
-                        value <= rating ? "text-yellow-400" : "text-gray-300 dark:text-gray-600"
+                      className={`text-3xl transition-all hover:scale-125 ${
+                        value <= rating ? "text-yellow-500 drop-shadow-lg" : "text-gray-300 dark:text-gray-300"
                       }`}
                     >
                       ★
@@ -835,14 +849,14 @@ export default function CreatePostModal({ onClose, onCreate }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Quick Comment
                 </label>
                 <input
                   type="text"
                   value={quickComment}
                   onChange={(e) => setQuickComment(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                   placeholder="Short comment (optional)"
                   maxLength={100}
                 />
@@ -854,28 +868,28 @@ export default function CreatePostModal({ onClose, onCreate }) {
           {selectedType === "goal" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Goal Target *
                 </label>
                 <input
                   type="text"
                   value={goalTarget}
                   onChange={(e) => setGoalTarget(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                   placeholder="e.g., Read 10 books this month"
                   required
             />
           </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
                   Deadline (Optional)
                 </label>
                 <input
                   type="date"
                   value={goalDeadline}
                   onChange={(e) => setGoalDeadline(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                  className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                   min={new Date().toISOString().split("T")[0]}
                 />
               </div>
@@ -883,23 +897,23 @@ export default function CreatePostModal({ onClose, onCreate }) {
           )}
 
           {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+            <div className="p-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-50 dark:to-orange-50 border-2 border-red-200 dark:border-red-200 rounded-xl shadow-lg">
+              <p className="text-sm font-semibold text-red-600 dark:text-red-600">{error}</p>
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="flex justify-end gap-4 pt-6 border-t-2 border-gray-100 dark:border-gray-200 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="px-6 py-3 text-base rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md"
               disabled={submitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm rounded-full bg-purple-600 hover:bg-purple-700 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 text-base rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               disabled={submitting}
             >
               {submitting ? "Publishing..." : "Publish"}

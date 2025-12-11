@@ -1,8 +1,9 @@
 ﻿using Goodreads.Application.Common.Attributes;
+using Goodreads.Application.Common.Interfaces.Authorization;
 using Microsoft.AspNetCore.Http;
 
 namespace Goodreads.Application.Books.Commands.CreateBook;
-public class CreateBookCommand : IRequest<Result<string>>
+public class CreateBookCommand : IRequest<Result<string>>, IRequireAuthorAuthorization
 {
     public string Title { get; set; }
     public string Description { get; set; }
