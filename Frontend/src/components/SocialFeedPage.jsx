@@ -125,28 +125,54 @@ export default function SocialFeedPage({
   );
 
   return (
-    <div className="max-w-6xl xl:max-w-7xl mx-auto px-4 xl:px-8 py-8">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Social Feed</h1>
-        <button
-          onClick={fetchFeed}
-          className="text-sm text-gray-600 dark:text-purple-400 hover:text-gray-800 dark:hover:text-purple-300"
-        >
-          Refresh
-        </button>
+    <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 bg-white dark:bg-white min-h-screen">
+      {/* Header Section - Ultra Modern Glassmorphism Design */}
+      <div className="mb-14 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-50/80 via-orange-50/80 to-red-50/80 dark:from-amber-50/80 dark:via-orange-50/80 dark:to-red-50/80 rounded-3xl -z-10 backdrop-blur-md"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-amber-50/40 rounded-3xl -z-10"></div>
+        <div className="px-10 py-12 relative z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-5 flex-1">
+              <div className="relative">
+                <div className="w-2 h-20 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-xl"></div>
+                <div className="absolute top-0 left-0 w-2 h-20 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-sm opacity-60 animate-pulse"></div>
+              </div>
+              <div className="flex-1">
+                <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-none mb-3 drop-shadow-sm">
+                  Social Feed
+                </h1>
+                <p className="text-gray-700 dark:text-gray-700 text-xl sm:text-2xl mt-3 font-semibold">
+                  Discover what others are reading
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={fetchFeed}
+              className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
       </div>
 
+      {/* Loading State */}
       {loading && (
-        <div className="bg-gray-100 dark:bg-gray-800 p-8 text-center rounded-lg text-gray-700 dark:text-gray-300">
-          Loading feed...
+        <div className="text-center py-20">
+          <div className="relative inline-block">
+            <div className="w-16 h-16 border-4 border-amber-200 dark:border-amber-200 rounded-full"></div>
+            <div className="w-16 h-16 border-4 border-purple-600 dark:border-purple-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+          </div>
+          <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mt-6">Loading feed...</p>
         </div>
       )}
 
+      {/* Error State */}
       {error && !loading && (
-        <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-200 p-6 rounded-lg text-center">
-          <p>{error}</p>
+        <div className="mb-8 p-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-50 dark:to-orange-50 border-2 border-red-200 dark:border-red-200 rounded-2xl shadow-lg">
+          <p className="text-red-600 dark:text-red-600 font-semibold mb-4">{error}</p>
           <button
-            className="mt-4 px-4 py-2 rounded-full bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white"
+            className="px-6 py-3 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             onClick={fetchFeed}
           >
             Try Again
@@ -154,15 +180,27 @@ export default function SocialFeedPage({
         </div>
       )}
 
+      {/* Empty State */}
       {!loading && !error && posts.length === 0 && (
-        <div className="bg-gray-100 dark:bg-gray-800 p-8 text-center rounded-lg text-gray-700 dark:text-gray-300">
-          No posts yet. Create one from the sidebar!
+        <div className="text-center py-20">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 rounded-full mb-6">
+            <svg className="h-12 w-12 text-amber-500 dark:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-black text-gray-900 dark:text-gray-900 mb-3">
+            No posts yet
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-600">
+            Create one from the sidebar!
+          </p>
         </div>
       )}
 
+      {/* Posts */}
       {!loading && !error && posts.length > 0 && (
         <>
-          <div className="space-y-4">
+          <div className="space-y-6">
             {posts.map((post) => (
               <SocialFeedPost
                 key={post.id}
@@ -184,19 +222,20 @@ export default function SocialFeedPage({
             ))}
           </div>
 
-          <div className="flex items-center justify-between mt-8">
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-12 pt-8 border-t-2 border-gray-100 dark:border-gray-200">
             <button
               onClick={handlePreviousPage}
               disabled={page === 1}
-              className="px-4 py-2 rounded-full border border-gray-600 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               Previous
             </button>
-            <span className="text-gray-400">Page {page}</span>
+            <span className="text-lg font-bold text-gray-900 dark:text-gray-900">Page {page}</span>
             <button
               onClick={handleNextPage}
               disabled={!hasMore}
-              className="px-4 py-2 rounded-full border border-gray-600 text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               Next
             </button>
@@ -217,17 +256,17 @@ export default function SocialFeedPage({
       )}
 
       {reviewModalOpen && reviewModalError && !reviewDetail && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-900 text-white p-6 rounded-xl max-w-md text-center space-y-4">
-            <p>{reviewModalError}</p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-white p-8 rounded-3xl max-w-md text-center space-y-6 border-2 border-gray-200 dark:border-gray-200 shadow-2xl">
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-900">{reviewModalError}</p>
             <button
               onClick={() => {
                 setReviewModalOpen(false);
                 setReviewModalError(null);
               }}
-              className="px-4 py-2 rounded bg-gray-900 dark:bg-purple-600 hover:bg-gray-800 dark:hover:bg-purple-500 text-white"
+              className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              Bağla
+              Close
             </button>
           </div>
         </div>
@@ -235,4 +274,3 @@ export default function SocialFeedPage({
     </div>
   );
 }
-

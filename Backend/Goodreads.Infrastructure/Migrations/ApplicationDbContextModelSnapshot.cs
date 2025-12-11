@@ -257,6 +257,25 @@ namespace Goodreads.Infrastructure.Migrations
                     b.ToTable("QuoteLikes");
                 });
 
+            modelBuilder.Entity("Goodreads.Domain.Entities.ReadingProgress", b =>
+                {
+                    b.Property<string>("BookId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CurrentPage")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("BookId", "UserId");
+
+                    b.ToTable("ReadingProgresses");
+                });
+
             modelBuilder.Entity("Goodreads.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -429,6 +448,25 @@ namespace Goodreads.Infrastructure.Migrations
                     b.HasIndex("FollowingId");
 
                     b.ToTable("UserFollows");
+                });
+
+            modelBuilder.Entity("Goodreads.Domain.Entities.UserYearChallenge", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompletedBooksCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TargetBooksCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "Year");
+
+                    b.ToTable("UserYearChallenges");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -660,6 +698,17 @@ namespace Goodreads.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Goodreads.Domain.Entities.ReadingProgress", b =>
+                {
+                    b.HasOne("Goodreads.Domain.Entities.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+                });
+
             modelBuilder.Entity("Goodreads.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("Goodreads.Domain.Entities.User", "User")
@@ -716,6 +765,17 @@ namespace Goodreads.Infrastructure.Migrations
                     b.Navigation("Follower");
 
                     b.Navigation("Following");
+                });
+
+            modelBuilder.Entity("Goodreads.Domain.Entities.UserYearChallenge", b =>
+                {
+                    b.HasOne("Goodreads.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

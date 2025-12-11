@@ -15,6 +15,7 @@ import AllBooksPage from "./components/AllBooksPage";
 import ProfilePage from "./components/ProfilePage";
 import SearchPage from "./components/SearchPage";
 import CategoriesPage from "./components/CategoriesPage";
+import RecommendationsPage from "./components/RecommendationsPage";
 import LoginPage from "./components/LoginPage";
 import SignUpPage from "./components/SignUp";
 import CreatePostModal from "./components/CreatePostModal";
@@ -200,6 +201,10 @@ function App() {
           <Routes>
             <Route
               path="/"
+              element={<RecommendationsPage onBookClick={handleBookClick} />}
+            />
+            <Route
+              path="/home"
               element={<HomePage onBookClick={handleBookClick} />}
             />
             <Route
@@ -225,6 +230,10 @@ function App() {
             <Route
               path="/categories"
               element={<CategoriesPage onBookClick={handleBookClick} />}
+            />
+            <Route
+              path="/recommendations"
+              element={<RecommendationsPage onBookClick={handleBookClick} />}
             />
             <Route
               path="/profile"

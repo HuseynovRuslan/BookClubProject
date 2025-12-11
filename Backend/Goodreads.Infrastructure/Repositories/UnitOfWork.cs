@@ -14,8 +14,8 @@ public class UnitOfWork : IUnitOfWork
     //private IRepository<AuthorClaimRequest>? _authorClaimRequestRepository;
     private IRepository<Quote>? _quoteRepository;
     private IRepository<QuoteLike>? _quoteLikeRepository;
-    //private IRepository<ReadingProgress>? _readingProgressRepository;
-    //private IRepository<UserYearChallenge>? _userYearChallengeRepository;
+    private IRepository<ReadingProgress>? _readingProgressRepository;
+    private IRepository<UserYearChallenge>? _userYearChallengeRepository;
     private IRepository<BookReview>? _bookReviewRepository;
 
     public UnitOfWork(ApplicationDbContext context)
@@ -32,8 +32,8 @@ public class UnitOfWork : IUnitOfWork
     //                                        new GenericRepository<AuthorClaimRequest>(_context);
     public IRepository<Quote> Quotes => _quoteRepository ??= new GenericRepository<Quote>(_context);
     public IRepository<QuoteLike> QuoteLikes => _quoteLikeRepository ??= new GenericRepository<QuoteLike>(_context);
-    //public IRepository<ReadingProgress> ReadingProgresses => _readingProgressRepository ??= new GenericRepository<ReadingProgress>(_context);
-    //public IRepository<UserYearChallenge> UserYearChallenges => _userYearChallengeRepository ??= new GenericRepository<UserYearChallenge>(_context);
+    public IRepository<ReadingProgress> ReadingProgresses => _readingProgressRepository ??= new GenericRepository<ReadingProgress>(_context);
+    public IRepository<UserYearChallenge> UserYearChallenges => _userYearChallengeRepository ??= new GenericRepository<UserYearChallenge>(_context);
     public IRepository<BookReview> BookReviews => _bookReviewRepository ??= new GenericRepository<BookReview>(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();

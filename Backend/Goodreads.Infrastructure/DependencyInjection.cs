@@ -11,8 +11,9 @@ using Goodreads.Infrastructure.Security.TokenProvider;
 using Goodreads.Infrastructure.Services.EmailService;
 //using Goodreads.Infrastructure.Services.Storage;
 using Goodreads.Infrastructure.Services.TokenProvider;
-//using Hangfire;
-//using Hangfire.Storage.SQLite;
+using Goodreads.Infrastructure.Jobs;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -29,10 +30,9 @@ public static class DependencyInjection
             .AddIdentity()
             .AddAuthentication(configuration)
             .AddAuthorization()
-            .AddEmailServices(configuration);
+            .AddEmailServices(configuration)
+            .AddBackgroundJobs(configuration);
             //.AddBlobStorage(configuration)
-            //.AddBackgroundJobs(configuration)
-            //.AddHealthChecks(configuration);
 
         return services;
     }
@@ -98,10 +98,10 @@ public static class DependencyInjection
 
     private static IServiceCollection AddAuthorization(this IServiceCollection services)
     {
-        //services.AddScoped<IShelfAuthorizationService, ShelfAuthorizationService>();
-        //services.AddScoped<IAuthorAuthorizationService, AuthorAuthorizationService>();
+        services.AddScoped<IShelfAuthorizationService, ShelfAuthorizationService>();
+        services.AddScoped<IAuthorAuthorizationService, AuthorAuthorizationService>();
         services.AddScoped<IQuoteAuthorizationService, QuoteAuthorizationService>();
-        //services.AddScoped<IReviewAuthorizationService, ReviewAuthorizationService>();
+        services.AddScoped<IReviewAuthorizationService, ReviewAuthorizationService>();
         return services;
     }
 
@@ -138,28 +138,30 @@ public static class DependencyInjection
     //    return services;
     //}
 
-    //private static IServiceCollection AddBackgroundJobs(this IServiceCollection services, IConfiguration configuration)
-    //{
-    //    services.AddScoped<RefreshTokenCleanupJob>();
-    //    services.AddHangfire(cfg => cfg
-    //            .UseSimpleAssemblyNameTypeSerializer()
-    //            .UseRecommendedSerializerSettings()
-    //            .UseSQLiteStorage(configuration.GetConnectionString("HangfireConnection")));
+    private static IServiceCollection AddBackgroundJobs(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<RefreshTokenCleanupJob>();
+        
+        // Hangfire konfiqurasiyası - SQL Server istifadə edirik
+        services.AddHangfire(cfg => cfg
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(
+                configuration.GetConnectionString("DefaultConnection"),
+                new SqlServerStorageOptions
+                {
+                    CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                    SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                    QueuePollInterval = TimeSpan.Zero,
+                    UseRecommendedIsolationLevel = true,
+                    DisableGlobalLocks = true
+                }));
 
-    //    services.AddHangfireServer();
+        services.AddHangfireServer();
 
-    //    return services;
-    //}
-
-    //private static IServiceCollection AddHealthChecks(this IServiceCollection services, IConfiguration configuration)
-    //{
-    //    var azureBlobStorageSettings = configuration.GetSection(BlobStorageSettings.Section).Get<BlobStorageSettings>();
-    //    services.AddHealthChecks()
-    //        .AddDbContextCheck<ApplicationDbContext>(name: "Database")
-    //        .AddAzureBlobStorage(azureBlobStorageSettings.ConnectionString, name: "BlobStorage");
-
-    //    return services;
-    //}
+        return services;
+    }
 
 }
 
