@@ -91,12 +91,12 @@ export default function ReadingListPage() {
     <div className="max-w-7xl xl:max-w-[1600px] mx-auto px-4 xl:px-8 py-8 bg-white dark:bg-white min-h-screen">
       {/* Modern Header Section */}
       <div className="mb-10 relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-50 dark:via-blue-50 dark:to-indigo-50 rounded-3xl -z-10 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-50 via-orange-50 to-red-50 dark:from-amber-50 dark:via-orange-50 dark:to-red-50 rounded-3xl -z-10 backdrop-blur-sm"></div>
         <div className="px-8 py-10 relative z-10">
           <div className="flex items-center gap-4 mb-3">
-            <div className="w-1.5 h-16 bg-gradient-to-b from-purple-500 via-blue-500 to-indigo-600 rounded-full shadow-lg"></div>
+            <div className="w-1.5 h-16 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-lg"></div>
             <div>
-              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent leading-tight">
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-tight">
                 My Reading List
               </h1>
               <p className="text-gray-600 dark:text-gray-600 text-lg sm:text-xl mt-2 font-semibold">
@@ -108,7 +108,7 @@ export default function ReadingListPage() {
       </div>
 
       {actionMessage && (
-        <div className="mb-6 text-sm text-purple-700 dark:text-purple-700 bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-100 dark:to-blue-100 border border-purple-200 dark:border-purple-200 p-4 rounded-xl shadow-md">
+        <div className="mb-6 text-sm text-amber-700 dark:text-amber-700 bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 border border-amber-200 dark:border-amber-200 p-4 rounded-xl shadow-md">
           {actionMessage}
         </div>
       )}
@@ -116,7 +116,7 @@ export default function ReadingListPage() {
       {loading && (
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-50 dark:to-gray-100 p-8 rounded-2xl text-center border-2 border-gray-200 dark:border-gray-200 shadow-lg">
           <div className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-700">
-            <div className="w-6 h-6 border-3 border-gray-300 dark:border-gray-300 border-t-purple-600 dark:border-t-purple-600 rounded-full animate-spin"></div>
+            <div className="w-6 h-6 border-3 border-gray-300 dark:border-gray-300 border-t-amber-600 dark:border-t-amber-600 rounded-full animate-spin"></div>
             <span className="text-lg font-semibold">Shelflər yüklənir...</span>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function ReadingListPage() {
                   <input
                     value={editingShelfName}
                     onChange={(e) => setEditingShelfName(e.target.value)}
-                    className="flex-1 bg-gray-50 dark:bg-gray-50 text-gray-900 dark:text-gray-900 rounded-xl px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-200 focus:border-purple-400 dark:focus:border-purple-400 focus:outline-none transition-colors font-semibold"
+                    className="flex-1 bg-gray-50 dark:bg-gray-50 text-gray-900 dark:text-gray-900 rounded-xl px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-200 focus:border-amber-400 dark:focus:border-amber-400 focus:outline-none transition-colors font-semibold"
                     autoFocus
                   />
                   <button className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105">
@@ -163,7 +163,7 @@ export default function ReadingListPage() {
                 </form>
               ) : (
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-1.5 h-12 bg-gradient-to-b from-purple-500 via-blue-500 to-indigo-600 rounded-full shadow-md"></div>
+                  <div className="w-1.5 h-12 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-md"></div>
                   <div>
                     <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-900 mb-1">{shelf.name}</h2>
                     <p className="text-gray-600 dark:text-gray-600 text-base font-semibold">
@@ -211,7 +211,7 @@ export default function ReadingListPage() {
                       className="bg-white dark:bg-white rounded-2xl p-4 flex flex-col gap-3 border-2 border-gray-100 dark:border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group"
                     >
                       {/* Book Cover Image */}
-                      <div className="aspect-[3/4] bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-50 dark:via-blue-50 dark:to-indigo-50 rounded-xl overflow-hidden mb-2 relative">
+                      <div className="aspect-[3/4] bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-50 dark:via-orange-50 dark:to-red-50 rounded-xl overflow-hidden mb-2 relative">
                         {coverImage ? (
                           <>
                             <img
@@ -246,7 +246,7 @@ export default function ReadingListPage() {
                       </div>
                       
                       {/* Book Title */}
-                      <h3 className="font-bold text-sm text-gray-900 dark:text-gray-900 line-clamp-2 leading-tight group-hover:text-purple-600 dark:group-hover:text-purple-600 transition-colors">
+                      <h3 className="font-bold text-sm text-gray-900 dark:text-gray-900 line-clamp-2 leading-tight group-hover:text-amber-600 dark:group-hover:text-amber-600 transition-colors">
                         {book.title}
                       </h3>
                       
@@ -265,7 +265,7 @@ export default function ReadingListPage() {
                         <div className="flex flex-col gap-2 mt-1">
                           <button
                             onClick={() => handleMoveBook(book, "Currently Reading")}
-                            className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
+                            className="px-3 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
                           >
                             Currently Reading
                           </button>
