@@ -242,12 +242,28 @@ function App() {
                   user={currentUser}
                   onUpdateProfile={(updated) => setCurrentUser(updated)}
                   onLogout={logout}
-              onSwitchAccount={() => {
-                logout();
-                setAuthMode("login");
-              }}
+                  onSwitchAccount={() => {
+                    logout();
+                    setAuthMode("login");
+                  }}
                   userPosts={userPosts}
                   userBooks={userBooks}
+                />
+              }
+            />
+            <Route
+              path="/profile/:userId"
+              element={
+                <ProfilePage
+                  user={null}
+                  onUpdateProfile={(updated) => setCurrentUser(updated)}
+                  onLogout={logout}
+                  onSwitchAccount={() => {
+                    logout();
+                    setAuthMode("login");
+                  }}
+                  userPosts={[]}
+                  userBooks={[]}
                 />
               }
             />

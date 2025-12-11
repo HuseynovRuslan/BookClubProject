@@ -24,12 +24,22 @@ export default function SignUpPage({ onSwitchToSignIn }) {
       return;
     }
 
-    if (!nameRegex.test(name)) {
+    if (!name || !name.trim()) {
+      setError("Name is required");
+      return;
+    }
+
+    if (!nameRegex.test(name.trim())) {
       setError("Name can only contain letters");
       return;
     }
 
-    if (!nameRegex.test(surname)) {
+    if (!surname || !surname.trim()) {
+      setError("Surname is required");
+      return;
+    }
+
+    if (!nameRegex.test(surname.trim())) {
       setError("Surname can only contain letters");
       return;
     }
@@ -42,10 +52,10 @@ export default function SignUpPage({ onSwitchToSignIn }) {
     setIsSubmitting(true);
     try {
       await register({
-        username,
-        name,
-        surname,
-        email,
+        username: username.trim(),
+        name: name.trim(),
+        surname: surname.trim(),
+        email: email.trim(),
         password,
         role: "reader"
       });

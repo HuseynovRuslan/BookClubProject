@@ -3,6 +3,8 @@ import { getFeed } from "../api/feed";
 import { getReviewById } from "../api/reviews";
 import SocialFeedPost from "./SocialFeedPost";
 import ReviewDetailModal from "./reviews/ReviewDetailModal";
+import { useAuth } from "../context/AuthContext.jsx";
+import { getFollowing } from "../api/userFollows";
 
 export default function SocialFeedPage({
   currentUsername,
@@ -10,6 +12,7 @@ export default function SocialFeedPage({
   onAddComment,
   onDeleteComment,
 }) {
+  const { user: authUser } = useAuth();
   const [remotePosts, setRemotePosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,6 +22,50 @@ export default function SocialFeedPage({
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewDetail, setReviewDetail] = useState(null);
   const [reviewModalError, setReviewModalError] = useState(null);
+  const [followingUsers, setFollowingUsers] = useState([]);
+  const [followingLoading, setFollowingLoading] = useState(true);
+
+  // Load following users list
+  const loadFollowing = useCallback(async () => {
+    if (!authUser?.id) {
+      setFollowingLoading(false);
+      return;
+    }
+    try {
+      const following = await getFollowing();
+      // Extract user IDs from following list
+      const userIds = following.map(user => user.id || user.Id || user.userId || user.UserId).filter(Boolean);
+      // Also include current user's ID to show own posts
+      const currentUserId = authUser.id || authUser.Id;
+      if (currentUserId) {
+        userIds.push(currentUserId);
+      }
+      setFollowingUsers(userIds);
+    } catch (err) {
+      console.error("Error loading following users:", err);
+      // On error, still show all posts (fallback behavior)
+      setFollowingUsers([]);
+    } finally {
+      setFollowingLoading(false);
+    }
+  }, [authUser]);
+
+  useEffect(() => {
+    loadFollowing();
+  }, [loadFollowing]);
+
+  // Listen for follow status changes separately
+  useEffect(() => {
+    const handleFollowStatusChange = () => {
+      loadFollowing();
+    };
+    
+    window.addEventListener('followStatusChanged', handleFollowStatusChange);
+    
+    return () => {
+      window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+    };
+  }, [loadFollowing]);
 
   const fetchFeed = useCallback(async () => {
     setLoading(true);
@@ -26,7 +73,22 @@ export default function SocialFeedPage({
     try {
       const response = await getFeed({ page, pageSize });
       // getFeed already returns normalized format: { items, total, page, pageSize }
-      const items = response.items || [];
+      let items = response.items || [];
+      
+      // Filter posts to only show posts from followed users (including own posts)
+      if (followingUsers.length > 0) {
+        const currentUserId = authUser?.id || authUser?.Id;
+        items = items.filter(post => {
+          // Get post author ID - try different possible field names
+          const postUserId = post.userId || post.UserId || 
+                           post.user?.id || post.User?.Id ||
+                           post.user?.userId || post.User?.UserId;
+          
+          // Include if post is from a followed user or from current user
+          return followingUsers.includes(postUserId) || postUserId === currentUserId;
+        });
+      }
+      
       const totalCount = response.total || 0;
       setRemotePosts(items);
       setHasMore(
@@ -38,16 +100,38 @@ export default function SocialFeedPage({
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, followingUsers, authUser]);
 
   useEffect(() => {
-    fetchFeed();
-  }, [fetchFeed]);
+    if (!followingLoading && followingUsers.length >= 0) {
+      fetchFeed();
+    }
+  }, [fetchFeed, followingLoading, followingUsers.length]);
 
-  const posts = useMemo(
-    () => [...localPosts, ...remotePosts],
-    [localPosts, remotePosts]
-  );
+  const posts = useMemo(() => {
+    // Combine local and remote posts
+    const allPosts = [...localPosts, ...remotePosts];
+    
+    // Filter to only show posts from followed users (including own posts)
+    if (followingUsers.length > 0) {
+      const currentUserId = authUser?.id || authUser?.Id;
+      return allPosts.filter(post => {
+        // Local posts are always from current user, so include them
+        if (post.isLocal) return true;
+        
+        // Get post author ID
+        const postUserId = post.userId || post.UserId || 
+                          post.user?.id || post.User?.Id ||
+                          post.user?.userId || post.User?.UserId;
+        
+        // Include if post is from a followed user or from current user
+        return followingUsers.includes(postUserId) || postUserId === currentUserId;
+      });
+    }
+    
+    // If no following list loaded yet, show all posts
+    return allPosts;
+  }, [localPosts, remotePosts, followingUsers, authUser]);
 
   const handleRemoteCommentAdd = useCallback(
     (postId, text) => {
