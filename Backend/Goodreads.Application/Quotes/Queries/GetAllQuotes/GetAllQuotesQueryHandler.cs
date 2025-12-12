@@ -34,7 +34,7 @@ public class GetAllQuotesQueryHandler : IRequestHandler<GetAllQuotesQuery, Paged
 
         var (quotes, count) = await _unitOfWork.Quotes.GetAllAsync(
             filter: filter,
-            includes: new[] { "Book", "Book.Author", "User" },
+            includes: new[] { "Likes" },
             sortColumn: p.SortColumn,
             sortOrder: p.SortOrder,
             pageNumber: p.PageNumber,

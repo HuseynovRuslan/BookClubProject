@@ -50,41 +50,49 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
         }
 
         // Get quotes from following users (include Likes for LikesCount)
-        var quotes = await _unitOfWork.Quotes
+        var (quotes, _) = await _unitOfWork.Quotes
             .GetAllAsync(filter: q => followingIds.Contains(q.CreatedByUserId), includes: new[] { "Likes" });
         
+        var quotesList = quotes.ToList();
+        
         // Get books for quotes to include book and author info
-        var quoteBookIds = quotes.Items.Where(q => !string.IsNullOrEmpty(q.BookId)).Select(q => q.BookId).Distinct().ToList();
+        var quoteBookIds = quotesList.Where(q => !string.IsNullOrEmpty(q.BookId)).Select(q => q.BookId).Distinct().ToList();
         var quoteBooks = new Dictionary<string, Book>();
         if (quoteBookIds.Any())
         {
-            var books = await _unitOfWork.Books.GetAllAsync(filter: b => quoteBookIds.Contains(b.Id), includes: new[] { "Author" });
-            foreach (var book in books.Items)
+            var (books, __) = await _unitOfWork.Books.GetAllAsync(filter: b => quoteBookIds.Contains(b.Id), includes: new[] { "Author" });
+            foreach (var book in books)
             {
                 quoteBooks[book.Id] = book;
             }
         }
         
-        _logger.LogInformation("Fetched {Count} books for {QuoteCount} quotes", quoteBooks.Count, quotes.Count);
+        _logger.LogInformation("Fetched {Count} books for {QuoteCount} quotes", quoteBooks.Count, quotesList.Count);
 
         // Get reviews from following users (include Book for BookTitle)
-        var reviews = await _unitOfWork.BookReviews
+        var (reviews, ___) = await _unitOfWork.BookReviews
             .GetAllAsync(filter: r => followingIds.Contains(r.UserId), includes: new[] { "Book", "User" });
+        
+        var reviewsList = reviews.ToList();
 
         // Get shelves from following users first
-        var shelves = await _unitOfWork.Shelves
+        var (shelves, ____) = await _unitOfWork.Shelves
             .GetAllAsync(filter: s => followingIds.Contains(s.UserId));
-        var shelfIds = shelves.Items.Select(s => s.Id).ToList();
+        
+        var shelvesList = shelves.ToList();
+        var shelfIds = shelvesList.Select(s => s.Id).ToList();
 
         // Get book additions from following users (BookShelf)
-        var bookShelves = await _unitOfWork.BookShelves
+        var (bookShelves, _____) = await _unitOfWork.BookShelves
             .GetAllAsync(filter: bs => shelfIds.Contains(bs.ShelfId));
+        
+        var bookShelvesList = bookShelves.ToList();
 
         // Combine all activities
         var feedItems = new List<FeedItemDto>();
 
         // Add quotes
-        foreach (var quote in quotes.Items)
+        foreach (var quote in quotesList)
         {
             var user = await _userManager.FindByIdAsync(quote.CreatedByUserId);
             if (user != null)
@@ -115,7 +123,7 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
         }
 
         // Add reviews
-        foreach (var review in reviews.Items)
+        foreach (var review in reviewsList)
         {
             var user = await _userManager.FindByIdAsync(review.UserId);
             if (user != null)
@@ -132,7 +140,7 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
         }
 
         // Add book additions
-        foreach (var bookShelf in bookShelves.Items)
+        foreach (var bookShelf in bookShelvesList)
         {
             var shelf = await _unitOfWork.Shelves.GetByIdAsync(bookShelf.ShelfId);
             if (shelf != null)
