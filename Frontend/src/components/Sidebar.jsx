@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus } from "lucide-react";
+import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus, Shield } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
 
@@ -7,6 +7,14 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
   const { user } = useAuth();
   const t = useTranslation();
   const isWriter = user?.role === "writer";
+  const isAdmin = user?.role === "Admin" || user?.role === "admin";
+  
+  // Debug: Check user role
+  if (user) {
+    console.log("Sidebar - User object:", user);
+    console.log("Sidebar - User role:", user.role);
+    console.log("Sidebar - isAdmin:", isAdmin);
+  }
 
   // Əsas menyu
   const mainMenuItems = [
@@ -95,6 +103,22 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
               </li>
             ))}
 
+            {/* Admin Panel linki yalnız admin-lər üçün */}
+            {isAdmin && (
+              <li>
+                <Link
+                  to="/admin"
+                  onClick={onClose}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                  }`}
+                >
+                  <Shield className="w-5 h-5" />
+                  {t("nav.admin") || "Admin Panel"}
+                </Link>
+              </li>
+            )}
+
             {/* New Book düyməsi yalnız writer-lər üçün */}
             {isWriter && (
               <li>
@@ -178,6 +202,21 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                 </Link>
               </li>
             ))}
+
+            {/* Admin Panel linki yalnız admin-lər üçün */}
+            {isAdmin && (
+              <li>
+                <Link
+                  to="/admin"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                  }`}
+                >
+                  <Shield className="w-5 h-5" />
+                  {t("nav.admin") || "Admin Panel"}
+                </Link>
+              </li>
+            )}
 
             {/* New Book düyməsi yalnız writer-lər üçün */}
             {isWriter && (

@@ -430,29 +430,31 @@ export default function SocialFeedPost({
               <img
                 src={bookCoverUrl}
                 alt={post.bookTitle || "Book cover"}
-                className="w-full h-auto max-h-80 object-contain rounded-lg"
+                className="w-full h-auto max-h-96 object-contain rounded-lg"
                 onError={(e) => {
                   e.target.style.display = 'none';
                 }}
               />
             );
           })() : (() => {
-            // Filter out blob URLs - they're invalid after page reload
-            if (post.postImage && post.postImage.startsWith('blob:')) {
-              return null;
-            }
-            const postImageUrl = getImageUrl(post.postImage);
+            // Allow blob URLs for newly created posts (they're valid until page reload)
+            const postImageUrl = post.postImage && post.postImage.startsWith('blob:') 
+              ? post.postImage 
+              : getImageUrl(post.postImage);
             if (!postImageUrl) return null;
             return (
-              // Regular post image - maintain natural aspect ratio, full width
-              <img
-                src={postImageUrl}
-                alt="Post image"
-                className="w-full h-auto max-h-80 object-cover rounded-lg"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
+              // Regular post image - Facebook style: maintain aspect ratio, reasonable max size
+              <div className="flex justify-center">
+                <img
+                  src={postImageUrl}
+                  alt="Post image"
+                  className="max-w-full h-auto max-h-96 object-contain rounded-lg"
+                  style={{ maxWidth: '100%', width: 'auto' }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
             );
           })()}
         </div>

@@ -7,13 +7,17 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.ProfilePictureUrl, opt => opt.MapFrom(src => 
                 string.IsNullOrEmpty(src.ProfilePictureUrl) 
                     ? "/images/default-profile.png" 
-                    : src.ProfilePictureUrl));
+                    : src.ProfilePictureUrl))
+            // Role is set manually in query handlers using UserManager.GetRolesAsync()
+            .ForMember(dest => dest.Role, opt => opt.Ignore());
 
         CreateMap<User, UserProfileDto>()
             .ForMember(dest => dest.ProfilePictureUrl, opt => opt.MapFrom(src => 
                 string.IsNullOrEmpty(src.ProfilePictureUrl) 
                     ? "/images/default-profile.png" 
-                    : src.ProfilePictureUrl));
+                    : src.ProfilePictureUrl))
+            // Role is set manually in query handlers using UserManager.GetRolesAsync()
+            .ForMember(dest => dest.Role, opt => opt.Ignore());
 
         CreateMap<Social, SocialDto>();
     }

@@ -115,7 +115,7 @@ export default function SocialFeedPage({
     const saved = loadFromStorage();
     return saved;
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Set to false since we're loading from localStorage initially
   const [error, setError] = useState(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewDetail, setReviewDetail] = useState(null);
@@ -225,11 +225,12 @@ export default function SocialFeedPage({
     }
   }, [followingUsers, authUser]);
 
-  useEffect(() => {
-    if (!followingLoading && followingUsers.length >= 0) {
-      fetchFeed();
-    }
-  }, [fetchFeed, followingLoading, followingUsers.length]);
+  // Disabled automatic feed refresh - user requested to disable this
+  // useEffect(() => {
+  //   if (!followingLoading && followingUsers.length >= 0) {
+  //     fetchFeed();
+  //   }
+  // }, [fetchFeed, followingLoading, followingUsers.length]);
 
   const posts = useMemo(() => {
     // Create a map to merge posts and their comments
@@ -286,6 +287,33 @@ export default function SocialFeedPage({
       saveToStorage(posts);
     }
   }, [posts]);
+
+  // Sync localPosts to remotePosts so they persist after page reload
+  useEffect(() => {
+    if (localPosts.length > 0) {
+      setRemotePosts((prev) => {
+        // Create a map to merge local and remote posts
+        const postMap = new Map();
+        
+        // First, add all remote posts
+        prev.forEach(post => {
+          postMap.set(post.id, post);
+        });
+        
+        // Then, add/update local posts (prioritize local posts)
+        localPosts.forEach(localPost => {
+          postMap.set(localPost.id, localPost);
+        });
+        
+        const merged = Array.from(postMap.values());
+        
+        // Save to localStorage
+        saveToStorage(merged);
+        
+        return merged;
+      });
+    }
+  }, [localPosts]);
 
   const handleRemoteCommentAdd = useCallback(
     (postId, text) => {

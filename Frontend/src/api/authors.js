@@ -7,7 +7,7 @@ export async function getAuthors({ page = 1, pageSize = 20, query, sortColumn, s
   if (sortOrder) params.append("SortOrder", sortOrder);
   if (page) params.append("PageNumber", page);
   if (pageSize) params.append("PageSize", pageSize);
-  return apiRequest(`/api/Authors?${params.toString()}`, { method: "GET" });
+  return apiRequest(`/api/Authors/action/get-all-authors?${params.toString()}`, { method: "GET" });
 }
 
 export async function getAuthorById(id) {

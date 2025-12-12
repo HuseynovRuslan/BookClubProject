@@ -181,6 +181,18 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
     throw error;
   }
 
+  // For 201 Created responses, try to extract ID from Location header
+  if (res.status === 201 && res.headers) {
+    const location = res.headers.get("Location");
+    if (location) {
+      // Extract ID from location header: /api/Books/get-book-by-id/{id}
+      const match = location.match(/\/get-book-by-id\/([^\/\?]+)/);
+      if (match && match[1]) {
+        return { ...data, id: match[1], location: location };
+      }
+    }
+  }
+
   return data;
 }
 

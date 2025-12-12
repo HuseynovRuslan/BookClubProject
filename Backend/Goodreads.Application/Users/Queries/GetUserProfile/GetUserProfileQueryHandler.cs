@@ -1,3 +1,5 @@
+using Goodreads.Domain.Constants;
+
 namespace Goodreads.Application.Users.Queries.GetUserProfile;
 internal class GetUserProfileQueryHandler : IRequestHandler<GetUserProfileQuery, Result<UserProfileDto>>
 {
@@ -33,6 +35,11 @@ internal class GetUserProfileQueryHandler : IRequestHandler<GetUserProfileQuery,
         }
 
         var dto = _mapper.Map<UserProfileDto>(user);
+        
+        // Get user roles
+        var roles = await _userManager.GetRolesAsync(user);
+        dto.Role = roles.FirstOrDefault() ?? Roles.User;
+        
         return Result<UserProfileDto>.Ok(dto);
     }
 }

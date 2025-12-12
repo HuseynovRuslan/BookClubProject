@@ -25,8 +25,9 @@ public class DeleteReviewCommandHandler : IRequestHandler<DeleteReviewCommand, R
         if (review == null)
             return Result.Fail(BookReviewErrors.NotFound(request.ReviewId));
 
-      
-        if (review.UserId != userId)
+        // Check if user is admin - admin can delete any review
+        var isAdmin = _userContext.IsInRole(Domain.Constants.Roles.Admin);
+        if (!isAdmin && review.UserId != userId)
             return Result.Fail(BookReviewErrors.Unauthorized);
 
        

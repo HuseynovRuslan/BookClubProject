@@ -9,5 +9,9 @@ public class QuoteDto
     public DateTime CreatedAt { get; set; }
     public int LikesCount { get; set; }
     public List<string> Tags { get; set; } = new();
+    
+    // Navigation properties
+    public BookDto? Book { get; set; }
+    public UserDto? User { get; set; }
 }
 

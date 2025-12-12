@@ -16,6 +16,7 @@ import SearchPage from "./components/SearchPage";
 import CategoriesPage from "./components/CategoriesPage";
 import RecommendationsPage from "./components/RecommendationsPage";
 import MorePage from "./components/MorePage";
+import AdminPanelPage from "./components/AdminPanelPage";
 import LoginPage from "./components/LoginPage";
 import SignUpPage from "./components/SignUp";
 import CreatePostModal from "./components/CreatePostModal";
@@ -55,28 +56,28 @@ function App() {
     setCurrentUser(user);
   }, [user]);
 
-        // One-time cleanup: Clear all posts from localStorage on app mount
-        useEffect(() => {
-          try {
-            const storageKey = "bookverse_social_feed";
-            const stored = localStorage.getItem(storageKey);
-            if (stored) {
-              const posts = JSON.parse(stored);
-              console.log(`Clearing ${posts.length} posts from localStorage`);
-              localStorage.removeItem(storageKey);
-              console.log("All posts cleared from localStorage");
-            }
-          } catch (err) {
-            console.error("Error clearing localStorage:", err);
-            // If there's an error, try to clear anyway
-            try {
-              localStorage.removeItem("bookverse_social_feed");
-              console.log("Cleared localStorage data");
-            } catch (clearErr) {
-              console.error("Error clearing localStorage:", clearErr);
-            }
-          }
-        }, []); // Run once on mount
+        // Disabled: One-time cleanup - user requested to keep posts after page reload
+        // useEffect(() => {
+        //   try {
+        //     const storageKey = "bookverse_social_feed";
+        //     const stored = localStorage.getItem(storageKey);
+        //     if (stored) {
+        //       const posts = JSON.parse(stored);
+        //       console.log(`Clearing ${posts.length} posts from localStorage`);
+        //       localStorage.removeItem(storageKey);
+        //       console.log("All posts cleared from localStorage");
+        //     }
+        //   } catch (err) {
+        //     console.error("Error clearing localStorage:", err);
+        //     // If there's an error, try to clear anyway
+        //     try {
+        //       localStorage.removeItem("bookverse_social_feed");
+        //       console.log("Cleared localStorage data");
+        //     } catch (clearErr) {
+        //       console.error("Error clearing localStorage:", clearErr);
+        //     }
+        //   }
+        // }, []); // Run once on mount
 
   // Dark mode-u HTML elementinə əlavə et ki, Tailwind dark: prefix işləsin və yadda saxla
   useEffect(() => {
@@ -93,24 +94,18 @@ function App() {
   const handleDarkModeToggle = () => setIsDarkMode((prev) => !prev);
 
   const handleCreatePost = (newPost) => {
-    // Clean blob URLs immediately - they're invalid after page reload
-    const cleanedPost = { ...newPost };
-    if (cleanedPost.postImage && cleanedPost.postImage.startsWith('blob:')) {
-      cleanedPost.postImage = null;
-    }
-    if (cleanedPost.bookCover && cleanedPost.bookCover.startsWith('blob:')) {
-      cleanedPost.bookCover = null;
-    }
-    
+    // For new posts, keep blob URLs for immediate display (they're valid until page reload)
+    // Only clean blob URLs when saving to localStorage (they won't persist after reload anyway)
     const postWithUser = {
-      ...cleanedPost,
+      ...newPost,
       id: `local-${Date.now()}`,
       username: currentUser?.name || "You",
-      likes: cleanedPost.likes ?? 0,
+      likes: newPost.likes ?? 0,
       comments: [],
       timestamp: new Date().toISOString(),
       isLocal: true,
     };
+    
     setLocalPosts((prev) => {
       const updated = [postWithUser, ...prev];
       // Save to localStorage
@@ -434,6 +429,10 @@ function App() {
             <Route
               path="/more"
               element={<MorePage />}
+            />
+            <Route
+              path="/admin"
+              element={<AdminPanelPage />}
             />
             <Route
               path="/profile"
