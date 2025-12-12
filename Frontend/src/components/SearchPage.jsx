@@ -4,8 +4,10 @@ import { Search, BookOpen, Users } from "lucide-react";
 import { getAllBooks } from "../api/books";
 import { getImageUrl } from "../api/config";
 import { searchUsers } from "../api/users";
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function SearchPage({ onBookClick }) {
+  const t = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
@@ -40,7 +42,7 @@ export default function SearchPage({ onBookClick }) {
         }
       } catch (err) {
         console.error("Search error:", err);
-        setError(err.message || `Failed to search ${mode}`);
+        setError(err.message || t("search.failed"));
         setResults([]);
       } finally {
         setLoading(false);
@@ -137,7 +139,7 @@ export default function SearchPage({ onBookClick }) {
         return book.author.name || book.author.Name;
       }
     }
-    return book.authorName || "Unknown author";
+    return book.authorName || t("profile.unknownAuthor");
   };
 
   const getRating = (book) => {
@@ -157,7 +159,7 @@ export default function SearchPage({ onBookClick }) {
                 <div className="absolute top-0 left-0 w-2 h-12 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-md opacity-50"></div>
               </div>
               <h1 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-gray-900 tracking-tight leading-none">
-                Search {searchMode === "users" ? "Users" : "Books"}
+                {t("search.title")} {searchMode === "users" ? t("search.users") : t("search.books")}
               </h1>
             </div>
 
@@ -176,7 +178,7 @@ export default function SearchPage({ onBookClick }) {
                 }`}
               >
                 <BookOpen className="w-5 h-5" />
-                Books
+                {t("search.books")}
               </button>
               <button
                 onClick={() => {
@@ -191,7 +193,7 @@ export default function SearchPage({ onBookClick }) {
                 }`}
               >
                 <Users className="w-5 h-5" />
-                Users
+                {t("search.users")}
               </button>
             </div>
 
@@ -204,7 +206,7 @@ export default function SearchPage({ onBookClick }) {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={searchMode === "users" ? "Search by username or display name..." : "Search by title, author, or genre..."}
+                placeholder={searchMode === "users" ? t("search.placeholderUsers") : t("search.placeholderBooks")}
                 className="w-full pl-14 pr-5 py-4 text-lg border-3 border-amber-200 dark:border-amber-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 placeholder-gray-400 dark:placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-lg backdrop-blur-sm"
                 autoFocus
               />
@@ -239,10 +241,10 @@ export default function SearchPage({ onBookClick }) {
                     <div className="w-1 h-8 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full"></div>
                   </div>
                   <p className="text-xl font-black text-gray-900 dark:text-gray-900">
-                    Found <span className="text-amber-600 dark:text-amber-600">{results.length}</span>{" "}
+                    {t("search.found")} <span className="text-amber-600 dark:text-amber-600">{results.length}</span>{" "}
                     {searchMode === "users" 
-                      ? (results.length === 1 ? "user" : "users")
-                      : (results.length === 1 ? "book" : "books")}
+                      ? (results.length === 1 ? t("search.user") : t("search.userPlural"))
+                      : (results.length === 1 ? t("categories.book") : t("categories.books"))}
                   </p>
                 </div>
                 
@@ -300,7 +302,7 @@ export default function SearchPage({ onBookClick }) {
                               )}
                               {user.role && (
                                 <span className="inline-block mt-2 px-2 py-1 rounded-md bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 text-gray-900 dark:text-gray-900 text-xs font-bold border border-amber-200 dark:border-amber-200">
-                                  {user.role === "writer" ? "✍️ Writer" : "📚 Reader"}
+                                  {user.role === "writer" ? `✍️ ${t("profile.writer")}` : `📚 ${t("profile.reader")}`}
                                 </span>
                               )}
                             </div>
@@ -408,10 +410,10 @@ export default function SearchPage({ onBookClick }) {
                   )}
                 </div>
                 <h2 className="text-3xl font-black text-gray-900 dark:text-gray-900 mb-3">
-                  No {searchMode === "users" ? "users" : "books"} found
+                  {t("search.noResults")}
                 </h2>
                 <p className="text-lg text-gray-600 dark:text-gray-600">
-                  Try searching with different keywords
+                  {t("search.tryDifferent")}
                 </p>
               </div>
             )}
@@ -425,12 +427,12 @@ export default function SearchPage({ onBookClick }) {
               <Search className="h-12 w-12 text-amber-500 dark:text-amber-500" />
             </div>
             <h2 className="text-3xl font-black text-gray-900 dark:text-gray-900 mb-3">
-              Start searching
+              {t("search.title")}
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-600">
               {searchMode === "users" 
-                ? "Search for users by username or display name"
-                : "Search for books by title, author, or genre"}
+                ? t("search.placeholderUsers")
+                : t("search.placeholderBooks")}
             </p>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { likeQuote } from "../api/quotes";
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function SocialFeedPost({
   post,
@@ -8,7 +9,9 @@ export default function SocialFeedPost({
   onAddComment,
   onDeleteComment,
   onViewReview,
+  onLikeChange,
 }) {
+  const t = useTranslation();
   const initials = post.username
     ? post.username
         .split(" ")
@@ -18,7 +21,7 @@ export default function SocialFeedPost({
     : "BV";
 
   const [likes, setLikes] = useState(post.likes || 0);
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [isLiking, setIsLiking] = useState(false);
   const [commentText, setCommentText] = useState("");
   const comments = post.comments || [];
@@ -29,8 +32,14 @@ export default function SocialFeedPost({
     // Only Quote-lər üçün like API-si var
     if (!isQuote || !post.quoteId) {
       // Review və ya BookAdded üçün yalnız local state dəyişirik
-      setIsLiked((prev) => !prev);
-      setLikes((prev) => prev + (isLiked ? -1 : 1));
+      const newLiked = !isLiked;
+      const newLikes = likes + (newLiked ? 1 : -1);
+      setIsLiked(newLiked);
+      setLikes(newLikes);
+      // Notify parent to save to localStorage
+      if (onLikeChange) {
+        onLikeChange(post.id, newLikes, newLiked);
+      }
       return;
     }
 
@@ -43,10 +52,11 @@ export default function SocialFeedPost({
       const liked = response.data !== undefined ? response.data : response;
       setIsLiked(liked);
       // Update likes count based on like/unlike
-      if (liked && !isLiked) {
-        setLikes((prev) => prev + 1);
-      } else if (!liked && isLiked) {
-        setLikes((prev) => Math.max(0, prev - 1));
+      const newLikes = liked && !isLiked ? likes + 1 : (!liked && isLiked ? Math.max(0, likes - 1) : likes);
+      setLikes(newLikes);
+      // Notify parent to save to localStorage
+      if (onLikeChange) {
+        onLikeChange(post.id, newLikes, liked);
       }
     } catch (err) {
       console.error("Error toggling like:", err);
@@ -74,22 +84,32 @@ export default function SocialFeedPost({
         </div>
         <div className="flex-1">
           <div className="text-base font-bold text-gray-900 dark:text-gray-900">
-            {post.username || "BookVerse User"}
+            {post.username || t("post.user")}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-600 mt-0.5">
-            {post.timestamp || "Moments ago"}
+            {post.timestamp || t("post.momentsAgo")}
           </div>
         </div>
       </div>
 
       {/* Book Cover/Image */}
       {(post.bookCover || post.postImage) && (
-        <div className="mb-4 rounded-xl overflow-hidden shadow-lg">
-          <img
-            src={post.postImage || post.bookCover}
-            alt={post.bookTitle || "Post image"}
-            className="w-full max-h-96 object-cover"
-          />
+        <div className="mb-4 flex justify-center">
+          {post.bookCover ? (
+            // Book cover - use standard book size (not stretched)
+            <img
+              src={post.bookCover}
+              alt={post.bookTitle || "Book cover"}
+              className="h-64 w-auto object-contain rounded-lg shadow-lg"
+            />
+          ) : (
+            // Regular post image - maintain natural aspect ratio
+            <img
+              src={post.postImage}
+              alt="Post image"
+              className="max-w-full h-auto object-contain rounded-lg shadow-lg"
+            />
+          )}
         </div>
       )}
 
@@ -135,7 +155,7 @@ export default function SocialFeedPost({
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          <span>{comments.length} comments</span>
+          <span>{comments.length} {comments.length === 1 ? t("post.comment") : t("post.comments")}</span>
         </div>
         {isReview && onViewReview && (
           <button
@@ -145,7 +165,7 @@ export default function SocialFeedPost({
             }}
             className="ml-auto px-4 py-2 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
           >
-            Review detayları
+            {t("post.reviewDetails")}
           </button>
         )}
       </div>
@@ -172,7 +192,7 @@ export default function SocialFeedPost({
                   className="text-xs font-semibold text-red-600 dark:text-red-600 hover:text-red-700 dark:hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-50 transition-all"
                   onClick={() => onDeleteComment(comment.id)}
                 >
-                  Delete
+                  {t("post.delete")}
                 </button>
               )}
             </div>
@@ -182,7 +202,7 @@ export default function SocialFeedPost({
             <form className="flex gap-3 mt-4" onSubmit={handleSubmit}>
               <input
                 className="flex-1 p-3 rounded-xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
-                placeholder="Write a comment..."
+                placeholder={t("post.writeComment")}
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
               />
@@ -190,7 +210,7 @@ export default function SocialFeedPost({
                 type="submit"
                 className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                Send
+                {t("post.send")}
               </button>
             </form>
           )}
