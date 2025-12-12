@@ -281,14 +281,15 @@ export default function CreatePostModal({ onClose, onCreate }) {
             return;
           }
 
-          // Don't create blob URL here - it will be invalid after page reload
-          // Instead, pass the File object and let handleCreatePost handle it
-          // For preview, we'll use a separate blob URL that won't be saved
+          // Create blob URL for immediate display - it will be valid until page reload
+          // The File object will be passed to handleCreatePost to create a persistent blob URL
+          const postImageBlobUrl = postImage ? URL.createObjectURL(postImage) : null;
           newPost = {
             ...newPost,
             type: "post",
             review: postText.trim(),
-            postImage: null, // Don't store blob URL - it's invalid after reload
+            postImage: postImageBlobUrl, // Blob URL for immediate display
+            postImageFile: postImage, // File object for potential future upload
           };
           break;
 

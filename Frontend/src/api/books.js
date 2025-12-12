@@ -108,9 +108,15 @@ export async function addGenresToBook(bookId, genreIds) {
     await delay(200);
     return { bookId, genreIds, message: "Genres added (mock)" };
   }
+  // Backend expects a JSON array directly (List<string> GenreIds)
+  // The endpoint signature is: AddGenresToBook(string bookId, [FromBody] List<string> GenreIds)
+  const genreIdsArray = Array.isArray(genreIds) ? genreIds : [genreIds];
   return apiRequest(`/api/Books/${encodeURIComponent(bookId)}/genres`, {
     method: "POST",
-    body: { genreIds: Array.isArray(genreIds) ? genreIds : [genreIds] },
+    body: JSON.stringify(genreIdsArray),
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
 }
 

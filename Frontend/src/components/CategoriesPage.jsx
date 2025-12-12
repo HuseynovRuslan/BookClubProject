@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllBooks, getBooksByGenre } from "../api/books";
 import { getImageUrl } from "../api/config";
@@ -35,9 +35,11 @@ export default function CategoriesPage({ onBookClick }) {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryBooks, setCategoryBooks] = useState([]);
+  const [recentlyAddedBooks, setRecentlyAddedBooks] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingBooks, setLoadingBooks] = useState(false);
   const [error, setError] = useState(null);
+  const scrollRefs = useRef({});
 
   useEffect(() => {
     loadCategories();
@@ -105,6 +107,16 @@ export default function CategoriesPage({ onBookClick }) {
         .sort((a, b) => b.count - a.count);
       
       setCategories(categoriesList);
+      
+      // Get recently added books (sorted by CreatedAt, latest first)
+      const recentlyAdded = [...allItems]
+        .sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA; // Latest first
+        })
+        .slice(0, 15); // Get top 15 most recently added
+      setRecentlyAddedBooks(recentlyAdded);
     } catch (err) {
       console.error("Error loading categories:", err);
       setError(err.message || "Failed to load categories");

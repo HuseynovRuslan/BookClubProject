@@ -11,6 +11,7 @@ public class UserProfileDto
     public string? Country { get; set; }
     public SocialDto? Social { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? Role { get; set; }
 }
 
 public class SocialDto

@@ -98,6 +98,7 @@ export default function RecommendationsPage({ onBookClick }) {
       const cachedTrending = getCachedTrendingBooks(allItems);
       setTrendingBooks(cachedTrending);
       
+      
       // Extract unique genres
       const uniqueGenres = new Set();
       allItems.forEach(book => {
@@ -518,6 +519,7 @@ export default function RecommendationsPage({ onBookClick }) {
           <p className="text-gray-600 dark:text-gray-400 text-lg">{t("recommendations.noBooks")}</p>
         </div>
       )}
+
     </div>
   );
 }

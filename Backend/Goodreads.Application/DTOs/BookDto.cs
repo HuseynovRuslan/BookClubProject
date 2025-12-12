@@ -12,6 +12,7 @@ public class BookDto
     public string Publisher { get; set; }
     public double AverageRating { get; set; } = 0.0;
     public int RatingCount { get; set; } = 0;
+    public DateTime CreatedAt { get; set; }
     public string AuthorName { get; set; }
     public List<BookGenreDto> Genres { get; set; }
 }
