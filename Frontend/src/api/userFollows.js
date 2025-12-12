@@ -87,17 +87,12 @@ export async function getFollowing() {
 }
 
 // Get followers of a specific user
-// NOTE: Backend may not have this endpoint, so we handle 404 gracefully
 export async function getUserFollowers(userId) {
   if (USE_API_MOCKS) {
     await delay(200);
     return [];
   }
   
-  // Backend doesn't have /api/UserFollows/followers/{userId} endpoint
-  // Return empty array to avoid 404 errors in console
-  // If backend adds this endpoint in the future, uncomment the code below
-  /*
   try {
     const response = await apiRequest(`/api/UserFollows/followers/${encodeURIComponent(userId)}`, {
       method: "GET",
@@ -105,29 +100,21 @@ export async function getUserFollowers(userId) {
     if (Array.isArray(response)) {
       return response;
     }
-    return response?.items || response?.Items || [];
+    return response?.items || response?.Items || response?.data || [];
   } catch (error) {
-    if (error.status === 404) {
-      return [];
-    }
+    // If endpoint doesn't exist (404) or other error, return empty array
+    console.warn(`Failed to load followers for user ${userId}:`, error);
     return [];
   }
-  */
-  return [];
 }
 
 // Get users that a specific user is following
-// NOTE: Backend may not have this endpoint, so we handle 404 gracefully
 export async function getUserFollowing(userId) {
   if (USE_API_MOCKS) {
     await delay(200);
     return [];
   }
   
-  // Backend doesn't have /api/UserFollows/following/{userId} endpoint
-  // Return empty array to avoid 404 errors in console
-  // If backend adds this endpoint in the future, uncomment the code below
-  /*
   try {
     const response = await apiRequest(`/api/UserFollows/following/${encodeURIComponent(userId)}`, {
       method: "GET",
@@ -135,15 +122,12 @@ export async function getUserFollowing(userId) {
     if (Array.isArray(response)) {
       return response;
     }
-    return response?.items || response?.Items || [];
+    return response?.items || response?.Items || response?.data || [];
   } catch (error) {
-    if (error.status === 404) {
-      return [];
-    }
+    // If endpoint doesn't exist (404) or other error, return empty array
+    console.warn(`Failed to load following for user ${userId}:`, error);
     return [];
   }
-  */
-  return [];
 }
 
 // Check if current user is following a specific user

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { getAllBooks } from "../api/books";
 import { getImageUrl } from "../api/config";
+import { useTranslation } from "../hooks/useTranslation";
 
 export function AllBooksPage({ onBookClick }) {
+  const t = useTranslation();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,7 +43,11 @@ export function AllBooksPage({ onBookClick }) {
         const currentPageEnd = pageToLoad * pageSize;
         setHasMore(totalCount > currentPageEnd);
       } catch (err) {
-        setError(err.message || "Failed to load books.");
+        // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+        const errorMsg = err.translationKey 
+          ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
+          : (err.message || t("error.booksLoad"));
+        setError(errorMsg);
         setBooks([]);
         setHasMore(false);
       } finally {
@@ -96,17 +102,17 @@ export function AllBooksPage({ onBookClick }) {
       <div className="mb-14 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-amber-50/80 via-orange-50/80 to-red-50/80 dark:from-amber-50/80 dark:via-orange-50/80 dark:to-red-50/80 rounded-3xl -z-10 backdrop-blur-md"></div>
         <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-amber-50/40 rounded-3xl -z-10"></div>
-        <div className="px-10 py-12 relative z-10">
-          <div className="flex items-center gap-5 mb-5">
+        <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-8 sm:py-10 md:py-12 relative z-10">
+          <div className="flex items-center gap-3 sm:gap-4 md:gap-5 mb-4 sm:mb-5">
             <div className="relative">
-              <div className="w-2 h-20 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-xl"></div>
-              <div className="absolute top-0 left-0 w-2 h-20 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-sm opacity-60 animate-pulse"></div>
+              <div className="w-1.5 sm:w-2 h-16 sm:h-18 md:h-20 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-xl"></div>
+              <div className="absolute top-0 left-0 w-1.5 sm:w-2 h-16 sm:h-18 md:h-20 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-sm opacity-60 animate-pulse"></div>
             </div>
             <div className="flex-1">
-              <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-none mb-3 drop-shadow-sm">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-none mb-2 sm:mb-3 drop-shadow-sm">
                 All Books
               </h1>
-              <p className="text-gray-700 dark:text-gray-700 text-xl sm:text-2xl mt-3 font-semibold">
+              <p className="text-gray-700 dark:text-gray-700 text-base sm:text-lg md:text-xl lg:text-2xl mt-2 sm:mt-3 font-semibold">
                 Browse all books available in the BookVerse library
               </p>
             </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAllBooks } from "../../api/books";
+import { useTranslation } from "../../hooks/useTranslation";
 
 const RATING_OPTIONS = [5, 4, 3, 2, 1, 0];
 
@@ -16,6 +17,7 @@ export default function ReviewForm({
   onCancel,
   bookOptions: providedBooks = null,
 }) {
+  const t = useTranslation();
   const [books, setBooks] = useState(providedBooks || []);
   const [formValues, setFormValues] = useState({ ...DEFAULT_FORM, ...initialValues });
   const [error, setError] = useState("");
@@ -62,7 +64,7 @@ export default function ReviewForm({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formValues.bookId) {
-      setError("Zəhmət olmasa kitab seçin");
+      setError(t("error.selectBook"));
       return;
     }
     if (!formValues.text.trim()) {

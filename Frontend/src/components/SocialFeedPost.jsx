@@ -3,6 +3,8 @@ import { Send, Trash2, MoreVertical, Edit, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { likeQuote, updateQuote } from "../api/quotes";
 import { useTranslation } from "../hooks/useTranslation";
+import { useAuth } from "../context/AuthContext.jsx";
+import GuestRestrictionModal from "./GuestRestrictionModal";
 import { getImageUrl } from "../api/config";
 import { formatTimestamp } from "../utils/formatTimestamp";
 
@@ -19,6 +21,8 @@ export default function SocialFeedPost({
 }) {
   const t = useTranslation();
   const navigate = useNavigate();
+  const { isGuest } = useAuth();
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const initials = post.username
     ? post.username
         .split(" ")
@@ -73,6 +77,10 @@ export default function SocialFeedPost({
   }, [showMenu]);
 
   const handleLike = async () => {
+    if (isGuest) {
+      setShowGuestModal(true);
+      return;
+    }
     // Only Quote-lər üçün like API-si var
     if (!isQuote || !post.quoteId) {
       // Review və ya BookAdded üçün yalnız local state dəyişirik
@@ -114,6 +122,10 @@ export default function SocialFeedPost({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (isGuest) {
+      setShowGuestModal(true);
+      return;
+    }
     if (!commentText.trim() || !onAddComment) return;
     // onAddComment expects (postId, text) format
     onAddComment(post.id, commentText.trim());
@@ -256,7 +268,7 @@ export default function SocialFeedPost({
           </div>
         </div>
         {/* 3 dots menu - only show for post owner */}
-        {isPostOwner && (onDeletePost || isQuote) && (
+        {isPostOwner && onDeletePost && (
           <div className="relative ml-auto" ref={menuRef}>
             <button
               onClick={(e) => {
@@ -624,6 +636,12 @@ export default function SocialFeedPost({
           )}
         </div>
       )}
+
+      {/* Guest Restriction Modal */}
+      <GuestRestrictionModal
+        isOpen={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+      />
     </div>
   );
 }

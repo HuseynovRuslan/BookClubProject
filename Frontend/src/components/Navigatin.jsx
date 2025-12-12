@@ -78,14 +78,6 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
             </>
           ) : (
             <>
-              {/* Mobile search icon */}
-              <Link
-                to="/search"
-                className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-100 transition-all"
-                aria-label="Search"
-              >
-                <Search className="w-5 h-5 text-gray-900 dark:text-gray-900" />
-              </Link>
               <Link
                 to="/profile"
                 className="group relative"

@@ -1,13 +1,20 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 export default function LoginPage({ onSwitchToSignUp }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, loginAsGuest } = useAuth();
+
+  const handleGuestLogin = () => {
+    loginAsGuest();
+    navigate("/");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,7 +124,7 @@ export default function LoginPage({ onSwitchToSignUp }) {
           </form>
 
           <div className="mt-6 text-center pt-5 border-t-2 border-gray-100 dark:border-gray-100">
-            <p className="text-sm font-bold text-gray-700 dark:text-gray-700">
+            <p className="text-sm font-bold text-gray-700 dark:text-gray-700 mb-4">
               Don't have an account?{" "}
               <button
                 onClick={onSwitchToSignUp}
@@ -126,6 +133,13 @@ export default function LoginPage({ onSwitchToSignUp }) {
                 Sign Up
               </button>
             </p>
+            <button
+              type="button"
+              onClick={handleGuestLogin}
+              className="w-full px-6 py-3 rounded-2xl border-2 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 text-gray-700 dark:text-gray-700 font-bold text-base transition-all shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+            >
+              Continue as Guest
+            </button>
           </div>
         </div>
       </div>

@@ -19,6 +19,10 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [isGuest, setIsGuest] = useState(() => {
+    // Check if guest mode is stored in sessionStorage (expires on tab close)
+    return sessionStorage.getItem("bookverse_guest_mode") === "true";
+  });
   const [initializing, setInitializing] = useState(true);
   const [authError, setAuthError] = useState(null);
   
@@ -52,6 +56,14 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = getAccessToken();
+    const guestMode = sessionStorage.getItem("bookverse_guest_mode") === "true";
+    
+    if (guestMode) {
+      setIsGuest(true);
+      setInitializing(false);
+      return;
+    }
+    
     if (!token) {
       setInitializing(false);
       return;
@@ -67,20 +79,34 @@ export function AuthProvider({ children }) {
   const login = useCallback(
     async (credentials) => {
       setAuthError(null);
+      // Clear guest mode when logging in
+      sessionStorage.removeItem("bookverse_guest_mode");
+      setIsGuest(false);
       await loginRequest(credentials);
       return fetchProfile();
     },
     [fetchProfile]
   );
 
+  const loginAsGuest = useCallback(() => {
+    setIsGuest(true);
+    sessionStorage.setItem("bookverse_guest_mode", "true");
+    setUser(null);
+    setAuthError(null);
+  }, []);
+
   const logout = useCallback(async () => {
     try {
-      await logoutRequest();
+      if (!isGuest) {
+        await logoutRequest();
+      }
     } finally {
       clearTokens();
+      sessionStorage.removeItem("bookverse_guest_mode");
       setUser(null);
+      setIsGuest(false);
     }
-  }, []);
+  }, [isGuest]);
 
   const register = useCallback(async (payload) => {
     setAuthError(null);
@@ -101,10 +127,12 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       isAuthenticated: Boolean(user),
+      isGuest,
       initializing,
       authError,
       setAuthError,
       login,
+      loginAsGuest,
       logout,
       register,
       refreshProfile: stableRefreshProfile,
@@ -114,9 +142,11 @@ export function AuthProvider({ children }) {
       stableRefreshProfile,
       initializing,
       login,
+      loginAsGuest,
       logout,
       register,
       user,
+      isGuest,
     ]
   );
 

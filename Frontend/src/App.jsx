@@ -29,6 +29,7 @@ function App() {
   const {
     user,
     isAuthenticated,
+    isGuest,
     initializing,
     logout,
   } = useAuth();
@@ -326,43 +327,42 @@ function App() {
     setSelectedBook(book);
   };
 
-  if (initializing) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
-        <p>Preparing your library...</p>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div
-        className={
-          isDarkMode
-            ? "bg-gray-900 text-white min-h-screen"
-            : "min-h-screen"
-        }
-      >
-        {authMode === "signup" ? (
-          <SignUpPage onSwitchToSignIn={() => setAuthMode("login")} />
-        ) : (
-          <LoginPage onSwitchToSignUp={() => setAuthMode("signup")} />
-        )}
-      </div>
-    );
-  }
-
   return (
     <Router>
+      {initializing ? (
+        <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+          <p>Preparing your library...</p>
+        </div>
+      ) : !isAuthenticated && !isGuest ? (
+        <div
+          className={
+            isDarkMode
+              ? "bg-gray-900 text-white min-h-screen"
+              : "min-h-screen"
+          }
+        >
+          {authMode === "signup" ? (
+            <SignUpPage onSwitchToSignIn={() => setAuthMode("login")} />
+          ) : (
+            <LoginPage onSwitchToSignUp={() => setAuthMode("signup")} />
+          )}
+        </div>
+      ) : (
       <div
         className={
           isDarkMode ? "bg-gray-900 text-white" : "bg-white text-black min-h-screen"
         }
       >
         <Navigation
-          isGuest={false}
-          onShowLogin={() => setAuthMode("login")}
-          onShowSignUp={() => setAuthMode("signup")}
+          isGuest={isGuest}
+          onShowLogin={() => {
+            logout();
+            setAuthMode("login");
+          }}
+          onShowSignUp={() => {
+            logout();
+            setAuthMode("signup");
+          }}
           isDarkMode={isDarkMode}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -470,13 +470,13 @@ function App() {
           </Routes>
         </main>
 
-        {showCreatePost && (
+        {!isGuest && showCreatePost && (
           <CreatePostModal
             onClose={() => setShowCreatePost(false)}
             onCreate={handleCreatePost}
           />
         )}
-        {showCreateBook && (
+        {!isGuest && showCreateBook && (
           <CreateBookModal
             onClose={() => setShowCreateBook(false)}
             onCreate={handleCreateBook}
@@ -490,6 +490,7 @@ function App() {
           />
         )}
       </div>
+      )}
     </Router>
   );
 }

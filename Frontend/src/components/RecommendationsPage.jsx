@@ -12,6 +12,34 @@ export default function RecommendationsPage({ onBookClick }) {
   const [trendingBooks, setTrendingBooks] = useState([]);
   const scrollRefs = useRef({});
 
+  // Helper function to translate category names
+  const translateCategoryName = (categoryName) => {
+    if (!categoryName) return categoryName;
+    const categoryMap = {
+      "Fiction": t("category.fiction"),
+      "Mystery": t("category.mystery"),
+      "Self-Help": t("category.selfHelp"),
+      "Romance": t("category.romance"),
+      "Science": t("category.science"),
+      "History": t("category.history"),
+      "Fantasy": t("category.fantasy"),
+      "Biography": t("category.biography"),
+      "Horror": t("category.horror"),
+      "Adventure": t("category.adventure"),
+      "Drama": t("category.drama"),
+      "Comedy": t("category.comedy"),
+      "Thriller": t("category.thriller"),
+      "Philosophy": t("category.philosophy"),
+      "Technology": t("category.technology"),
+      "Business": t("category.business"),
+      "Health": t("category.health"),
+      "Education": t("category.education"),
+      "Art": t("category.art"),
+      "Music": t("category.music"),
+    };
+    return categoryMap[categoryName] || categoryName;
+  };
+
   // Function to get cached trending books or generate new ones
   const getCachedTrendingBooks = (allBooks) => {
     if (!allBooks || allBooks.length === 0) return [];
@@ -115,7 +143,11 @@ export default function RecommendationsPage({ onBookClick }) {
       
       setGenres(Array.from(uniqueGenres).sort());
     } catch (err) {
-      setError(err.message || "Failed to load books.");
+      // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+      const errorMsg = err.translationKey 
+        ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
+        : (err.message || t("error.booksLoad"));
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -379,7 +411,7 @@ export default function RecommendationsPage({ onBookClick }) {
                   </div>
                   <div className="flex items-baseline gap-4">
                     <h2 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-gray-900 tracking-tight leading-none">
-                      {genreName}
+                      {translateCategoryName(genreName)}
                     </h2>
                     <span className="text-xs text-gray-600 dark:text-gray-600 font-bold bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 px-4 py-2 rounded-full border border-amber-200 dark:border-amber-200 shadow-sm">
                       {genreBooks.length} {genreBooks.length === 1 ? t("categories.book") : t("categories.books")}
