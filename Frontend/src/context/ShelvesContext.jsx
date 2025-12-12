@@ -51,10 +51,19 @@ export function ShelvesProvider({ children }) {
         err.name === "TypeError" ||
         !err.status;
       
+      // Error mesajları translation key'leri olarak döndürülüyor
+      // Component'lerde t() ile çevrilecek
       if (isNetworkError) {
-        setError("Backend server ilə əlaqə qurula bilmədi. Zəhmət olmasa backend serverin işlədiyini yoxlayın.");
+        const networkError = new Error("error.network");
+        networkError.translationKey = "error.network";
+        setError(networkError);
       } else {
-        setError(err.message || "Shelflər yüklənə bilmədi");
+        const errorMsg = err.translationKey || err.message || "error.default";
+        const error = new Error(errorMsg);
+        if (err.translationKey) {
+          error.translationKey = err.translationKey;
+        }
+        setError(error);
       }
       
       // Don't clear shelves on error - keep previous data if available

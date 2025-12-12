@@ -8,6 +8,7 @@ import {
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Camera, Edit2, LogOut, UserPlus, UserCheck, UserX, X } from "lucide-react";
 import SocialFeedPost from "./SocialFeedPost";
+import GuestRestrictionModal from "./GuestRestrictionModal";
 import { useShelves } from "../context/ShelvesContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
@@ -43,11 +44,24 @@ export default function ProfilePage({
   const t = useTranslation();
   // Get user data passed from navigation state (from followers/following list)
   const passedUserData = location.state?.userData;
-  const { user: authUser, refreshProfile } = useAuth();
+  const { user: authUser, refreshProfile, isGuest } = useAuth();
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const baseUser = user || authUser;
   const { shelves, loading: shelvesLoading } = useShelves();
   const [profile, setProfile] = useState(baseUser);
   const [editedUser, setEditedUser] = useState(baseUser);
+
+  // Helper function to translate shelf names
+  const translateShelfName = (shelfName) => {
+    if (!shelfName) return shelfName;
+    const shelfMap = {
+      "Want to Read": t("readingList.wantToRead"),
+      "Currently Reading": t("readingList.currentlyReading"),
+      "Read": t("readingList.read"),
+      "Custom Shelves": t("readingList.customShelves"),
+    };
+    return shelfMap[shelfName] || shelfName;
+  };
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     // Default to posts for other users, shelves for own profile
@@ -303,11 +317,18 @@ export default function ProfilePage({
               if (followers.status === 'fulfilled' && Array.isArray(followers.value)) {
                 setFollowersCount(followers.value.length);
                 saveToStorage('followers_list', freshProfile.id, followers.value, true);
+                saveToStorage('followers_count', freshProfile.id, followers.value.length, true);
               } else {
                 console.warn("Failed to load followers count:", followers.reason);
-                // Keep cached value if available, otherwise set to 0
-                if (cachedFollowers === null || !Array.isArray(cachedFollowers)) {
-                  setFollowersCount(0);
+                // Keep cached value - don't reset to 0
+                if (cachedFollowers !== null && Array.isArray(cachedFollowers) && cachedFollowers.length > 0) {
+                  // Already set above, keep it
+                } else {
+                  // Only set to 0 if we truly have no data
+                  const savedCount = loadFromStorage('followers_count', freshProfile.id, true);
+                  if (savedCount !== null && typeof savedCount === 'number' && savedCount > 0) {
+                    setFollowersCount(savedCount);
+                  }
                 }
               }
               
@@ -315,11 +336,18 @@ export default function ProfilePage({
               if (following.status === 'fulfilled' && Array.isArray(following.value)) {
                 setFollowingCount(following.value.length);
                 saveToStorage('following_list', freshProfile.id, following.value, true);
+                saveToStorage('following_count', freshProfile.id, following.value.length, true);
               } else {
                 console.warn("Failed to load following count:", following.reason);
-                // Keep cached value if available, otherwise set to 0
-                if (cachedFollowing === null || !Array.isArray(cachedFollowing)) {
-                  setFollowingCount(0);
+                // Keep cached value - don't reset to 0
+                if (cachedFollowing !== null && Array.isArray(cachedFollowing) && cachedFollowing.length > 0) {
+                  // Already set above, keep it
+                } else {
+                  // Only set to 0 if we truly have no data
+                  const savedCount = loadFromStorage('following_count', freshProfile.id, true);
+                  if (savedCount !== null && typeof savedCount === 'number' && savedCount > 0) {
+                    setFollowingCount(savedCount);
+                  }
                 }
               }
               
@@ -329,39 +357,56 @@ export default function ProfilePage({
               // Try to load from localStorage first
               const cachedFollowersCount = loadFromStorage('followers_count', freshProfile.id, false);
               const cachedFollowingCount = loadFromStorage('following_count', freshProfile.id, false);
+              const cachedFollowers = loadFromStorage('followers_list', freshProfile.id, false);
+              const cachedFollowing = loadFromStorage('following_list', freshProfile.id, false);
               
-              // Load followers count from localStorage
+              // Load followers count from localStorage first (for instant display)
+              let initialFollowersCount = 0;
               if (cachedFollowersCount !== null && typeof cachedFollowersCount === 'number') {
-                setFollowersCount(cachedFollowersCount);
-                console.log("Loaded followers count from localStorage (OTHER USER):", cachedFollowersCount, "for user:", freshProfile.id);
-              } else {
-                // Try to load from list if count not available
-                const cachedFollowers = loadFromStorage('followers_list', freshProfile.id, false);
-                if (cachedFollowers !== null && Array.isArray(cachedFollowers)) {
-                  const count = cachedFollowers.length;
-                  setFollowersCount(count);
-                  // Save count for faster loading next time (with isOwn=false)
-                  saveToStorage('followers_count', freshProfile.id, count, false);
-                } else {
-                  setFollowersCount(0);
-                }
+                initialFollowersCount = cachedFollowersCount;
+              } else if (cachedFollowers !== null && Array.isArray(cachedFollowers) && cachedFollowers.length > 0) {
+                initialFollowersCount = cachedFollowers.length;
               }
+              setFollowersCount(initialFollowersCount);
               
-              // Load following count from localStorage
+              // Load following count from localStorage first (for instant display)
+              let initialFollowingCount = 0;
               if (cachedFollowingCount !== null && typeof cachedFollowingCount === 'number') {
-                setFollowingCount(cachedFollowingCount);
-                console.log("Loaded following count from localStorage (OTHER USER):", cachedFollowingCount, "for user:", freshProfile.id);
-              } else {
-                // Try to load from list if count not available
-                const cachedFollowing = loadFromStorage('following_list', freshProfile.id, false);
-                if (cachedFollowing !== null && Array.isArray(cachedFollowing)) {
-                  const count = cachedFollowing.length;
-                  setFollowingCount(count);
-                  // Save count for faster loading next time (with isOwn=false)
-                  saveToStorage('following_count', freshProfile.id, count, false);
-                } else {
-                  setFollowingCount(0);
+                initialFollowingCount = cachedFollowingCount;
+              } else if (cachedFollowing !== null && Array.isArray(cachedFollowing) && cachedFollowing.length > 0) {
+                initialFollowingCount = cachedFollowing.length;
+              }
+              setFollowingCount(initialFollowingCount);
+              
+              // Try to refresh from backend (but don't reset to 0 if it fails)
+              try {
+                const [followersResult, followingResult] = await Promise.allSettled([
+                  getUserFollowers(freshProfile.id),
+                  getUserFollowing(freshProfile.id),
+                ]);
+                
+                // Update followers count from backend if available
+                if (followersResult.status === 'fulfilled' && Array.isArray(followersResult.value) && followersResult.value.length > 0) {
+                  setFollowersCount(followersResult.value.length);
+                  saveToStorage('followers_count', freshProfile.id, followersResult.value.length, false);
+                  saveToStorage('followers_list', freshProfile.id, followersResult.value, false);
+                } else if (initialFollowersCount > 0) {
+                  // Keep the cached value if backend doesn't return data
+                  console.log("Backend didn't return followers, keeping cached count:", initialFollowersCount);
                 }
+                
+                // Update following count from backend if available
+                if (followingResult.status === 'fulfilled' && Array.isArray(followingResult.value) && followingResult.value.length > 0) {
+                  setFollowingCount(followingResult.value.length);
+                  saveToStorage('following_count', freshProfile.id, followingResult.value.length, false);
+                  saveToStorage('following_list', freshProfile.id, followingResult.value, false);
+                } else if (initialFollowingCount > 0) {
+                  // Keep the cached value if backend doesn't return data
+                  console.log("Backend didn't return following, keeping cached count:", initialFollowingCount);
+                }
+              } catch (err) {
+                console.warn("Error refreshing followers/following from backend:", err);
+                // Keep cached values - don't reset to 0
               }
               
               // Check if current user is following this user
@@ -376,9 +421,28 @@ export default function ProfilePage({
               }
             }
           } catch (err) {
-            // Silently handle errors - set defaults
-            setFollowersCount(0);
-            setFollowingCount(0);
+            // Silently handle errors - try to keep cached values
+            console.error("Error loading profile counts:", err);
+            // Try to load from localStorage as fallback
+            if (isOwnProfile && freshProfile?.id) {
+              const savedFollowersCount = loadFromStorage('followers_count', freshProfile.id, true);
+              const savedFollowingCount = loadFromStorage('following_count', freshProfile.id, true);
+              if (savedFollowersCount !== null && typeof savedFollowersCount === 'number') {
+                setFollowersCount(savedFollowersCount);
+              }
+              if (savedFollowingCount !== null && typeof savedFollowingCount === 'number') {
+                setFollowingCount(savedFollowingCount);
+              }
+            } else if (freshProfile?.id) {
+              const savedFollowersCount = loadFromStorage('followers_count', freshProfile.id, false);
+              const savedFollowingCount = loadFromStorage('following_count', freshProfile.id, false);
+              if (savedFollowersCount !== null && typeof savedFollowersCount === 'number') {
+                setFollowersCount(savedFollowersCount);
+              }
+              if (savedFollowingCount !== null && typeof savedFollowingCount === 'number') {
+                setFollowingCount(savedFollowingCount);
+              }
+            }
             setIsFollowingUser(false);
           }
         }
@@ -584,6 +648,10 @@ export default function ProfilePage({
   };
 
   const handleFollow = async () => {
+    if (isGuest) {
+      setShowGuestModal(true);
+      return;
+    }
     if (!profile?.id || followLoading) return;
     
     const userId = profile.id || profile.Id || profile.userId || profile.UserId;
@@ -754,49 +822,62 @@ export default function ProfilePage({
             }
           }
         } else {
-          // For other users, backend doesn't have endpoints for their followers/following
-          // So we'll keep the optimistic update and save to localStorage
+          // For other users, try to refresh followers list from backend
           // Re-check follow status to ensure it's accurate
           try {
             const isFollowingStatus = await checkIsFollowing(userId);
             setIsFollowingUser(isFollowingStatus);
             console.log("Refreshed follow status after follow/unfollow:", isFollowingStatus);
             
-            // Save optimistic followers count to localStorage for this user (with isOwn=false)
-            // We already saved it above in optimistic update, but save again to ensure it's persisted
-            const currentFollowersCount = followersCount;
-            saveToStorage('followers_count', userId, currentFollowersCount, false);
+            // Try to refresh followers list from backend
+            const [followersResult] = await Promise.allSettled([
+              getUserFollowers(userId),
+            ]);
             
-            // Also update the followers list in localStorage after API call
-            const cachedFollowersList = loadFromStorage('followers_list', userId, false) || [];
-            const currentUserId = authUser?.id || authUser?.Id;
-            
-            // If we just followed and user is not in list, add them
-            if (!wasFollowing && !cachedFollowersList.some(f => {
-              const followerId = f.id || f.Id || f.userId || f.UserId || f.followerId || f.FollowerId;
-              return followerId === currentUserId;
-            }) && currentUserId) {
-              const currentUserData = {
-                id: currentUserId,
-                userId: currentUserId,
-                followerId: currentUserId,
-                name: authUser?.name || authUser?.username || authUser?.email?.split('@')[0] || 'User',
-                username: authUser?.username || authUser?.email?.split('@')[0] || '',
-                email: authUser?.email || '',
-                avatarUrl: authUser?.avatarUrl || authUser?.profilePictureUrl || null,
-                role: authUser?.role || 'reader',
-              };
-              const updatedFollowersList = [...cachedFollowersList, currentUserData];
-              saveToStorage('followers_list', userId, updatedFollowersList, false);
-              setFollowersList(updatedFollowersList);
-            } else if (wasFollowing && currentUserId) {
-              // If we just unfollowed, remove from list
-              const updatedFollowersList = cachedFollowersList.filter(f => {
+            // Update followers count and list from backend if available
+            if (followersResult.status === 'fulfilled' && Array.isArray(followersResult.value) && followersResult.value.length > 0) {
+              setFollowersCount(followersResult.value.length);
+              setFollowersList(followersResult.value);
+              // Save to localStorage for this user (with isOwn=false)
+              saveToStorage('followers_count', userId, followersResult.value.length, false);
+              saveToStorage('followers_list', userId, followersResult.value, false);
+              console.log("Refreshed followers list from backend:", followersResult.value);
+            } else {
+              // If backend doesn't return data, keep optimistic update and save to localStorage
+              const currentFollowersCount = followersCount;
+              saveToStorage('followers_count', userId, currentFollowersCount, false);
+              
+              // Also update the followers list in localStorage after API call
+              const cachedFollowersList = loadFromStorage('followers_list', userId, false) || [];
+              const currentUserId = authUser?.id || authUser?.Id;
+              
+              // If we just followed and user is not in list, add them
+              if (!wasFollowing && !cachedFollowersList.some(f => {
                 const followerId = f.id || f.Id || f.userId || f.UserId || f.followerId || f.FollowerId;
-                return followerId !== currentUserId;
-              });
-              saveToStorage('followers_list', userId, updatedFollowersList, false);
-              setFollowersList(updatedFollowersList);
+                return followerId === currentUserId;
+              }) && currentUserId) {
+                const currentUserData = {
+                  id: currentUserId,
+                  userId: currentUserId,
+                  followerId: currentUserId,
+                  name: authUser?.name || authUser?.username || authUser?.email?.split('@')[0] || 'User',
+                  username: authUser?.username || authUser?.email?.split('@')[0] || '',
+                  email: authUser?.email || '',
+                  avatarUrl: authUser?.avatarUrl || authUser?.profilePictureUrl || null,
+                  role: authUser?.role || 'reader',
+                };
+                const updatedFollowersList = [...cachedFollowersList, currentUserData];
+                saveToStorage('followers_list', userId, updatedFollowersList, false);
+                setFollowersList(updatedFollowersList);
+              } else if (wasFollowing && currentUserId) {
+                // If we just unfollowed, remove from list
+                const updatedFollowersList = cachedFollowersList.filter(f => {
+                  const followerId = f.id || f.Id || f.userId || f.UserId || f.followerId || f.FollowerId;
+                  return followerId !== currentUserId;
+                });
+                saveToStorage('followers_list', userId, updatedFollowersList, false);
+                setFollowersList(updatedFollowersList);
+              }
             }
             
             // Also save following count for current user (if viewing own profile)
@@ -884,9 +965,12 @@ export default function ProfilePage({
         const followers = await getFollowers();
         const followersList = Array.isArray(followers) ? followers : [];
         setFollowersList(followersList);
+        // Update followers count based on list length
+        setFollowersCount(followersList.length);
         // Save to localStorage
         if (userId) {
           saveToStorage('followers_list', userId, followersList, true);
+          saveToStorage('followers_count', userId, followersList.length, true);
         }
       } else {
         // Load viewed user's followers from localStorage (backend doesn't have this endpoint)
@@ -896,6 +980,8 @@ export default function ProfilePage({
           if (cachedFollowers !== null && Array.isArray(cachedFollowers) && cachedFollowers.length > 0) {
             console.log("Loading followers from localStorage:", cachedFollowers);
             setFollowersList(cachedFollowers);
+            // Update followers count based on cached list length
+            setFollowersCount(cachedFollowers.length);
             setLoadingFollowers(false);
             return; // Return early since we have cached data
           }
@@ -905,15 +991,20 @@ export default function ProfilePage({
             const followers = await getUserFollowers(userId);
             const followersList = Array.isArray(followers) ? followers : [];
             setFollowersList(followersList);
+            // Update followers count based on list length
+            setFollowersCount(followersList.length);
             // Save to localStorage even if empty
             saveToStorage('followers_list', userId, followersList, false);
+            saveToStorage('followers_count', userId, followersList.length, false);
           } catch (err) {
             console.error("Error loading followers from API:", err);
             // Fallback to empty array
             setFollowersList([]);
+            setFollowersCount(0);
           }
         } else {
           setFollowersList([]);
+          setFollowersCount(0);
         }
       }
     } catch (err) {
@@ -924,11 +1015,15 @@ export default function ProfilePage({
         const cachedFollowers = loadFromStorage('followers_list', userId, isOwnProfile);
         if (cachedFollowers !== null && Array.isArray(cachedFollowers)) {
           setFollowersList(cachedFollowers);
+          // Update followers count based on cached list length
+          setFollowersCount(cachedFollowers.length);
         } else {
           setFollowersList([]);
+          setFollowersCount(0);
         }
       } else {
         setFollowersList([]);
+        setFollowersCount(0);
       }
     } finally {
       setLoadingFollowers(false);
@@ -1045,7 +1140,7 @@ export default function ProfilePage({
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-gray-900 dark:text-gray-900">
-                    {shelf.name}
+                    {translateShelfName(shelf.name)}
                   </h3>
                   <p className="text-sm font-semibold text-gray-600 dark:text-gray-600 mt-1">
                     {shelf.books?.length || 0} {shelf.books?.length === 1 ? t("profile.book") : t("profile.books")}
@@ -1375,74 +1470,6 @@ export default function ProfilePage({
                     }
                   />
                 </div>
-                {/* Writer/Reader ol butonu */}
-                <div className="mt-4">
-                  {editedUser?.role !== "writer" ? (
-                    <button
-                      onClick={async () => {
-                        try {
-                          setProfileMessage(null);
-                          setProfileError(null);
-                          const nameParts = editedUser?.name?.trim().split(/\s+/) || [];
-                          const firstName = nameParts[0] || "";
-                          const surname = nameParts.slice(1).join(" ") || "";
-                          
-                          // Note: role update might need a separate endpoint
-                          // For now, we'll just update the profile without role
-                          await updateProfileApi({
-                            firstName: firstName,
-                            lastName: surname,
-                            bio: editedUser.bio || "",
-                          });
-                          
-                          const updatedProfile = await loadProfile();
-                          if (updatedProfile) {
-                            setProfile(updatedProfile);
-                          }
-                          setProfileMessage(t("profile.writerSuccess"));
-                          setTimeout(() => setProfileMessage(null), 3000);
-                        } catch (err) {
-                          setProfileMessage(err.message || t("profile.error"));
-                        }
-                      }}
-                      className="px-6 py-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-                    >
-                      ✍️ {t("profile.becomeWriter")}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={async () => {
-                        try {
-                          setProfileMessage(null);
-                          setProfileError(null);
-                          const nameParts = editedUser?.name?.trim().split(/\s+/) || [];
-                          const firstName = nameParts[0] || "";
-                          const surname = nameParts.slice(1).join(" ") || "";
-                          
-                          // Note: role update might need a separate endpoint
-                          // For now, we'll just update the profile without role
-                          await updateProfileApi({
-                            firstName: firstName,
-                            lastName: surname,
-                            bio: editedUser.bio || "",
-                          });
-                          
-                          const updatedProfile = await loadProfile();
-                          if (updatedProfile) {
-                            setProfile(updatedProfile);
-                          }
-                          setProfileMessage(t("profile.readerSuccess"));
-                          setTimeout(() => setProfileMessage(null), 3000);
-                        } catch (err) {
-                          setProfileMessage(err.message || t("profile.error"));
-                        }
-                      }}
-                      className="px-6 py-3 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-                    >
-                      📚 {t("profile.becomeReader")}
-                    </button>
-                  )}
-                </div>
               </>
             ) : (
               <>
@@ -1450,9 +1477,6 @@ export default function ProfilePage({
                   <h1 className="text-4xl font-black text-gray-900 dark:text-gray-900">
                     {profile?.name || "User"}
                   </h1>
-                  <span className="px-4 py-2 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 text-gray-900 dark:text-gray-900 text-sm font-bold border-2 border-amber-200 dark:border-amber-200 shadow-sm">
-                    {profile?.role === "writer" ? `✍️ ${t("profile.writer")}` : `📚 ${t("profile.reader")}`}
-                  </span>
                   {!isOwnProfile && (
                     <button
                       onClick={handleFollow}
@@ -1817,6 +1841,12 @@ export default function ProfilePage({
           </div>
         </div>
       )}
+
+      {/* Guest Restriction Modal */}
+      <GuestRestrictionModal
+        isOpen={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+      />
     </div>
   );
 }

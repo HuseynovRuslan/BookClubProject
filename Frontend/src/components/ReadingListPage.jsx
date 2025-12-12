@@ -1,8 +1,10 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useShelves } from "../context/ShelvesContext.jsx";
 import { updateBookStatus } from "../api/books";
 import { getImageUrl } from "../api/config";
 import { useTranslation } from "../hooks/useTranslation";
+import ShelfSelectionModal from "./ShelfSelectionModal";
+import { MoreVertical, Move, Trash2 } from "lucide-react";
 
 export default function ReadingListPage() {
   const t = useTranslation();
@@ -13,11 +15,17 @@ export default function ReadingListPage() {
     updateShelf,
     deleteShelf,
     removeBookFromShelf,
+    addBookToShelf,
     refreshShelves,
   } = useShelves();
   const [editingShelfId, setEditingShelfId] = useState(null);
   const [editingShelfName, setEditingShelfName] = useState("");
   const [actionMessage, setActionMessage] = useState(null);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [selectedShelf, setSelectedShelf] = useState(null);
+  const [showShelfModal, setShowShelfModal] = useState(false);
+  const [showBookMenu, setShowBookMenu] = useState({}); // { bookId: true/false }
+  const menuRefs = useRef({});
 
   // Listen for shelf updates
   useEffect(() => {
@@ -29,6 +37,26 @@ export default function ReadingListPage() {
       window.removeEventListener('shelfUpdated', handleShelfUpdate);
     };
   }, [refreshShelves]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const clickedOutside = Object.keys(menuRefs.current).every(
+        (bookId) => !menuRefs.current[bookId]?.contains(event.target)
+      );
+      if (clickedOutside) {
+        setShowBookMenu({});
+      }
+    };
+
+    if (Object.keys(showBookMenu).some(key => showBookMenu[key])) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showBookMenu]);
 
   const handleShelfRename = async (event) => {
     event.preventDefault();
@@ -75,18 +103,77 @@ export default function ReadingListPage() {
     return [...defaultShelvesList, ...customShelvesList];
   }, [shelves]);
 
-  const handleMoveBook = async (book, targetShelfName) => {
+  const handleMoveBook = async (book, currentShelfId, targetShelfId) => {
     try {
+      const targetShelf = shelves.find(s => s.id === targetShelfId);
+      if (!targetShelf) {
+        setActionMessage(t("readingList.shelfNotFound"));
+        setTimeout(() => setActionMessage(null), 2500);
+        return;
+      }
+      
       const bookId = book.id || book._id;
-      await updateBookStatus(bookId, targetShelfName);
-      setActionMessage(`"${book.title}" ${targetShelfName} siyahısına köçürüldü`);
-      // Refresh shelves
+      
+      // First, remove from current shelf
+      if (currentShelfId) {
+        await removeBookFromShelf(currentShelfId, bookId);
+      }
+      
+      // Then, add to target shelf
+      await addBookToShelf(targetShelfId, book);
+      
+      setActionMessage(`"${book.title}" ${t("readingList.bookMovedTo")} ${targetShelf.name}`);
       await refreshShelves();
       setTimeout(() => setActionMessage(null), 2500);
     } catch (err) {
-      setActionMessage(err.message || "Kitab köçürmək alınmadı");
+      setActionMessage(err.message || t("readingList.moveFailed"));
       setTimeout(() => setActionMessage(null), 2500);
     }
+  };
+
+  const handleDeleteBook = async (shelfId, bookId) => {
+    try {
+      await removeBookFromShelf(shelfId, bookId);
+      const book = shelves.find(s => s.id === shelfId)?.books?.find(b => (b.id || b._id) === bookId);
+      setActionMessage(`"${book?.title || t("shelfSelection.book")}" ${t("readingList.bookDeleted")}`);
+      await refreshShelves();
+      setTimeout(() => setActionMessage(null), 2500);
+    } catch (err) {
+      setActionMessage(err.message || t("readingList.deleteFailed"));
+      setTimeout(() => setActionMessage(null), 2500);
+    }
+  };
+
+  const openMoveModal = (book, shelf) => {
+    setSelectedBook(book);
+    setSelectedShelf(shelf);
+    setShowShelfModal(true);
+    setShowBookMenu({});
+  };
+
+  const handleShelfSelect = async (targetShelfId) => {
+    if (!selectedBook || !selectedShelf) return;
+    
+    await handleMoveBook(selectedBook, selectedShelf.id, targetShelfId);
+  };
+
+  // Helper function to translate shelf names
+  const translateShelfName = (shelfName) => {
+    if (!shelfName) return shelfName;
+    const shelfMap = {
+      "Want to Read": t("readingList.wantToRead"),
+      "Currently Reading": t("readingList.currentlyReading"),
+      "Read": t("readingList.read"),
+      "Custom Shelves": t("readingList.customShelves"),
+    };
+    return shelfMap[shelfName] || shelfName;
+  };
+
+  const toggleBookMenu = (bookId) => {
+    setShowBookMenu(prev => ({
+      ...prev,
+      [bookId]: !prev[bookId]
+    }));
   };
 
   return (
@@ -102,7 +189,7 @@ export default function ReadingListPage() {
                 {t("readingList.title")}
               </h1>
               <p className="text-gray-600 dark:text-gray-600 text-lg sm:text-xl mt-2 font-semibold">
-                Organize your books by shelves
+                {t("readingList.subtitle")}
               </p>
             </div>
           </div>
@@ -119,7 +206,7 @@ export default function ReadingListPage() {
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-50 dark:to-gray-100 p-8 rounded-2xl text-center border-2 border-gray-200 dark:border-gray-200 shadow-lg">
           <div className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-700">
             <div className="w-6 h-6 border-3 border-gray-300 dark:border-gray-300 border-t-amber-600 dark:border-t-amber-600 rounded-full animate-spin"></div>
-            <span className="text-lg font-semibold">Shelflər yüklənir...</span>
+            <span className="text-lg font-semibold">{t("readingList.loading")}</span>
           </div>
         </div>
       )}
@@ -127,17 +214,24 @@ export default function ReadingListPage() {
       {error && (
         <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-50 dark:to-pink-50 border-2 border-red-200 dark:border-red-200 text-red-700 dark:text-red-700 p-6 rounded-2xl shadow-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-lg mb-2">{error}</p>
+            <div className="flex-1">
+              <p className="font-semibold text-lg mb-2">
+                {/* Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir */}
+                {typeof error === 'string' 
+                  ? (error.startsWith("error.") ? t(error) : error)
+                  : (error?.translationKey 
+                      ? (error.status ? t(error.translationKey).replace("{status}", error.status) : t(error.translationKey))
+                      : (error?.message || t("error.default")))}
+              </p>
               <p className="text-sm text-red-600 dark:text-red-600">
-                Səhifəni yeniləyərək yenidən cəhd edin.
+                {t("common.retry")}
               </p>
             </div>
             <button
               onClick={() => refreshShelves()}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
+              className="ml-4 px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-md hover:shadow-lg transition-all transform hover:scale-105 whitespace-nowrap"
             >
-              Yenidən yoxla
+              {t("common.retry")}
             </button>
           </div>
         </div>
@@ -151,7 +245,7 @@ export default function ReadingListPage() {
 
       <div className="space-y-10">
         {sortedShelves.map((shelf) => {
-          const isWantToRead = shelf.name === "Want to Read";
+          const isWantToRead = shelf.name === t("readingList.wantToRead");
           
           return (
           <div key={shelf.id} className="bg-white dark:bg-white border-2 border-gray-100 dark:border-gray-200 rounded-3xl p-8 space-y-6 shadow-xl hover:shadow-2xl transition-all duration-500">
@@ -166,23 +260,23 @@ export default function ReadingListPage() {
                     autoFocus
                   />
                   <button className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105">
-                    Saxla
+                    {t("common.save")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingShelfId(null)}
                     className="px-6 py-3 bg-gray-200 dark:bg-gray-200 hover:bg-gray-300 dark:hover:bg-gray-300 text-gray-900 dark:text-gray-900 rounded-xl font-bold transition-all transform hover:scale-105"
                   >
-                    Ləğv et
+                    {t("common.cancel")}
                   </button>
                 </form>
               ) : (
                 <div className="flex items-center gap-4 flex-1">
                   <div className="w-1.5 h-12 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-md"></div>
                   <div>
-                    <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-900 mb-1">{shelf.name}</h2>
+                    <h2 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-900 mb-1">{translateShelfName(shelf.name)}</h2>
                     <p className="text-gray-600 dark:text-gray-600 text-base font-semibold">
-                      {shelf.books?.length || 0} {shelf.books?.length === 1 ? 'kitab' : 'kitab'}
+                      {shelf.books?.length || 0} {shelf.books?.length === 1 ? t("readingList.book") : t("readingList.books")}
                     </p>
                   </div>
                 </div>
@@ -193,7 +287,7 @@ export default function ReadingListPage() {
                     onClick={() => startRename(shelf)}
                     className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 text-gray-900 dark:text-gray-900 text-sm font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
                   >
-                    Yenilə
+                    {t("readingList.refresh")}
                   </button>
                   {shelf.type !== "default" && (
                     <button
@@ -275,30 +369,52 @@ export default function ReadingListPage() {
                         </div>
                       </div>
                       
-                      {/* Action Buttons */}
-                      {isWantToRead ? (
-                        <div className="flex flex-col gap-2 mt-1">
-                          <button
-                            onClick={() => handleMoveBook(book, "Currently Reading")}
-                            className="px-3 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
-                          >
-                            Currently Reading
-                          </button>
-                          <button
-                            onClick={() => handleMoveBook(book, "Read")}
-                            className="px-3 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
-                          >
-                            Read
-                          </button>
-                        </div>
-                      ) : (
+                      {/* Book Options Menu */}
+                      <div className="relative mt-1">
                         <button
-                          onClick={() => removeBookFromShelf(shelf.id, book.id)}
-                          className="px-3 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105 mt-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleBookMenu(book.id || book._id);
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 text-gray-900 dark:text-gray-900 text-xs font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
                         >
-                          Sil
+                          <MoreVertical className="w-4 h-4" />
+                          Options
                         </button>
-                      )}
+                        
+                        {showBookMenu[book.id || book._id] && (
+                          <div 
+                            ref={(el) => {
+                              const bookId = book.id || book._id;
+                              if (el) menuRefs.current[bookId] = el;
+                              else delete menuRefs.current[bookId];
+                            }}
+                            className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-white rounded-xl shadow-2xl border-2 border-gray-200 dark:border-gray-200 overflow-hidden z-10"
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openMoveModal(book, shelf);
+                              }}
+                              className="w-full px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-50 dark:hover:to-cyan-50 flex items-center gap-2 transition-all"
+                            >
+                              <Move className="w-4 h-4 text-blue-600 dark:text-blue-600" />
+                              {t("readingList.moveToEllipsis")}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteBook(shelf.id, book.id || book._id);
+                                setShowBookMenu({});
+                              }}
+                              className="w-full px-4 py-3 text-left text-sm font-semibold text-red-600 dark:text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-orange-50 dark:hover:from-red-50 dark:hover:to-orange-50 flex items-center gap-2 transition-all border-t border-gray-100 dark:border-gray-100"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              {t("readingList.delete")}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -306,7 +422,7 @@ export default function ReadingListPage() {
             ) : (
               <div className="text-center py-12 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-50 dark:to-gray-100 rounded-2xl border-2 border-gray-200 dark:border-gray-200">
                 <p className="text-gray-600 dark:text-gray-600 text-base font-semibold">
-                  Bu shelf boşdur. Home Page və ya All Books-dan kitab əlavə edə bilərsən.
+                  {t("readingList.emptyShelf")}
                 </p>
               </div>
             )}
@@ -314,6 +430,20 @@ export default function ReadingListPage() {
           );
         })}
       </div>
+
+      {/* Shelf Selection Modal */}
+      <ShelfSelectionModal
+        isOpen={showShelfModal}
+        onClose={() => {
+          setShowShelfModal(false);
+          setSelectedBook(null);
+          setSelectedShelf(null);
+        }}
+        book={selectedBook}
+        mode="move"
+        currentShelfId={selectedShelf?.id}
+        onSelect={handleShelfSelect}
+      />
     </div>
   );
 }

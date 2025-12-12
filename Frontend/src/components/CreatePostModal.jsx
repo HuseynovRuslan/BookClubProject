@@ -168,9 +168,13 @@ export default function CreatePostModal({ onClose, onCreate }) {
             }
           } catch (err) {
             if (err.isConflict || err.status === 409) {
-              setError("You have already reviewed this book. Please update your existing review instead.");
+              setError(t("error.reviewExists"));
             } else {
-              setError(err.message || "Failed to create review");
+              // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+              const errorMsg = err.translationKey 
+                ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
+                : (err.message || t("error.reviewCreate"));
+              setError(errorMsg);
             }
             setSubmitting(false);
             return;
@@ -206,7 +210,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
             }
 
             if (!authorId) {
-              setError("Could not determine book author. Please try again.");
+              setError(t("error.authorNotFound"));
               setSubmitting(false);
               return;
             }
@@ -248,7 +252,11 @@ export default function CreatePostModal({ onClose, onCreate }) {
               quoteId: quoteIdValue,
             };
           } catch (err) {
-            setError(err.message || "Failed to create quote");
+            // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+            const errorMsg = err.translationKey 
+              ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
+              : (err.message || t("error.quoteCreate"));
+            setError(errorMsg);
             setSubmitting(false);
             return;
           }
@@ -319,9 +327,13 @@ export default function CreatePostModal({ onClose, onCreate }) {
     onClose();
     } catch (err) {
       if (err.status === 401) {
-        setError(t("post.authRequired"));
+        setError(t("error.authRequired"));
       } else {
-        setError(err.message || t("post.failedCreate"));
+        // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+        const errorMsg = err.translationKey 
+          ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
+          : (err.message || t("error.postCreate"));
+        setError(errorMsg);
       }
     } finally {
       setSubmitting(false);
@@ -363,7 +375,11 @@ export default function CreatePostModal({ onClose, onCreate }) {
       await loadUserReviews();
       setError("");
     } catch (err) {
-      setError(err.message || t("post.failedDelete"));
+      // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+      const errorMsg = err.translationKey 
+        ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
+        : (err.message || t("error.reviewDelete"));
+      setError(errorMsg);
     }
   };
 
@@ -533,22 +549,32 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   <div className="p-2 text-center text-gray-500 text-sm">{t("post.loadingBooks")}</div>
                 ) : (
                   <select
-                    value={selectedBook?.id || ""}
+                    value={selectedBook ? String(selectedBook.id || selectedBook.Id || "") : ""}
                     onChange={(e) => {
-                      const book = books.find((b) => (b.id || b.Id) === e.target.value);
-                      setSelectedBook(book);
-                      // Check if user already reviewed this book
-                      const existingReview = userReviews.find(
-                        (r) => (r.bookId || r.book?.id) === (book?.id || book?.Id)
-                      );
-                      if (existingReview) {
-                        setEditingReview(existingReview);
-                        setRating(existingReview.rating || 0);
-                        setReviewText(existingReview.text || "");
-                      } else {
+                      const selectedValue = e.target.value;
+                      if (!selectedValue) {
+                        setSelectedBook(null);
                         setEditingReview(null);
                         setRating(0);
                         setReviewText("");
+                        return;
+                      }
+                      const book = books.find((b) => String(b.id || b.Id) === selectedValue);
+                      if (book) {
+                        setSelectedBook(book);
+                        // Check if user already reviewed this book
+                        const existingReview = userReviews.find(
+                          (r) => String(r.bookId || r.book?.id) === String(book.id || book.Id)
+                        );
+                        if (existingReview) {
+                          setEditingReview(existingReview);
+                          setRating(existingReview.rating || 0);
+                          setReviewText(existingReview.text || "");
+                        } else {
+                          setEditingReview(null);
+                          setRating(0);
+                          setReviewText("");
+                        }
                       }
                     }}
                     className="w-full p-4 text-base rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
@@ -556,11 +582,12 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   >
                     <option value="">{t("post.chooseBook")}</option>
                     {books.map((book) => {
+                      const bookId = String(book.id || book.Id || "");
                       const hasReview = userReviews.some(
-                        (r) => (r.bookId || r.book?.id) === (book.id || book.Id)
+                        (r) => String(r.bookId || r.book?.id) === bookId
                       );
                       return (
-                        <option key={book.id || book.Id} value={book.id || book.Id}>
+                        <option key={bookId} value={bookId}>
                           {book.title || book.Title} {hasReview ? "✓" : ""}
                         </option>
                       );
@@ -622,20 +649,28 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   <div className="p-4 text-center text-gray-500">{t("post.loadingBooks")}</div>
                 ) : (
                   <select
-                    value={selectedBook?.id || ""}
+                    value={selectedBook ? String(selectedBook.id || selectedBook.Id || "") : ""}
                     onChange={(e) => {
-                      const book = books.find((b) => (b.id || b.Id) === e.target.value);
-                      setSelectedBook(book);
+                      const selectedValue = e.target.value;
+                      if (!selectedValue) {
+                        setSelectedBook(null);
+                        return;
+                      }
+                      const book = books.find((b) => String(b.id || b.Id) === selectedValue);
+                      setSelectedBook(book || null);
                     }}
                     className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                     required
                   >
                     <option value="">{t("post.chooseBook")}</option>
-                    {books.map((book) => (
-                      <option key={book.id || book.Id} value={book.id || book.Id}>
-                        {book.title || book.Title}
-                      </option>
-                    ))}
+                    {books.map((book) => {
+                      const bookId = String(book.id || book.Id || "");
+                      return (
+                        <option key={bookId} value={bookId}>
+                          {book.title || book.Title}
+                        </option>
+                      );
+                    })}
                   </select>
                 )}
               </div>
@@ -703,19 +738,27 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   <div className="p-4 text-center text-gray-500">Loading books...</div>
                 ) : (
                   <select
-                    value={selectedBook?.id || ""}
+                    value={selectedBook ? String(selectedBook.id || selectedBook.Id || "") : ""}
                     onChange={(e) => {
-                      const book = books.find((b) => (b.id || b.Id) === e.target.value);
+                      const selectedValue = e.target.value;
+                      if (!selectedValue) {
+                        setSelectedBook(null);
+                        return;
+                      }
+                      const book = books.find((b) => String(b.id || b.Id) === selectedValue);
                       setSelectedBook(book || null);
                     }}
                     className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                   >
                     <option value="">No book selected</option>
-                    {books.map((book) => (
-                      <option key={book.id || book.Id} value={book.id || book.Id}>
-                        {book.title || book.Title}
-                      </option>
-                    ))}
+                    {books.map((book) => {
+                      const bookId = String(book.id || book.Id || "");
+                      return (
+                        <option key={bookId} value={bookId}>
+                          {book.title || book.Title}
+                        </option>
+                      );
+                    })}
                   </select>
                 )}
               </div>
@@ -832,20 +875,29 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   <div className="p-4 text-center text-gray-500">{t("post.loadingBooks")}</div>
                 ) : (
                   <select
-                    value={selectedBook?.id || ""}
+                    value={selectedBook ? String(selectedBook.id || selectedBook.Id || "") : ""}
                     onChange={(e) => {
-                      const book = books.find((b) => (b.id || b.Id) === e.target.value);
-                      setSelectedBook(book);
-                      // Check if user already reviewed this book
-                      const existingReview = userReviews.find(
-                        (r) => (r.bookId || r.book?.id) === (book?.id || book?.Id)
-                      );
-                      if (existingReview) {
-                        setRating(existingReview.rating || 0);
-                        setQuickComment(existingReview.text || "");
-                      } else {
+                      const selectedValue = e.target.value;
+                      if (!selectedValue) {
+                        setSelectedBook(null);
                         setRating(0);
                         setQuickComment("");
+                        return;
+                      }
+                      const book = books.find((b) => String(b.id || b.Id) === selectedValue);
+                      if (book) {
+                        setSelectedBook(book);
+                        // Check if user already reviewed this book
+                        const existingReview = userReviews.find(
+                          (r) => String(r.bookId || r.book?.id) === String(book.id || book.Id)
+                        );
+                        if (existingReview) {
+                          setRating(existingReview.rating || 0);
+                          setQuickComment(existingReview.text || "");
+                        } else {
+                          setRating(0);
+                          setQuickComment("");
+                        }
                       }
                     }}
                     className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
@@ -853,11 +905,12 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   >
                     <option value="">{t("post.chooseBook")}</option>
                     {books.map((book) => {
+                      const bookId = String(book.id || book.Id || "");
                       const hasReview = userReviews.some(
-                        (r) => (r.bookId || r.book?.id) === (book.id || book.Id)
+                        (r) => String(r.bookId || r.book?.id) === bookId
                       );
                       return (
-                        <option key={book.id || book.Id} value={book.id || book.Id}>
+                        <option key={bookId} value={bookId}>
                           {book.title || book.Title} {hasReview ? "✓ (Reviewed)" : ""}
                         </option>
                       );

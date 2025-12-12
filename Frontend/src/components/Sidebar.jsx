@@ -2,10 +2,13 @@ import { Link } from "react-router-dom";
 import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus, Shield } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
+import GuestRestrictionModal from "./GuestRestrictionModal";
+import { useState } from "react";
 
 export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreatePost, onCreateBook, isOpen = false, onClose }) {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const t = useTranslation();
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const isWriter = user?.role === "writer";
   const isAdmin = user?.role === "Admin" || user?.role === "admin";
   
@@ -37,32 +40,37 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
       >
-        {/* Logo */}
-        <Link
-          to="/"
-          className={`p-6 border-b transition-colors ${isDarkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-100'}`}
-          onClick={onClose}
-        >
-          <div className={`font-bold tracking-wide ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            BookVerse
-          </div>
-        </Link>
-
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-4 overflow-y-auto">
           <ul className="space-y-2">
             {mainMenuItems.map(({ label, to, icon: Icon }) => (
               <li key={label}>
-                <Link
-                  to={to}
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                  }`}
-                >
-                  {Icon && <Icon className="w-5 h-5" />}
-                  {label}
-                </Link>
+                {isGuest ? (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowGuestModal(true);
+                      onClose();
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                      isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                    }`}
+                  >
+                    {Icon && <Icon className="w-5 h-5" />}
+                    {label}
+                  </button>
+                ) : (
+                  <Link
+                    to={to}
+                    onClick={onClose}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                      isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                    }`}
+                  >
+                    {Icon && <Icon className="w-5 h-5" />}
+                    {label}
+                  </Link>
+                )}
               </li>
             ))}
 
@@ -70,6 +78,11 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
             <li>
               <button
                 onClick={() => {
+                  if (isGuest) {
+                    setShowGuestModal(true);
+                    onClose();
+                    return;
+                  }
                   onCreatePost();
                   onClose();
                 }}
@@ -88,20 +101,40 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
             </li>
 
             {/* Əlavə linklər */}
-            {extraMenuItems.map(({ label, to, icon: Icon }) => (
-              <li key={label}>
-                <Link
-                  to={to}
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                  }`}
-                >
-                  {Icon && <Icon className="w-5 h-5" />}
-                  {label}
-                </Link>
-              </li>
-            ))}
+            {extraMenuItems.map(({ label, to, icon: Icon }) => {
+              // More sayfası guest mode'da kısıtlı
+              const isRestricted = isGuest && to === "/more";
+              return (
+                <li key={label}>
+                  {isRestricted ? (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowGuestModal(true);
+                        onClose();
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                        isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                      }`}
+                    >
+                      {Icon && <Icon className="w-5 h-5" />}
+                      {label}
+                    </button>
+                  ) : (
+                    <Link
+                      to={to}
+                      onClick={onClose}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                        isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                      }`}
+                    >
+                      {Icon && <Icon className="w-5 h-5" />}
+                      {label}
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
 
             {/* Admin Panel linki yalnız admin-lər üçün */}
             {isAdmin && (
@@ -158,22 +191,43 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
           <ul className="space-y-2">
             {mainMenuItems.map(({ label, to, icon: Icon }) => (
               <li key={label}>
-                <Link
-                  to={to}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                  }`}
-                >
-                  {Icon && <Icon className="w-5 h-5" />}
-                  {label}
-                </Link>
+                {isGuest ? (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowGuestModal(true);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                      isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                    }`}
+                  >
+                    {Icon && <Icon className="w-5 h-5" />}
+                    {label}
+                  </button>
+                ) : (
+                  <Link
+                    to={to}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                      isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                    }`}
+                  >
+                    {Icon && <Icon className="w-5 h-5" />}
+                    {label}
+                  </Link>
+                )}
               </li>
             ))}
 
             {/* Create Post düyməsi */}
             <li>
               <button
-                onClick={onCreatePost}
+                onClick={() => {
+                  if (isGuest) {
+                    setShowGuestModal(true);
+                    return;
+                  }
+                  onCreatePost();
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
                   isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                 }`}
@@ -189,19 +243,38 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
             </li>
 
             {/* Əlavə linklər */}
-            {extraMenuItems.map(({ label, to, icon: Icon }) => (
-              <li key={label}>
-                <Link
-                  to={to}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                  }`}
-                >
-                  {Icon && <Icon className="w-5 h-5" />}
-                  {label}
-                </Link>
-              </li>
-            ))}
+            {extraMenuItems.map(({ label, to, icon: Icon }) => {
+              // More sayfası guest mode'da kısıtlı
+              const isRestricted = isGuest && to === "/more";
+              return (
+                <li key={label}>
+                  {isRestricted ? (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowGuestModal(true);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                        isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                      }`}
+                    >
+                      {Icon && <Icon className="w-5 h-5" />}
+                      {label}
+                    </button>
+                  ) : (
+                    <Link
+                      to={to}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
+                        isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
+                      }`}
+                    >
+                      {Icon && <Icon className="w-5 h-5" />}
+                      {label}
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
 
             {/* Admin Panel linki yalnız admin-lər üçün */}
             {isAdmin && (
@@ -246,6 +319,12 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
           </button>
         </div>
       </div>
+
+      {/* Guest Restriction Modal */}
+      <GuestRestrictionModal
+        isOpen={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+      />
     </>
   );
 }

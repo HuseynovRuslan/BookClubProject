@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import BookCard from "./BookCard";
 import { getAllBooks } from "../api/books";
+import { useTranslation } from "../hooks/useTranslation";
 
 function HomePage({ onBookClick }) {
+  const t = useTranslation();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,11 +19,15 @@ function HomePage({ onBookClick }) {
         : response?.items || response?.data || [];
       setBooks(items);
     } catch (err) {
-      setError(err.message || "Failed to load books.");
+      // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+      const errorMsg = err.translationKey 
+        ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
+        : (err.message || t("error.booksLoad"));
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchTrendingBooks();
@@ -36,11 +42,11 @@ function HomePage({ onBookClick }) {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-1 h-12 bg-gradient-to-b from-purple-500 to-indigo-600 rounded-full"></div>
             <h1 className="text-3xl sm:text-4xl xl:text-5xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Trending Books
+              {t("recommendations.trending")}
             </h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg ml-4">
-            Discover the most popular books in the BookVerse community
+            {t("feed.subtitle")}
           </p>
         </div>
       </div>
@@ -49,7 +55,7 @@ function HomePage({ onBookClick }) {
         <div className="text-center py-20">
           <div className="inline-flex items-center gap-3 text-gray-600 dark:text-gray-400">
             <div className="w-6 h-6 border-3 border-gray-300 dark:border-gray-600 border-t-purple-600 dark:border-t-purple-400 rounded-full animate-spin"></div>
-            <span className="text-lg">Loading books...</span>
+            <span className="text-lg">{t("common.loading")}</span>
           </div>
         </div>
       )}
@@ -62,7 +68,7 @@ function HomePage({ onBookClick }) {
               className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium shadow-md hover:shadow-lg transition-all"
               onClick={fetchTrendingBooks}
             >
-              Retry
+              {t("common.retry")}
             </button>
           </div>
         </div>
@@ -71,7 +77,7 @@ function HomePage({ onBookClick }) {
       {!loading && !error && books.length === 0 && (
         <div className="text-center py-20">
           <div className="inline-block p-8 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <p className="text-gray-600 dark:text-gray-400 text-lg">No books available yet.</p>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">{t("recommendations.noBooks")}</p>
           </div>
         </div>
       )}

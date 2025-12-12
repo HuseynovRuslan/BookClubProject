@@ -1,8 +1,15 @@
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://localhost:7050";
-const USE_API_MOCKS =
-  import.meta.env.VITE_USE_API_MOCKS !== "false"; // default true for local demo
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:7050";
+// Mock dataları aktif et - Backend API problemli
+const USE_API_MOCKS = true; // Mock datalar aktif, backend API kapalı
+
+// Console'da API durumunu göster
+if (USE_API_MOCKS) {
+  console.log("⚠️ Mock datalar aktif - API yerine localStorage kullanılıyor");
+} else {
+  console.log("✅ Backend API aktif - Gerçek API kullanılıyor");
+}
 
 const ACCESS_TOKEN_KEY = "bookverse_access_token";
 const REFRESH_TOKEN_KEY = "bookverse_refresh_token";
@@ -124,8 +131,9 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
       networkError.name === "TypeError";
     
     if (isConnectionError) {
-      const friendlyError = new Error("Backend server ilə əlaqə qurula bilmədi. Zəhmət olmasa backend serverin işlədiyini yoxlayın.");
+      const friendlyError = new Error("error.network");
       friendlyError.isNetworkError = true;
+      friendlyError.translationKey = "error.network";
       friendlyError.originalError = networkError;
       throw friendlyError;
     }
@@ -165,17 +173,86 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
     }
     
     // Backend ApiResponse formatında error-lar: { isSuccess: false, message, errorMessages: [] }
-    let errorMessage = "Request failed with error";
+    // RFC 7807 Problem Details formatı: { type, title, status, detail }
+    let errorMessage = "error.default";
+    let translationKey = null;
+    
+    // Önce backend-dən gələn mesajı yoxla
     if (data) {
-      if (typeof data === 'object' && data.errorMessages && Array.isArray(data.errorMessages) && data.errorMessages.length > 0) {
+      // RFC 7807 Problem Details formatını yoxla (title, detail, status)
+      if (typeof data === 'object' && data.title && data.detail) {
+        // Problem Details formatında - detail'i kullan (backend'den gelen mesaj, translation yok)
+        errorMessage = data.detail;
+      } else if (typeof data === 'object' && data.title && !data.detail) {
+        // Sadece title varsa, onu kullan
+        errorMessage = data.title;
+      } else if (typeof data === 'object' && data.errorMessages && Array.isArray(data.errorMessages) && data.errorMessages.length > 0) {
+        // ApiResponse formatında errorMessages array
         errorMessage = data.errorMessages[0];
       } else if (typeof data === 'object' && data.message) {
+        // Standart message field
         errorMessage = data.message;
       } else if (typeof data === 'string' && data.trim()) {
+        // String formatında error
         errorMessage = data;
+      } else if (typeof data === 'object') {
+        // JSON formatında error object - stringify edip gösterme, bunun yerine status code'a göre mesaj göster
+        errorMessage = null; // Status code'a göre mesaj gösterilecek
       }
     }
+    
+    // HTTP status kodlarına görə kullanıcı dostu mesajlar
+    // Eğer errorMessage hala default değerse veya null ise, status code'a göre mesaj göster
+    if (!errorMessage || errorMessage === "error.default" || errorMessage === "Xəta baş verdi" || errorMessage === "Request failed with error" || 
+        errorMessage === "Internal Server Error" || errorMessage === "An error occurred while processing your request.") {
+      switch (res.status) {
+        case 400:
+          translationKey = "error.400";
+          errorMessage = "error.400";
+          break;
+        case 401:
+          translationKey = "error.401";
+          errorMessage = "error.401";
+          break;
+        case 403:
+          translationKey = "error.403";
+          errorMessage = "error.403";
+          break;
+        case 404:
+          translationKey = "error.404";
+          errorMessage = "error.404";
+          break;
+        case 409:
+          translationKey = "error.409";
+          errorMessage = "error.409";
+          break;
+        case 422:
+          translationKey = "error.422";
+          errorMessage = "error.422";
+          break;
+        case 500:
+          translationKey = "error.500";
+          errorMessage = "error.500";
+          break;
+        case 502:
+          translationKey = "error.502";
+          errorMessage = "error.502";
+          break;
+        case 503:
+          translationKey = "error.503";
+          errorMessage = "error.503";
+          break;
+        default:
+          translationKey = "error.generic";
+          errorMessage = "error.generic";
+      }
+    }
+    
     const error = new Error(errorMessage);
+    if (translationKey) {
+      error.translationKey = translationKey;
+      error.status = res.status; // For generic error message
+    }
     error.status = res.status;
     error.data = data;
     throw error;

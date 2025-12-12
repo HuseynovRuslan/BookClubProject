@@ -5,16 +5,22 @@ import { getBookById, updateBookStatus } from "../api/books";
 import { getReviews, createReview, updateReview as updateReviewApi, deleteReview } from "../api/reviews";
 import { getImageUrl } from "../api/config";
 import ReviewForm from "./reviews/ReviewForm";
+import ShelfSelectionModal from "./ShelfSelectionModal";
+import GuestRestrictionModal from "./GuestRestrictionModal";
+import { useTranslation } from "../hooks/useTranslation";
 
 function BookDetailModal({ book, onClose, isDarkMode = false }) {
-  const { refreshShelves } = useShelves();
-  const { user } = useAuth();
+  const t = useTranslation();
+  const { shelves, addBookToShelf, refreshShelves } = useShelves();
+  const { user, isGuest } = useAuth();
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const [bookDetails, setBookDetails] = useState(book);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null);
   const [editingReview, setEditingReview] = useState(null);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [showShelfModal, setShowShelfModal] = useState(false);
 
   const loadBookDetails = useCallback(async () => {
     if (!book?.id && !book?._id) {
@@ -124,27 +130,47 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
     };
   }, [loadBookDetails]);
 
-  const handleAddToReadingList = async () => {
+  const handleAddToReadingList = () => {
+    if (isGuest) {
+      setShowGuestModal(true);
+      return;
+    }
     // Ensure we have bookDetails with an ID
     if (!bookDetails || (!bookDetails.id && !bookDetails._id)) {
       setStatus({
         type: "error",
         message: "Kitab məlumatları yüklənməyib",
       });
+      setTimeout(() => setStatus(null), 2500);
       return;
     }
     
-    const bookId = bookDetails.id || bookDetails._id;
+    // Open shelf selection modal
+    setShowShelfModal(true);
+  };
+
+  const handleShelfSelect = async (shelfId) => {
+    if (!bookDetails) return;
+    
+    const targetShelf = shelves.find(s => s.id === shelfId);
+    
+    if (!targetShelf) {
+      setStatus({
+        type: "error",
+        message: "Shelf tapılmadı",
+      });
+      setTimeout(() => setStatus(null), 2500);
+      return;
+    }
     
     try {
-      // Automatically add to "Want to Read" shelf
-      await updateBookStatus(bookId, "Want to Read");
+      await addBookToShelf(shelfId, bookDetails);
       if (typeof refreshShelves === "function") {
         await refreshShelves();
       }
       setStatus({
         type: "success",
-        message: `"${bookDetails.title || 'Kitab'}" Want to Read siyahısına əlavə olundu`,
+        message: `"${bookDetails.title || 'Kitab'}" ${targetShelf.name} siyahısına əlavə olundu`,
       });
       // Refresh shelves to update Reading List page
       if (window.dispatchEvent) {
@@ -218,7 +244,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
   );
   
   // Handle Author object from backend (BookDetailDto has Author as AuthorDto object)
-  let authorName = "Unknown author";
+  let authorName = t("bookDetail.unknownAuthor");
   if (bookDetails?.author) {
     if (typeof bookDetails.author === 'string') {
       authorName = bookDetails.author;
@@ -288,7 +314,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
       <div className={`fixed inset-0 z-50 overflow-y-auto ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
         <div className="max-w-7xl xl:max-w-[1600px] mx-auto px-6 xl:px-8 py-8">
           <div className="flex items-center justify-center min-h-screen">
-            <p className={isDarkMode ? "text-gray-300" : "text-gray-600"}>Loading book details...</p>
+            <p className={isDarkMode ? "text-gray-300" : "text-gray-600"}>{t("bookDetail.loading")}</p>
           </div>
         </div>
       </div>
@@ -304,7 +330,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
             className={`flex items-center gap-2 transition-colors group ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
           >
             <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
-            <span className="font-medium">Back to Home</span>
+            <span className="font-medium">{t("bookDetail.backToHome")}</span>
           </button>
         </div>
 
@@ -320,7 +346,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-gray-400">
-                    No Image
+                    {t("bookDetail.noImage")}
                   </div>
                 )}
               </div>
@@ -330,7 +356,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
               <h1 className={`text-4xl lg:text-5xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                 {bookDetails?.title}
               </h1>
-              <p className={`text-xl mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>by {authorName}</p>
+              <p className={`text-xl mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{t("bookDetail.by")} {authorName}</p>
 
               <div className="flex flex-wrap items-center gap-4 mb-6">
                 {genre && (
@@ -348,6 +374,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
 
               {description && (
                 <div className="mb-8">
+                  <h3 className={`text-xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t("bookDetail.about")}</h3>
                   <p className={`leading-7 text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{description}</p>
                 </div>
               )}
@@ -357,7 +384,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
                 className={`flex items-center gap-2 px-6 py-3 text-white rounded-lg transition-all shadow-md hover:shadow-lg font-medium ${isDarkMode ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-900 hover:bg-gray-800'}`}
               >
                 <span className="text-xl">+</span>
-                <span>Add to Reading List</span>
+                <span>{t("bookDetail.addToReadingList")}</span>
               </button>
 
               {status && (
@@ -375,10 +402,10 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
           </div>
 
           <div className={`border-t pt-8 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <h2 className={`text-3xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Reviews</h2>
+            <h2 className={`text-3xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t("bookDetail.reviews")}</h2>
             
             <div className="mb-8">
-              {bookDetails && (bookDetails.id || bookDetails._id) && (
+              {!isGuest && bookDetails && (bookDetails.id || bookDetails._id) && (
                 <ReviewForm
                   initialValues={
                     editingReview
@@ -398,12 +425,23 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
                   bookOptions={[bookDetails].filter(Boolean)}
                 />
               )}
+              {isGuest && (
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 border-2 border-amber-200 dark:border-amber-200 rounded-xl">
+                  <p className="text-gray-700 dark:text-gray-700 mb-3">{t("guest.reviewRestriction")}</p>
+                  <button
+                    onClick={() => setShowGuestModal(true)}
+                    className="px-4 py-2 rounded-lg bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-semibold transition-all shadow-md hover:shadow-lg"
+                  >
+                    {t("guest.login")}
+                  </button>
+                </div>
+              )}
             </div>
 
-            <h3 className={`text-2xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>User Reviews</h3>
+            <h3 className={`text-2xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t("bookDetail.userReviews")}</h3>
             {reviews.length === 0 ? (
               <div className={`text-center py-12 rounded-xl ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <p className={`text-lg ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>No reviews yet. Be the first to review this book!</p>
+                <p className={`text-lg ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t("bookDetail.noReviews")}</p>
               </div>
             ) : (
               <div className="space-y-5">
@@ -436,7 +474,7 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
                               onClick={() => setEditingReview(review)}
                               className={`px-3 py-1 rounded text-sm ${isDarkMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
                             >
-                              Edit
+                              {t("bookDetail.edit")}
                             </button>
                           )}
                         </div>
@@ -449,6 +487,21 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
           </div>
         </div>
       </div>
+
+      {/* Shelf Selection Modal */}
+      <ShelfSelectionModal
+        isOpen={showShelfModal}
+        onClose={() => setShowShelfModal(false)}
+        book={bookDetails}
+        mode="add"
+        onSelect={handleShelfSelect}
+      />
+
+      {/* Guest Restriction Modal */}
+      <GuestRestrictionModal
+        isOpen={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+      />
     </div>
   );
 }
