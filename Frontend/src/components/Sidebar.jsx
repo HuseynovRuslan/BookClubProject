@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
 
@@ -9,15 +10,15 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
 
   // Əsas menyu
   const mainMenuItems = [
-    { label: t("nav.readingList"), to: "/reading-list" },
+    { label: t("nav.readingList"), to: "/reading-list", icon: BookOpen },
   ];
 
   // Əlavə linklər (Create Post-dan sonra gələcək)
   const extraMenuItems = [
-    { label: t("nav.search"), to: "/search" },
-    { label: t("nav.categories"), to: "/categories" },
-    { label: t("nav.recommendations"), to: "/recommendations" },
-    { label: t("nav.more"), to: "/more" },
+    { label: t("nav.search"), to: "/search", icon: Search },
+    { label: t("nav.categories"), to: "/categories", icon: FolderOpen },
+    { label: t("nav.recommendations"), to: "/recommendations", icon: Sparkles },
+    { label: t("nav.more"), to: "/more", icon: MoreHorizontal },
   ];
 
   return (
@@ -42,15 +43,16 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-4 overflow-y-auto">
           <ul className="space-y-2">
-            {mainMenuItems.map(({ label, to }) => (
+            {mainMenuItems.map(({ label, to, icon: Icon }) => (
               <li key={label}>
                 <Link
                   to={to}
                   onClick={onClose}
-                  className={`block px-4 py-3 rounded-lg font-medium text-sm ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
                     isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                   }`}
                 >
+                  {Icon && <Icon className="w-5 h-5" />}
                   {label}
                 </Link>
               </li>
@@ -63,10 +65,11 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                   onCreatePost();
                   onClose();
                 }}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium text-sm ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
                   isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                 }`}
               >
+                <Plus className="w-5 h-5" />
                 {t("nav.createPost")}
               </button>
             </li>
@@ -77,15 +80,16 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
             </li>
 
             {/* Əlavə linklər */}
-            {extraMenuItems.map(({ label, to }) => (
+            {extraMenuItems.map(({ label, to, icon: Icon }) => (
               <li key={label}>
                 <Link
                   to={to}
                   onClick={onClose}
-                  className={`block px-4 py-3 rounded-lg font-medium text-sm ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
                     isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                   }`}
                 >
+                  {Icon && <Icon className="w-5 h-5" />}
                   {label}
                 </Link>
               </li>
@@ -99,10 +103,11 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                     onCreateBook();
                     onClose();
                   }}
-                  className={`w-full text-left px-4 py-3 rounded-lg font-medium text-sm ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
                     isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                   }`}
                 >
+                  <BookPlus className="w-5 h-5" />
                   {t("nav.newBook")}
                 </button>
               </li>
@@ -127,14 +132,15 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-4 overflow-y-auto">
           <ul className="space-y-2">
-            {mainMenuItems.map(({ label, to }) => (
+            {mainMenuItems.map(({ label, to, icon: Icon }) => (
               <li key={label}>
                 <Link
                   to={to}
-                  className={`block px-4 py-3 rounded-lg font-medium text-sm ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
                     isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                   }`}
                 >
+                  {Icon && <Icon className="w-5 h-5" />}
                   {label}
                 </Link>
               </li>
@@ -144,10 +150,11 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
             <li>
               <button
                 onClick={onCreatePost}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium text-sm ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
                   isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                 }`}
               >
+                <Plus className="w-5 h-5" />
                 {t("nav.createPost")}
               </button>
             </li>
@@ -158,14 +165,15 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
             </li>
 
             {/* Əlavə linklər */}
-            {extraMenuItems.map(({ label, to }) => (
+            {extraMenuItems.map(({ label, to, icon: Icon }) => (
               <li key={label}>
                 <Link
                   to={to}
-                  className={`block px-4 py-3 rounded-lg font-medium text-sm ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
                     isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                   }`}
                 >
+                  {Icon && <Icon className="w-5 h-5" />}
                   {label}
                 </Link>
               </li>
@@ -176,10 +184,11 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
               <li>
                 <button
                   onClick={onCreateBook}
-                  className={`w-full text-left px-4 py-3 rounded-lg font-medium text-sm ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
                     isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                   }`}
                 >
+                  <BookPlus className="w-5 h-5" />
                   {t("nav.newBook")}
                 </button>
               </li>

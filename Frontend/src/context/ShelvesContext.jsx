@@ -31,7 +31,23 @@ export function ShelvesProvider({ children }) {
       setShelves(Array.isArray(shelvesArray) ? shelvesArray : []);
     } catch (err) {
       console.error("Failed to fetch shelves:", err);
-      setError(err.message || "Failed to load shelves");
+      
+      // Check if it's a network error (connection refused, failed to fetch, etc.)
+      const isNetworkError = 
+        err.message?.includes("Failed to fetch") ||
+        err.message?.includes("ERR_CONNECTION_REFUSED") ||
+        err.message?.includes("NetworkError") ||
+        err.name === "TypeError" ||
+        !err.status;
+      
+      if (isNetworkError) {
+        setError("Backend server ilə əlaqə qurula bilmədi. Zəhmət olmasa backend serverin işlədiyini yoxlayın.");
+      } else {
+        setError(err.message || "Shelflər yüklənə bilmədi");
+      }
+      
+      // Don't clear shelves on error - keep previous data if available
+      // This prevents the page from showing empty state when backend is temporarily unavailable
     } finally {
       setLoading(false);
     }

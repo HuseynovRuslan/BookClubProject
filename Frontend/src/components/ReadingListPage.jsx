@@ -126,7 +126,20 @@ export default function ReadingListPage() {
 
       {error && (
         <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-50 dark:to-pink-50 border-2 border-red-200 dark:border-red-200 text-red-700 dark:text-red-700 p-6 rounded-2xl shadow-lg">
-          <p className="font-semibold">{error}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-lg mb-2">{error}</p>
+              <p className="text-sm text-red-600 dark:text-red-600">
+                Səhifəni yeniləyərək yenidən cəhd edin.
+              </p>
+            </div>
+            <button
+              onClick={() => refreshShelves()}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
+            >
+              Yenidən yoxla
+            </button>
+          </div>
         </div>
       )}
 

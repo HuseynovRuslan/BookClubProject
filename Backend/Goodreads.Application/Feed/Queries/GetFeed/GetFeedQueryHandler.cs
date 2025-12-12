@@ -52,6 +52,20 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
         // Get quotes from following users (include Likes for LikesCount)
         var quotes = await _unitOfWork.Quotes
             .GetAllAsync(filter: q => followingIds.Contains(q.CreatedByUserId), includes: new[] { "Likes" });
+        
+        // Get books for quotes to include book and author info
+        var quoteBookIds = quotes.Items.Where(q => !string.IsNullOrEmpty(q.BookId)).Select(q => q.BookId).Distinct().ToList();
+        var quoteBooks = new Dictionary<string, Book>();
+        if (quoteBookIds.Any())
+        {
+            var books = await _unitOfWork.Books.GetAllAsync(filter: b => quoteBookIds.Contains(b.Id), includes: new[] { "Author" });
+            foreach (var book in books.Items)
+            {
+                quoteBooks[book.Id] = book;
+            }
+        }
+        
+        _logger.LogInformation("Fetched {Count} books for {QuoteCount} quotes", quoteBooks.Count, quotes.Items.Count);
 
         // Get reviews from following users (include Book for BookTitle)
         var reviews = await _unitOfWork.BookReviews
@@ -75,14 +89,28 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             var user = await _userManager.FindByIdAsync(quote.CreatedByUserId);
             if (user != null)
             {
-                feedItems.Add(new FeedItemDto
+                var feedItem = new FeedItemDto
                 {
                     Id = quote.Id,
                     ActivityType = "Quote",
                     CreatedAt = quote.CreatedAt,
                     User = _mapper.Map<UserDto>(user),
                     Quote = _mapper.Map<QuoteDto>(quote)
-                });
+                };
+                
+                // Add book info if available
+                if (!string.IsNullOrEmpty(quote.BookId) && quoteBooks.TryGetValue(quote.BookId, out var book))
+                {
+                    feedItem.Book = _mapper.Map<BookDto>(book);
+                    _logger.LogInformation("Added book to quote {QuoteId}: BookId={BookId}, Title={Title}, AuthorName={AuthorName}", 
+                        quote.Id, book.Id, book.Title, feedItem.Book?.AuthorName);
+                }
+                else
+                {
+                    _logger.LogWarning("Book not found for quote {QuoteId}, BookId={BookId}", quote.Id, quote.BookId);
+                }
+                
+                feedItems.Add(feedItem);
             }
         }
 
