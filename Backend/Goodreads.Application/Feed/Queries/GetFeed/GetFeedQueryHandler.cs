@@ -65,7 +65,7 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             }
         }
         
-        _logger.LogInformation("Fetched {Count} books for {QuoteCount} quotes", quoteBooks.Count, quotes.Items.Count);
+        _logger.LogInformation("Fetched {Count} books for {QuoteCount} quotes", quoteBooks.Count, quotes.Count);
 
         // Get reviews from following users (include Book for BookTitle)
         var reviews = await _unitOfWork.BookReviews
