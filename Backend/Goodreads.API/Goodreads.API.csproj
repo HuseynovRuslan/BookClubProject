@@ -4,12 +4,16 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Disable precompressed assets to prevent duplicate key errors -->
+    <!-- Completely disable precompressed assets to prevent duplicate key errors -->
     <EnablePrecompressedAssets>false</EnablePrecompressedAssets>
     <_EnablePrecompressedAssets>false</_EnablePrecompressedAssets>
-    <_StaticWebAssetsCompressionTargetsImported>true</_StaticWebAssetsCompressionTargetsImported>
-    <!-- Additional property to ensure compression is disabled -->
     <StaticWebAssetCompressionEnabled>false</StaticWebAssetCompressionEnabled>
+    <!-- Prevent compression targets from being imported -->
+    <_StaticWebAssetsCompressionTargetsImported>true</_StaticWebAssetsCompressionTargetsImported>
+    <!-- Disable static web assets compression completely -->
+    <EnableStaticWebAssetCompression>false</EnableStaticWebAssetCompression>
+    <!-- Additional property to disable compression in static web assets -->
+    <EnableCompressionInStaticWebAssets>false</EnableCompressionInStaticWebAssets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,13 +31,10 @@
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.17" />
   </ItemGroup>
 
-  <!-- Completely disable DiscoverPrecompressedAssets target -->
-  <Target Name="DiscoverPrecompressedAssets" BeforeTargets="Build" />
-  <Target Name="_DiscoverPrecompressedAssets" BeforeTargets="Build" />
-  
-  <!-- Also disable it in Compile target -->
-  <Target Name="DiscoverPrecompressedAssets" BeforeTargets="Compile" />
-  <Target Name="_DiscoverPrecompressedAssets" BeforeTargets="Compile" />
+  <!-- Completely override DiscoverPrecompressedAssets target to prevent duplicate key errors -->
+  <!-- This must be placed after PropertyGroup to ensure it overrides SDK targets -->
+  <Target Name="DiscoverPrecompressedAssets" />
+  <Target Name="_DiscoverPrecompressedAssets" />
 
 
 </Project>

@@ -14,6 +14,8 @@ import {
   removeBookFromShelf as apiRemoveBookFromShelf,
 } from "../api/shelves";
 import { getMyShelves } from "../api/users";
+import { useAuth } from "./AuthContext";
+import { getAccessToken } from "../api/config";
 
 const ShelvesContext = createContext(null);
 
@@ -21,8 +23,17 @@ export function ShelvesProvider({ children }) {
   const [shelves, setShelves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user, isAuthenticated, initializing } = useAuth();
 
   const fetchShelves = useCallback(async () => {
+    // Don't fetch if user is not authenticated
+    const token = getAccessToken();
+    if (!token || !isAuthenticated) {
+      setLoading(false);
+      setShelves([]);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -51,11 +62,24 @@ export function ShelvesProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
+  // Fetch shelves when user logs in or when component mounts
   useEffect(() => {
-    fetchShelves();
-  }, [fetchShelves]);
+    // Wait for auth to finish initializing
+    if (initializing) {
+      return;
+    }
+
+    if (isAuthenticated && user) {
+      fetchShelves();
+    } else if (!isAuthenticated) {
+      // Clear shelves when user logs out
+      setShelves([]);
+      setLoading(false);
+      setError(null);
+    }
+  }, [fetchShelves, isAuthenticated, user, initializing]);
 
   // Listen for shelf update events
   useEffect(() => {

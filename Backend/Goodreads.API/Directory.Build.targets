@@ -3,14 +3,13 @@
   <PropertyGroup>
     <EnablePrecompressedAssets>false</EnablePrecompressedAssets>
     <_EnablePrecompressedAssets>false</_EnablePrecompressedAssets>
-  </PropertyGroup>
-  
-  <!-- Override the DiscoverPrecompressedAssets target to prevent it from running -->
-  <Target Name="DiscoverPrecompressedAssets" BeforeTargets="Build" Condition="false" />
-  <Target Name="_DiscoverPrecompressedAssets" BeforeTargets="Build" Condition="false" />
-  
-  <!-- Prevent the compression targets from being imported -->
-  <PropertyGroup>
+    <StaticWebAssetCompressionEnabled>false</StaticWebAssetCompressionEnabled>
+    <!-- Prevent the compression targets from being imported -->
     <_StaticWebAssetsCompressionTargetsImported>true</_StaticWebAssetsCompressionTargetsImported>
   </PropertyGroup>
+  
+  <!-- Override the DiscoverPrecompressedAssets target AFTER SDK targets are imported -->
+  <!-- This empty target will replace the SDK's implementation -->
+  <Target Name="DiscoverPrecompressedAssets" />
+  <Target Name="_DiscoverPrecompressedAssets" />
 </Project>

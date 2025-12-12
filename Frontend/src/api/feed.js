@@ -132,15 +132,6 @@ export async function getFeed({ page = 1, pageSize = 20 } = {}) {
                                 quote.BookAuthor ||
                                 '';
         
-        // Debug log
-        console.log("=== Feed.js Quote Processing ===");
-        console.log("item.book:", item.book);
-        console.log("item.Book:", item.Book);
-        console.log("book:", book);
-        console.log("book?.authorName:", book?.authorName);
-        console.log("book?.AuthorName:", book?.AuthorName);
-        console.log("normalized.bookAuthor:", normalized.bookAuthor);
-        
         // Extract quoteId properly - ensure it's a string
         // Backend returns QuoteDto with Id field (capital I)
         let quoteIdValue = quote.Id || quote.id || quote.quoteId || quote.QuoteId || normalized.id;
