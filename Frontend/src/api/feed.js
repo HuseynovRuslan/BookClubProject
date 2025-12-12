@@ -4,6 +4,7 @@ import {
   loadMockReviews,
   ensureReviewHasBook,
 } from "./mockData";
+import { formatTimestamp } from "../utils/formatTimestamp";
 
 function buildMockFeed({ page, pageSize }) {
   const bookPosts = mockBooks.map((book, index) => ({
@@ -73,11 +74,14 @@ export async function getFeed({ page = 1, pageSize = 20 } = {}) {
       // Backend format: { id, activityType, createdAt, user, quote, review, book, shelfName }
       // Frontend format: { id, type, username, bookTitle, bookCover, review, rating, reviewId, likes, comments, timestamp }
 
+      const rawUserAvatar = item.user?.avatarUrl || item.User?.AvatarUrl || item.user?.profilePictureUrl || item.User?.ProfilePictureUrl || item.user?.avatar || item.User?.Avatar || null;
+      
       const normalized = {
         id: item.id || item.Id,
         type: item.activityType?.toLowerCase() || item.ActivityType?.toLowerCase() || 'review',
         username: item.user?.username || item.User?.Username || item.user?.userName || item.User?.UserName || 'Anonymous',
-        timestamp: item.createdAt || item.CreatedAt ? new Date(item.createdAt || item.CreatedAt).toLocaleString() : 'Just now',
+        userAvatar: rawUserAvatar,
+        timestamp: formatTimestamp(item.createdAt || item.CreatedAt),
         likes: 0, // Backend-də likes yoxdur, default 0
         comments: [], // Backend-də comments yoxdur, default []
       };
@@ -96,17 +100,62 @@ export async function getFeed({ page = 1, pageSize = 20 } = {}) {
         if (review.username || review.Username) {
           normalized.username = review.username || review.Username;
         }
+        // Review might have user avatar
+        if (review.userAvatar || review.UserAvatar || review.user?.avatarUrl || review.User?.AvatarUrl) {
+          normalized.userAvatar = review.userAvatar || review.UserAvatar || review.user?.avatarUrl || review.User?.AvatarUrl;
+        }
         console.log("Normalized review:", normalized);
       }
       // Handle Quote activity
       else if (item.quote || item.Quote) {
         const quote = item.quote || item.Quote;
+        const book = item.book || item.Book; // Book info from FeedItemDto
         normalized.type = 'quote';
-        normalized.bookTitle = quote.bookTitle || quote.BookTitle || quote.book?.title || quote.Book?.Title || '';
-        normalized.bookCover = quote.book?.coverImageUrl || quote.Book?.CoverImageUrl || quote.bookCover || quote.BookCover || '';
+        normalized.bookTitle = book?.title || book?.Title || quote.bookTitle || quote.BookTitle || quote.book?.title || quote.Book?.Title || '';
+        normalized.bookCover = book?.coverImageUrl || book?.CoverImageUrl || quote.book?.coverImageUrl || quote.Book?.CoverImageUrl || quote.bookCover || quote.BookCover || '';
         normalized.review = quote.text || quote.Text || quote.content || quote.Content || '';
         normalized.likes = quote.likesCount || quote.LikesCount || 0;
-        normalized.quoteId = quote.id || quote.Id || normalized.id; // Quote ID for like API
+        
+        // Extract bookAuthor from book object (BookDto has AuthorName field)
+        // Priority: book.AuthorName (from BookDto) > book.author.name > other sources
+        normalized.bookAuthor = book?.authorName || 
+                                book?.AuthorName ||
+                                book?.author?.name ||
+                                book?.Author?.Name ||
+                                quote.book?.author?.name || 
+                                quote.Book?.Author?.Name ||
+                                quote.book?.authorName || 
+                                quote.Book?.AuthorName ||
+                                quote.author?.name ||
+                                quote.Author?.Name ||
+                                quote.bookAuthor ||
+                                quote.BookAuthor ||
+                                '';
+        
+        // Debug log
+        console.log("=== Feed.js Quote Processing ===");
+        console.log("item.book:", item.book);
+        console.log("item.Book:", item.Book);
+        console.log("book:", book);
+        console.log("book?.authorName:", book?.authorName);
+        console.log("book?.AuthorName:", book?.AuthorName);
+        console.log("normalized.bookAuthor:", normalized.bookAuthor);
+        
+        // Extract quoteId properly - ensure it's a string
+        // Backend returns QuoteDto with Id field (capital I)
+        let quoteIdValue = quote.Id || quote.id || quote.quoteId || quote.QuoteId || normalized.id;
+        
+        // If quoteId is still an object, try to extract from it
+        if (quoteIdValue && typeof quoteIdValue !== 'string') {
+          quoteIdValue = quoteIdValue.Id || quoteIdValue.id || quoteIdValue.quoteId || quoteIdValue.QuoteId || String(quoteIdValue);
+        }
+        
+        // Final check - ensure it's a string
+        normalized.quoteId = quoteIdValue ? String(quoteIdValue).trim() : null;
+        // Quote might have user avatar
+        if (quote.userAvatar || quote.UserAvatar || quote.user?.avatarUrl || quote.User?.AvatarUrl) {
+          normalized.userAvatar = quote.userAvatar || quote.UserAvatar || quote.user?.avatarUrl || quote.User?.AvatarUrl;
+        }
       }
       // Handle BookAdded activity
       else if (item.book || item.Book) {

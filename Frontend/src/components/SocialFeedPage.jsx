@@ -12,7 +12,18 @@ const STORAGE_KEY = "bookverse_social_feed";
 // localStorage helper functions
 const saveToStorage = (posts) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+    // Remove blob URLs before saving - they're invalid after page reload
+    const cleanedPosts = posts.map(post => {
+      const cleanedPost = { ...post };
+      if (cleanedPost.postImage && cleanedPost.postImage.startsWith('blob:')) {
+        cleanedPost.postImage = null;
+      }
+      if (cleanedPost.bookCover && cleanedPost.bookCover.startsWith('blob:')) {
+        cleanedPost.bookCover = null;
+      }
+      return cleanedPost;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedPosts));
   } catch (err) {
     console.error("Error saving to localStorage:", err);
   }
@@ -21,7 +32,69 @@ const saveToStorage = (posts) => {
 const loadFromStorage = () => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    
+    const posts = JSON.parse(stored);
+    // Filter out blob URLs from postImage and bookCover as they're invalid after page reload
+    // Also ensure quoteId and reviewId are strings, not objects
+    // Remove posts with invalid quoteId (object format that can't be fixed)
+    const cleanedPosts = posts
+      .map(post => {
+        const cleanedPost = { ...post };
+        // Remove blob URLs - they're invalid after page reload
+        if (cleanedPost.postImage && cleanedPost.postImage.startsWith('blob:')) {
+          cleanedPost.postImage = null;
+        }
+        if (cleanedPost.bookCover && cleanedPost.bookCover.startsWith('blob:')) {
+          cleanedPost.bookCover = null;
+        }
+        // Ensure quoteId is a string
+        if (cleanedPost.quoteId && typeof cleanedPost.quoteId !== 'string') {
+          const quoteIdObj = cleanedPost.quoteId;
+          cleanedPost.quoteId = quoteIdObj.Id || 
+                                quoteIdObj.id || 
+                                quoteIdObj.quoteId || 
+                                quoteIdObj.QuoteId ||
+                                quoteIdObj.data?.Id ||
+                                quoteIdObj.data?.id ||
+                                quoteIdObj.Data?.Id ||
+                                quoteIdObj.Data?.id ||
+                                (quoteIdObj.toString && quoteIdObj.toString() !== '[object Object]' ? quoteIdObj.toString() : null) ||
+                                String(quoteIdObj);
+          
+          // If still contains [object Object], set to null (will be filtered out)
+          if (cleanedPost.quoteId && cleanedPost.quoteId.includes('[object')) {
+            console.warn("quoteId contains [object Object], removing post. Original:", quoteIdObj);
+            cleanedPost.quoteId = null;
+          }
+        }
+        // Ensure reviewId is a string
+        if (cleanedPost.reviewId && typeof cleanedPost.reviewId !== 'string') {
+          cleanedPost.reviewId = cleanedPost.reviewId.id || cleanedPost.reviewId.Id || String(cleanedPost.reviewId);
+        }
+        return cleanedPost;
+      })
+      .filter(post => {
+        // Remove posts that are quotes but have invalid quoteId
+        if (post.type === 'quote' && (!post.quoteId || post.quoteId.includes('[object'))) {
+          console.log("Removing quote post with invalid quoteId:", post.id);
+          return false;
+        }
+        return true;
+      });
+    
+    // Save cleaned posts back to localStorage to prevent future errors
+    if (cleanedPosts.length !== posts.length || cleanedPosts.some((post, idx) => 
+      (post.postImage !== posts[idx]?.postImage) || 
+      (post.bookCover !== posts[idx]?.bookCover) ||
+      (post.quoteId !== posts[idx]?.quoteId) ||
+      (post.reviewId !== posts[idx]?.reviewId)
+    )) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedPosts));
+      console.log(`Cleaned ${posts.length - cleanedPosts.length} invalid posts from localStorage`);
+    }
+    
+    return cleanedPosts;
   } catch (err) {
     console.error("Error loading from localStorage:", err);
     return [];
@@ -33,6 +106,7 @@ export default function SocialFeedPage({
   localPosts = [],
   onAddComment,
   onDeleteComment,
+  onDeletePost,
 }) {
   const { user: authUser } = useAuth();
   const t = useTranslation();
@@ -132,12 +206,19 @@ export default function SocialFeedPage({
         !newPostIds.has(ep.id)
       );
       
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/45687df3-eadd-450e-98a3-bb43b3daaefc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SocialFeedPage.jsx:135',message:'mergedPosts before setState',data:{mergedPostsCount:mergedPosts.length,firstPostUserAvatar:mergedPosts[0]?.userAvatar,additionalPostsCount:additionalPosts.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+      
       setRemotePosts([...mergedPosts, ...additionalPosts]);
     } catch (err) {
       console.error("Error fetching feed:", err);
       setError(err.message || "Failed to load feed.");
       // On error, load from localStorage
       const saved = loadFromStorage();
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/45687df3-eadd-450e-98a3-bb43b3daaefc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SocialFeedPage.jsx:141',message:'loaded from localStorage on error',data:{savedCount:saved.length,firstPostUserAvatar:saved[0]?.userAvatar},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       setRemotePosts(saved);
     } finally {
       setLoading(false);
@@ -151,19 +232,32 @@ export default function SocialFeedPage({
   }, [fetchFeed, followingLoading, followingUsers.length]);
 
   const posts = useMemo(() => {
-    // Combine local and remote posts
-    const allPosts = [...localPosts, ...remotePosts];
+    // Create a map to merge posts and their comments
+    const postMap = new Map();
     
-    // Remove duplicates (prioritize localPosts > remotePosts)
-    const uniquePosts = [];
-    const seenIds = new Set();
+    // First, add all remote posts
+    remotePosts.forEach(post => {
+      postMap.set(post.id, { ...post });
+    });
     
-    for (const post of allPosts) {
-      if (!seenIds.has(post.id)) {
-        seenIds.add(post.id);
-        uniquePosts.push(post);
+    // Then, merge local posts (prioritize local posts)
+    localPosts.forEach(post => {
+      const existingPost = postMap.get(post.id);
+      if (existingPost) {
+        // Merge comments from both sources
+        const existingCommentIds = new Set((existingPost.comments || []).map(c => c.id));
+        const newComments = (post.comments || []).filter(c => !existingCommentIds.has(c.id));
+        postMap.set(post.id, {
+          ...existingPost,
+          ...post, // Local post takes priority
+          comments: [...(existingPost.comments || []), ...newComments]
+        });
+      } else {
+        postMap.set(post.id, { ...post });
       }
-    }
+    });
+    
+    const uniquePosts = Array.from(postMap.values());
     
     // Filter to only show posts from followed users (including own posts)
     if (followingUsers.length > 0) {
@@ -197,12 +291,13 @@ export default function SocialFeedPage({
     (postId, text) => {
       const newComment = {
         id: Date.now().toString(),
-        username: currentUsername || "You",
+        username: currentUsername || authUser?.name || "You",
+        userAvatar: authUser?.avatarUrl || authUser?.AvatarUrl || authUser?.profilePictureUrl || authUser?.ProfilePictureUrl || null,
         text,
-        timestamp: "Just now",
+        timestamp: new Date().toISOString(),
       };
       setRemotePosts((prev) => {
-        return prev.map((post) =>
+        const updated = prev.map((post) =>
           post.id === postId
             ? {
                 ...post,
@@ -210,9 +305,12 @@ export default function SocialFeedPage({
               }
             : post
         );
+        // Save to localStorage immediately
+        saveToStorage(updated);
+        return updated;
       });
     },
-    [currentUsername]
+    [currentUsername, authUser]
   );
 
   const handleRemoteCommentDelete = useCallback((postId, commentId) => {
@@ -228,6 +326,100 @@ export default function SocialFeedPage({
           : post
       );
     });
+  }, []);
+
+  const handleRemotePostUpdate = useCallback(async (postId, updatedPost) => {
+    // Update post in remote posts state
+    setRemotePosts((prev) => {
+      const updated = prev.map((p) => (p.id === postId ? updatedPost : p));
+      // Save to localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        const merged = existing.map((p) => {
+          const updatedPost = updated.find((up) => up.id === p.id);
+          return updatedPost || p;
+        });
+        // Add new posts that aren't in existing
+        updated.forEach((up) => {
+          if (!merged.find((p) => p.id === up.id)) {
+            merged.push(up);
+          }
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      } catch (err) {
+        console.error("Error saving post update to localStorage:", err);
+      }
+      return updated;
+    });
+  }, []);
+
+  const handleRemotePostDelete = useCallback(async (postId, post) => {
+    try {
+      // Delete from backend if it's a review or quote
+      if (post.type === "review" && post.reviewId) {
+        const { deleteReview } = await import("../api/reviews");
+        const reviewId = String(post.reviewId || post.reviewId?.id || post.reviewId?.Id || post.reviewId);
+        await deleteReview(reviewId);
+      } else if (post.type === "quote" && post.quoteId) {
+        const { deleteQuote } = await import("../api/quotes");
+        // Ensure quoteId is a string, not an object
+        let quoteId = null;
+        
+        // Log the structure for debugging
+        console.log("post.quoteId structure:", post.quoteId, "Type:", typeof post.quoteId);
+        
+        if (typeof post.quoteId === 'string') {
+          quoteId = post.quoteId.trim();
+        } else if (typeof post.quoteId === 'object' && post.quoteId !== null) {
+          // Try all possible ways to extract the ID from the object
+          quoteId = post.quoteId.id || 
+                   post.quoteId.Id || 
+                   post.quoteId.quoteId ||
+                   post.quoteId.QuoteId ||
+                   post.quoteId.data?.id ||
+                   post.quoteId.data?.Id ||
+                   post.quoteId.Data?.id ||
+                   post.quoteId.Data?.Id ||
+                   (post.quoteId.toString && post.quoteId.toString() !== '[object Object]' ? post.quoteId.toString() : null);
+          
+          if (quoteId) {
+            quoteId = String(quoteId).trim();
+          } else {
+            // If we can't extract, try JSON.stringify to see the structure
+            console.error("Cannot extract quoteId from object:", JSON.stringify(post.quoteId, null, 2));
+            console.error("Full post object:", JSON.stringify(post, null, 2));
+            throw new Error("quoteId is an object but cannot extract ID. Object keys: " + Object.keys(post.quoteId).join(', '));
+          }
+        } else {
+          throw new Error("quoteId is not a string or object: " + typeof post.quoteId);
+        }
+        
+        if (!quoteId || quoteId === 'null' || quoteId === 'undefined' || quoteId.includes('[object')) {
+          console.error("Invalid quoteId detected:", { quoteId, postQuoteId: post.quoteId, postType: typeof post.quoteId, post });
+          throw new Error("Invalid quoteId: " + quoteId);
+        }
+        
+        console.log("Deleting quote with ID:", quoteId);
+        await deleteQuote(quoteId);
+      }
+      
+      // Remove from remote posts state
+      setRemotePosts((prev) => {
+        const updated = prev.filter((p) => p.id !== postId);
+        // Save to localStorage
+        try {
+          const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+          const filtered = existing.filter((p) => p.id !== postId);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        } catch (err) {
+          console.error("Error saving post deletion to localStorage:", err);
+        }
+        return updated;
+      });
+    } catch (err) {
+      console.error("Error deleting remote post:", err);
+      throw err; // Re-throw to let component handle error display
+    }
   }, []);
 
   const handleViewReview = useCallback(
@@ -259,33 +451,25 @@ export default function SocialFeedPage({
   );
 
   return (
-    <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 bg-white dark:bg-white min-h-screen">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 bg-white dark:bg-white min-h-screen">
       {/* Header Section - Ultra Modern Glassmorphism Design */}
-      <div className="mb-14 relative">
+      <div className="mb-10 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-amber-50/80 via-orange-50/80 to-red-50/80 dark:from-amber-50/80 dark:via-orange-50/80 dark:to-red-50/80 rounded-3xl -z-10 backdrop-blur-md"></div>
         <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-amber-50/40 rounded-3xl -z-10"></div>
-        <div className="px-10 py-12 relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-5 flex-1">
-              <div className="relative">
-                <div className="w-2 h-20 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-xl"></div>
-                <div className="absolute top-0 left-0 w-2 h-20 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-sm opacity-60 animate-pulse"></div>
-              </div>
-              <div className="flex-1">
-                <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-none mb-3 drop-shadow-sm">
-                  {t("feed.title")}
-                </h1>
-                <p className="text-gray-700 dark:text-gray-700 text-xl sm:text-2xl mt-3 font-semibold">
-                  {t("feed.subtitle")}
-                </p>
-              </div>
+        <div className="px-6 py-8 relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-shrink-0">
+              <div className="w-1.5 h-16 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-xl"></div>
+              <div className="absolute top-0 left-0 w-1.5 h-16 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-sm opacity-60 animate-pulse"></div>
             </div>
-            <button
-              onClick={fetchFeed}
-              className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              {t("feed.refresh")}
-            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-tight mb-2 drop-shadow-sm">
+                {t("feed.title")}
+              </h1>
+              <p className="text-gray-700 dark:text-gray-700 text-base sm:text-lg mt-2 font-semibold">
+                {t("feed.subtitle")}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -333,24 +517,26 @@ export default function SocialFeedPage({
 
       {/* Posts */}
       {!loading && !error && posts.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {posts.map((post) => (
             <SocialFeedPost
               key={post.id}
               post={post}
               currentUsername={currentUsername}
               enableInteractions
-              onAddComment={(text) =>
+              onAddComment={(postId, text) =>
                 post.isLocal
-                  ? onAddComment?.(post.id, text)
-                  : handleRemoteCommentAdd(post.id, text)
+                  ? onAddComment?.(postId, text)
+                  : handleRemoteCommentAdd(postId, text)
               }
               onDeleteComment={(commentId) =>
                 post.isLocal
                   ? onDeleteComment?.(post.id, commentId)
                   : handleRemoteCommentDelete(post.id, commentId)
               }
+              onDeletePost={post.isLocal ? onDeletePost : handleRemotePostDelete}
               onViewReview={handleViewReview}
+              onPostUpdate={post.isLocal ? undefined : handleRemotePostUpdate}
               onLikeChange={(postId, likes, isLiked) => {
                 // Update post likes in state
                 setRemotePosts((prev) => {

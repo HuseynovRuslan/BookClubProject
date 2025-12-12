@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
 } from "react";
 import {
   login as loginRequest,
@@ -20,11 +21,23 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
   const [authError, setAuthError] = useState(null);
+  
+  // Use ref to store the latest user state to avoid stale closures
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const fetchProfile = useCallback(async () => {
     try {
       const profile = await getCurrentUserProfile();
-      setUser(profile);
+      // Only update if profile actually changed to prevent unnecessary re-renders
+      setUser(prevUser => {
+        if (prevUser?.id === profile?.id && prevUser?.email === profile?.email) {
+          return prevUser; // Return same reference if nothing changed
+        }
+        return profile;
+      });
       return profile;
     } catch (error) {
       if (error.status === 401) {
@@ -74,6 +87,16 @@ export function AuthProvider({ children }) {
     return registerRequest(payload);
   }, []);
 
+  // Memoize refreshProfile separately to prevent it from changing on every render
+  const refreshProfileRef = useRef(fetchProfile);
+  useEffect(() => {
+    refreshProfileRef.current = fetchProfile;
+  }, [fetchProfile]);
+
+  const stableRefreshProfile = useCallback(async () => {
+    return refreshProfileRef.current();
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -84,11 +107,11 @@ export function AuthProvider({ children }) {
       login,
       logout,
       register,
-      refreshProfile: fetchProfile,
+      refreshProfile: stableRefreshProfile,
     }),
     [
       authError,
-      fetchProfile,
+      stableRefreshProfile,
       initializing,
       login,
       logout,

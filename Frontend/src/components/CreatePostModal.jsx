@@ -107,7 +107,8 @@ export default function CreatePostModal({ onClose, onCreate }) {
         id: `post-${Date.now()}`,
         type: selectedType,
         username: user?.name || user?.firstName || "You",
-        timestamp: "Just now",
+        userAvatar: user?.avatarUrl || user?.AvatarUrl || user?.profilePictureUrl || user?.ProfilePictureUrl || null,
+        timestamp: new Date().toISOString(),
         likes: 0,
         comments: [],
         isLocal: true,
@@ -117,14 +118,17 @@ export default function CreatePostModal({ onClose, onCreate }) {
         case "review":
           if (!selectedBook) {
             setError(t("post.selectBookFirst"));
+            setSubmitting(false);
             return;
           }
           if (rating === 0) {
             setError(t("post.fillRequired"));
+            setSubmitting(false);
             return;
           }
           if (!reviewText.trim()) {
             setError(t("post.fillRequired"));
+            setSubmitting(false);
             return;
           }
 
@@ -168,6 +172,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
             } else {
               setError(err.message || "Failed to create review");
             }
+            setSubmitting(false);
             return;
           }
           break;
@@ -175,10 +180,12 @@ export default function CreatePostModal({ onClose, onCreate }) {
         case "quote":
           if (!selectedBook) {
             setError("Please select a book");
+            setSubmitting(false);
             return;
           }
           if (!quoteText.trim()) {
             setError("Please enter a quote");
+            setSubmitting(false);
             return;
           }
 
@@ -200,6 +207,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
             if (!authorId) {
               setError("Could not determine book author. Please try again.");
+              setSubmitting(false);
               return;
             }
 
@@ -211,16 +219,37 @@ export default function CreatePostModal({ onClose, onCreate }) {
               Tags: tags,
             });
 
+            // Extract quoteId properly - ensure it's a string
+            let quoteIdValue = null;
+            if (quote) {
+              if (typeof quote === 'string') {
+                quoteIdValue = quote;
+              } else if (quote.id) {
+                quoteIdValue = String(quote.id);
+              } else if (quote.Id) {
+                quoteIdValue = String(quote.Id);
+              } else if (quote.data?.id) {
+                quoteIdValue = String(quote.data.id);
+              } else if (quote.data?.Id) {
+                quoteIdValue = String(quote.data.Id);
+              } else if (quote.Data?.id) {
+                quoteIdValue = String(quote.Data.id);
+              } else if (quote.Data?.Id) {
+                quoteIdValue = String(quote.Data.Id);
+              }
+            }
+
             newPost = {
               ...newPost,
               type: "quote",
               bookTitle: selectedBook.title || selectedBook.Title,
               bookCover: selectedBook.coverImageUrl || selectedBook.coverImage || selectedBook.cover,
               review: quoteText.trim(),
-              quoteId: quote.id || quote.Id || quote,
+              quoteId: quoteIdValue,
             };
           } catch (err) {
             setError(err.message || "Failed to create quote");
+            setSubmitting(false);
             return;
           }
           break;
@@ -228,6 +257,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
         case "status":
           if (!readingStatus) {
             setError("Please select a reading status");
+            setSubmitting(false);
             return;
           }
 
@@ -247,14 +277,18 @@ export default function CreatePostModal({ onClose, onCreate }) {
         case "post":
           if (!postText.trim() && !postImage) {
             setError("Please add text or an image");
+            setSubmitting(false);
             return;
           }
 
+          // Don't create blob URL here - it will be invalid after page reload
+          // Instead, pass the File object and let handleCreatePost handle it
+          // For preview, we'll use a separate blob URL that won't be saved
           newPost = {
             ...newPost,
             type: "post",
             review: postText.trim(),
-            postImage: postImage ? URL.createObjectURL(postImage) : null,
+            postImage: null, // Don't store blob URL - it's invalid after reload
           };
           break;
 
@@ -262,8 +296,9 @@ export default function CreatePostModal({ onClose, onCreate }) {
         case "goal":
           if (!goalTarget.trim()) {
             setError(t("post.enterGoal"));
-      return;
-    }
+            setSubmitting(false);
+            return;
+          }
 
           newPost = {
             ...newPost,

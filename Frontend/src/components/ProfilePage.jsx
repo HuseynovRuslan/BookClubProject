@@ -145,12 +145,16 @@ export default function ProfilePage({
   }, [urlParam, authUser]);
 
   useEffect(() => {
-    setProfile(baseUser);
-    setEditedUser(baseUser);
-    // Reset preview and image error when profile changes
-    setPreviewImage(null);
-    setImageError(false);
-  }, [baseUser]);
+    if (baseUser) {
+      setProfile(baseUser);
+      setEditedUser(baseUser);
+      // Reset preview and image error when profile changes
+      setPreviewImage(null);
+      setImageError(false);
+    }
+    // Only update when user ID or email changes, not on every baseUser object change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseUser?.id, baseUser?.email]);
 
   // Close avatar menu when clicking outside
   useEffect(() => {
@@ -243,8 +247,14 @@ export default function ProfilePage({
           return null;
         }
       } else {
-        // Load current user's profile
-        freshProfile = await refreshProfile();
+        // Load current user's profile - use authUser if available, otherwise fetch
+        if (authUser && !urlParam) {
+          // Use existing authUser to avoid unnecessary API call
+          freshProfile = authUser;
+        } else {
+          // Only call refreshProfile if we don't have authUser
+          freshProfile = await refreshProfile();
+        }
       }
       
       if (freshProfile) {
@@ -407,11 +417,15 @@ export default function ProfilePage({
     } finally {
       setProfileLoading(false);
     }
-  }, [refreshProfile, urlParam, isOwnProfile, passedUserData, t]);
+    // Remove refreshProfile from dependencies to prevent infinite loop
+    // refreshProfile is only called conditionally when needed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlParam, isOwnProfile, passedUserData, t, authUser?.id]);
 
   useEffect(() => {
     loadProfile();
-  }, [loadProfile, urlParam]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlParam]);
 
   const handleProfileSave = async () => {
     if (!editedUser?.name?.trim()) {

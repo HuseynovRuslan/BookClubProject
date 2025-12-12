@@ -115,7 +115,22 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
       body: requestBody,
     });
   } catch (networkError) {
-    // Network errors should still be thrown
+    // Network errors (connection refused, failed to fetch, etc.)
+    // Create a more user-friendly error message
+    const isConnectionError = 
+      networkError.message?.includes("Failed to fetch") ||
+      networkError.message?.includes("ERR_CONNECTION_REFUSED") ||
+      networkError.message?.includes("NetworkError") ||
+      networkError.name === "TypeError";
+    
+    if (isConnectionError) {
+      const friendlyError = new Error("Backend server ilə əlaqə qurula bilmədi. Zəhmət olmasa backend serverin işlədiyini yoxlayın.");
+      friendlyError.isNetworkError = true;
+      friendlyError.originalError = networkError;
+      throw friendlyError;
+    }
+    
+    // For other network errors, throw as is
     throw networkError;
   }
 
@@ -195,24 +210,54 @@ export function delay(ms = 500) {
 /**
  * Şəkil URL-ini formatlaşdırır
  * Əgər relative path-dirsə, backend URL-i əlavə edir
+ * UUID-lər üçün Files API endpoint istifadə edir
  */
 export function getImageUrl(url) {
   if (!url || url.trim() === "" || url === "null" || url === "undefined") {
     return null; // Return null to trigger placeholder
   }
   
+  // Convert to string and trim
+  const urlStr = String(url).trim();
+  
+  // Əgər blob URL-dirsə, olduğu kimi qaytar (URL.createObjectURL() ilə yaradılmış)
+  if (urlStr.startsWith("blob:")) {
+    return urlStr;
+  }
+  
   // Əgər tam URL-dirsə (http/https), olduğu kimi qaytar
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
+  if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
+    return urlStr;
   }
   
   // Əgər relative path-dirsə (/images/...), backend URL-i əlavə et
-  if (url.startsWith("/")) {
-    return `${API_BASE_URL}${url}`;
+  if (urlStr.startsWith("/")) {
+    return `${API_BASE_URL}${urlStr}`;
+  }
+  
+  // UUID formatını yoxla (8-4-4-4-12 formatında) - təmiz UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = uuidRegex.test(urlStr);
+  if (isUuid) {
+    // UUID-dirsə, profil şəkilləri üçün /images/profiles/ endpoint istifadə et
+    // Backend-də profil şəkilləri /images/profiles/ qovluğunda saxlanılır və UseStaticFiles ilə serve edilir
+    return `${API_BASE_URL}/images/profiles/${urlStr}`;
+  }
+  
+  // UUID + extension formatını yoxla (məsələn: uuid.jpg, uuid.png)
+  const uuidWithExtRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z]{3,4}$/i;
+  if (uuidWithExtRegex.test(urlStr)) {
+    return `${API_BASE_URL}/images/profiles/${urlStr}`;
+  }
+  
+  // userId_uuid.extension formatını yoxla (backend-də istifadə olunan format)
+  const userIdUuidExtRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z]{3,4}$/i;
+  if (userIdUuidExtRegex.test(urlStr)) {
+    return `${API_BASE_URL}/images/profiles/${urlStr}`;
   }
   
   // Əgər sadə path-dirsə (images/...), backend URL-i əlavə et
-  return `${API_BASE_URL}/${url}`;
+  return `${API_BASE_URL}/${urlStr}`;
 }
 
 export { API_BASE_URL, USE_API_MOCKS };

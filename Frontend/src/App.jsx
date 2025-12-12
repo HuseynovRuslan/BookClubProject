@@ -55,6 +55,29 @@ function App() {
     setCurrentUser(user);
   }, [user]);
 
+        // One-time cleanup: Clear all posts from localStorage on app mount
+        useEffect(() => {
+          try {
+            const storageKey = "bookverse_social_feed";
+            const stored = localStorage.getItem(storageKey);
+            if (stored) {
+              const posts = JSON.parse(stored);
+              console.log(`Clearing ${posts.length} posts from localStorage`);
+              localStorage.removeItem(storageKey);
+              console.log("All posts cleared from localStorage");
+            }
+          } catch (err) {
+            console.error("Error clearing localStorage:", err);
+            // If there's an error, try to clear anyway
+            try {
+              localStorage.removeItem("bookverse_social_feed");
+              console.log("Cleared localStorage data");
+            } catch (clearErr) {
+              console.error("Error clearing localStorage:", clearErr);
+            }
+          }
+        }, []); // Run once on mount
+
   // Dark mode-u HTML elementinə əlavə et ki, Tailwind dark: prefix işləsin və yadda saxla
   useEffect(() => {
     const htmlElement = document.documentElement;
@@ -70,13 +93,22 @@ function App() {
   const handleDarkModeToggle = () => setIsDarkMode((prev) => !prev);
 
   const handleCreatePost = (newPost) => {
+    // Clean blob URLs immediately - they're invalid after page reload
+    const cleanedPost = { ...newPost };
+    if (cleanedPost.postImage && cleanedPost.postImage.startsWith('blob:')) {
+      cleanedPost.postImage = null;
+    }
+    if (cleanedPost.bookCover && cleanedPost.bookCover.startsWith('blob:')) {
+      cleanedPost.bookCover = null;
+    }
+    
     const postWithUser = {
-      ...newPost,
+      ...cleanedPost,
       id: `local-${Date.now()}`,
       username: currentUser?.name || "You",
-      likes: newPost.likes ?? 0,
+      likes: cleanedPost.likes ?? 0,
       comments: [],
-      timestamp: "Just now",
+      timestamp: new Date().toISOString(),
       isLocal: true,
     };
     setLocalPosts((prev) => {
@@ -84,7 +116,25 @@ function App() {
       // Save to localStorage
       try {
         const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
-        localStorage.setItem("bookverse_social_feed", JSON.stringify([...updated, ...existing]));
+        // Remove blob URLs before saving - they're invalid after page reload
+        const cleanPost = { ...postWithUser };
+        if (cleanPost.postImage && cleanPost.postImage.startsWith('blob:')) {
+          cleanPost.postImage = null;
+        }
+        if (cleanPost.bookCover && cleanPost.bookCover.startsWith('blob:')) {
+          cleanPost.bookCover = null;
+        }
+        const cleanedExisting = existing.map(post => {
+          const cleaned = { ...post };
+          if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
+            cleaned.postImage = null;
+          }
+          if (cleaned.bookCover && cleaned.bookCover.startsWith('blob:')) {
+            cleaned.bookCover = null;
+          }
+          return cleaned;
+        });
+        localStorage.setItem("bookverse_social_feed", JSON.stringify([cleanPost, ...cleanedExisting]));
       } catch (err) {
         console.error("Error saving post to localStorage:", err);
       }
@@ -120,14 +170,15 @@ function App() {
   const handleAddComment = (postId, commentText) => {
     const newComment = {
       id: Date.now().toString(),
-      username: currentUser?.name || "You",
+      username: currentUser?.name || currentUser?.firstName || "You",
+      userAvatar: currentUser?.avatarUrl || currentUser?.AvatarUrl || currentUser?.profilePictureUrl || currentUser?.ProfilePictureUrl || null,
       text: commentText,
-      timestamp: "Just now",
+      timestamp: new Date().toISOString(),
     };
     setLocalPosts((prev) => {
       const updated = prev.map((post) =>
         post.id === postId
-          ? { ...post, comments: [...post.comments, newComment] }
+          ? { ...post, comments: [...(post.comments || []), newComment] }
           : post
       );
       // Save to localStorage
@@ -143,7 +194,18 @@ function App() {
             merged.push(lp);
           }
         });
-        localStorage.setItem("bookverse_social_feed", JSON.stringify(merged));
+        // Remove blob URLs before saving - they're invalid after page reload
+        const cleanedMerged = merged.map(post => {
+          const cleaned = { ...post };
+          if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
+            cleaned.postImage = null;
+          }
+          if (cleaned.bookCover && cleaned.bookCover.startsWith('blob:')) {
+            cleaned.bookCover = null;
+          }
+          return cleaned;
+        });
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(cleanedMerged));
       } catch (err) {
         console.error("Error saving comment to localStorage:", err);
       }
@@ -174,12 +236,95 @@ function App() {
             merged.push(lp);
           }
         });
-        localStorage.setItem("bookverse_social_feed", JSON.stringify(merged));
+        // Remove blob URLs before saving - they're invalid after page reload
+        const cleanedMerged = merged.map(post => {
+          const cleaned = { ...post };
+          if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
+            cleaned.postImage = null;
+          }
+          if (cleaned.bookCover && cleaned.bookCover.startsWith('blob:')) {
+            cleaned.bookCover = null;
+          }
+          return cleaned;
+        });
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(cleanedMerged));
       } catch (err) {
         console.error("Error saving comment deletion to localStorage:", err);
       }
       return updated;
     });
+  };
+
+  const handleDeletePost = async (postId, post) => {
+    try {
+      // Delete from backend if it's a review or quote
+      if (post.type === "review" && post.reviewId) {
+        const { deleteReview } = await import("./api/reviews");
+        const reviewId = String(post.reviewId || post.reviewId?.id || post.reviewId?.Id || post.reviewId);
+        await deleteReview(reviewId);
+      } else if (post.type === "quote" && post.quoteId) {
+        const { deleteQuote } = await import("./api/quotes");
+        // Ensure quoteId is a string, not an object
+        let quoteId = null;
+        
+        // Log the structure for debugging
+        console.log("post.quoteId structure:", post.quoteId, "Type:", typeof post.quoteId);
+        
+        if (typeof post.quoteId === 'string') {
+          quoteId = post.quoteId.trim();
+        } else if (typeof post.quoteId === 'object' && post.quoteId !== null) {
+          // Try all possible ways to extract the ID from the object
+          quoteId = post.quoteId.id || 
+                   post.quoteId.Id || 
+                   post.quoteId.quoteId ||
+                   post.quoteId.QuoteId ||
+                   post.quoteId.data?.id ||
+                   post.quoteId.data?.Id ||
+                   post.quoteId.Data?.id ||
+                   post.quoteId.Data?.Id ||
+                   (post.quoteId.toString && post.quoteId.toString() !== '[object Object]' ? post.quoteId.toString() : null);
+          
+          if (quoteId) {
+            quoteId = String(quoteId).trim();
+          } else {
+            // If we can't extract, try JSON.stringify to see the structure
+            console.error("Cannot extract quoteId from object:", JSON.stringify(post.quoteId, null, 2));
+            console.error("Full post object:", JSON.stringify(post, null, 2));
+            throw new Error("quoteId is an object but cannot extract ID. Object keys: " + Object.keys(post.quoteId).join(', '));
+          }
+        } else {
+          throw new Error("quoteId is not a string or object: " + typeof post.quoteId);
+        }
+        
+        if (!quoteId || quoteId === 'null' || quoteId === 'undefined' || quoteId.includes('[object')) {
+          console.error("Invalid quoteId detected:", { quoteId, postQuoteId: post.quoteId, postType: typeof post.quoteId, post });
+          throw new Error("Invalid quoteId: " + quoteId);
+        }
+        
+        console.log("Deleting quote with ID:", quoteId);
+        await deleteQuote(quoteId);
+      }
+      
+      // Remove from local state
+      setLocalPosts((prev) => {
+        const updated = prev.filter((p) => p.id !== postId);
+        // Save to localStorage
+        try {
+          const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+          const filtered = existing.filter((p) => p.id !== postId);
+          localStorage.setItem("bookverse_social_feed", JSON.stringify(filtered));
+        } catch (err) {
+          console.error("Error saving post deletion to localStorage:", err);
+        }
+        return updated;
+      });
+      
+      // Remove from userPosts
+      setUserPosts((prev) => prev.filter((p) => p.id !== postId));
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      throw err; // Re-throw to let component handle error display
+    }
   };
 
   const handleBookClick = (book) => {
@@ -253,6 +398,7 @@ function App() {
                   localPosts={localPosts}
                   onAddComment={handleAddComment}
                   onDeleteComment={handleDeleteComment}
+                  onDeletePost={handleDeletePost}
                 />
               }
             />
@@ -268,6 +414,7 @@ function App() {
                   localPosts={localPosts}
                   onAddComment={handleAddComment}
                   onDeleteComment={handleDeleteComment}
+                  onDeletePost={handleDeletePost}
                 />
               }
             />
