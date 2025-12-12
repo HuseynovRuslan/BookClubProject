@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { getAllBooks } from "../api/books";
 import { getImageUrl } from "../api/config";
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function RecommendationsPage({ onBookClick }) {
+  const t = useTranslation();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -152,7 +154,7 @@ export default function RecommendationsPage({ onBookClick }) {
       <div className="text-center py-20">
         <div className="inline-flex items-center gap-3 text-gray-600 dark:text-gray-400">
           <div className="w-6 h-6 border-3 border-gray-300 dark:border-gray-600 border-t-amber-600 dark:border-t-amber-400 rounded-full animate-spin"></div>
-          <span className="text-lg">Loading recommendations...</span>
+          <span className="text-lg">{t("recommendations.loading")}</span>
         </div>
       </div>
     );
@@ -182,10 +184,10 @@ export default function RecommendationsPage({ onBookClick }) {
             </div>
             <div className="flex-1">
               <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-none mb-3 drop-shadow-sm">
-                What Should I Read?
+                {t("recommendations.title")}
               </h1>
               <p className="text-gray-700 dark:text-gray-700 text-xl sm:text-2xl mt-3 font-semibold">
-                Discover books by genre
+                {t("recommendations.subtitle")}
               </p>
             </div>
           </div>
@@ -205,10 +207,10 @@ export default function RecommendationsPage({ onBookClick }) {
                 </div>
                 <div className="flex items-baseline gap-4">
                   <h2 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-gray-900 tracking-tight leading-none">
-                    Trending Books
+                    {t("recommendations.trending")}
                   </h2>
                   <span className="text-xs text-gray-600 dark:text-gray-600 font-bold bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 px-4 py-2 rounded-full border border-amber-200 dark:border-amber-200 shadow-sm">
-                    10 books
+                    10 {t("recommendations.booksCount")}
                   </span>
                 </div>
               </div>
@@ -379,7 +381,7 @@ export default function RecommendationsPage({ onBookClick }) {
                       {genreName}
                     </h2>
                     <span className="text-xs text-gray-600 dark:text-gray-600 font-bold bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 px-4 py-2 rounded-full border border-amber-200 dark:border-amber-200 shadow-sm">
-                      {genreBooks.length} {genreBooks.length === 1 ? 'book' : 'books'}
+                      {genreBooks.length} {genreBooks.length === 1 ? t("categories.book") : t("categories.books")}
                     </span>
                   </div>
                 </div>
@@ -513,7 +515,7 @@ export default function RecommendationsPage({ onBookClick }) {
 
       {genres.length === 0 && (
         <div className="text-center py-20">
-          <p className="text-gray-600 dark:text-gray-400 text-lg">No books available yet.</p>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">{t("recommendations.noBooks")}</p>
         </div>
       )}
     </div>

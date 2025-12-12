@@ -2,8 +2,10 @@ import { useState, useMemo, useEffect } from "react";
 import { useShelves } from "../context/ShelvesContext.jsx";
 import { updateBookStatus } from "../api/books";
 import { getImageUrl } from "../api/config";
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function ReadingListPage() {
+  const t = useTranslation();
   const {
     shelves,
     loading,
@@ -50,7 +52,7 @@ export default function ReadingListPage() {
   const sortedShelves = useMemo(() => {
     if (!shelves || shelves.length === 0) return [];
     
-    const defaultShelves = ["Want to Read", "Currently Reading", "Read"];
+    const defaultShelves = [t("readingList.wantToRead"), t("readingList.currentlyReading"), t("readingList.read")];
     const defaultShelvesList = [];
     const customShelvesList = [];
     
@@ -97,7 +99,7 @@ export default function ReadingListPage() {
             <div className="w-1.5 h-16 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-lg"></div>
             <div>
               <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-tight">
-                My Reading List
+                {t("readingList.title")}
               </h1>
               <p className="text-gray-600 dark:text-gray-600 text-lg sm:text-xl mt-2 font-semibold">
                 Organize your books by shelves

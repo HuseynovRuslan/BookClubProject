@@ -6,23 +6,25 @@ import { getMyReviews } from "../api/users";
 import { createQuote } from "../api/quotes";
 import { useAuth } from "../context/AuthContext";
 import { getImageUrl } from "../api/config";
-
-const POST_TYPES = [
-  { id: "review", label: "Write Review", icon: BookOpen, color: "purple" },
-  { id: "quote", label: "Share Quote", icon: Quote, color: "blue" },
-  { id: "status", label: "Reading Status", icon: BookCheck, color: "green" },
-  { id: "post", label: "Normal Post", icon: FileText, color: "gray" },
-  { id: "goal", label: "Reading Goal", icon: Target, color: "orange" },
-];
-
-const READING_STATUSES = [
-  { id: "started", label: "Started Reading" },
-  { id: "reading", label: "Currently Reading" },
-  { id: "finished", label: "Finished Reading" },
-];
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function CreatePostModal({ onClose, onCreate }) {
   const { user } = useAuth();
+  const t = useTranslation();
+  
+  const POST_TYPES = [
+    { id: "review", label: t("post.writeReview"), icon: BookOpen, color: "purple" },
+    { id: "quote", label: t("post.shareQuote"), icon: Quote, color: "blue" },
+    { id: "status", label: t("post.readingStatus"), icon: BookCheck, color: "green" },
+    { id: "post", label: t("post.normalPost"), icon: FileText, color: "gray" },
+    { id: "goal", label: t("post.readingGoal"), icon: Target, color: "orange" },
+  ];
+
+  const READING_STATUSES = [
+    { id: "started", label: t("post.startedReading") },
+    { id: "reading", label: t("post.currentlyReading") },
+    { id: "finished", label: t("post.finishedReading") },
+  ];
   const [selectedType, setSelectedType] = useState(null);
   const [books, setBooks] = useState([]);
   const [loadingBooks, setLoadingBooks] = useState(false);
@@ -114,15 +116,15 @@ export default function CreatePostModal({ onClose, onCreate }) {
       switch (selectedType) {
         case "review":
           if (!selectedBook) {
-            setError("Please select a book");
+            setError(t("post.selectBookFirst"));
             return;
           }
           if (rating === 0) {
-            setError("Please provide a rating");
+            setError(t("post.fillRequired"));
             return;
           }
           if (!reviewText.trim()) {
-            setError("Please write a review");
+            setError(t("post.fillRequired"));
             return;
           }
 
@@ -259,7 +261,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
         case "goal":
           if (!goalTarget.trim()) {
-            setError("Please enter a reading goal");
+            setError(t("post.enterGoal"));
       return;
     }
 
@@ -281,9 +283,9 @@ export default function CreatePostModal({ onClose, onCreate }) {
     onClose();
     } catch (err) {
       if (err.status === 401) {
-        setError("Authentication required. Please login again.");
+        setError(t("post.authRequired"));
       } else {
-        setError(err.message || "Failed to create post");
+        setError(err.message || t("post.failedCreate"));
       }
     } finally {
       setSubmitting(false);
@@ -317,7 +319,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (!window.confirm("Are you sure you want to delete this review?")) {
+    if (!window.confirm(t("post.deleteConfirm"))) {
       return;
     }
     try {
@@ -325,7 +327,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
       await loadUserReviews();
       setError("");
     } catch (err) {
-      setError(err.message || "Failed to delete review");
+      setError(err.message || t("post.failedDelete"));
     }
   };
 
@@ -350,7 +352,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   <div className="w-2 h-12 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-lg"></div>
                   <div className="absolute top-0 left-0 w-2 h-12 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-md opacity-50"></div>
                 </div>
-                <h2 className="text-4xl font-black text-gray-900 dark:text-gray-900 tracking-tight">Create Post</h2>
+                <h2 className="text-4xl font-black text-gray-900 dark:text-gray-900 tracking-tight">{t("post.createPost")}</h2>
               </div>
               <button
                 onClick={onClose}
@@ -362,7 +364,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
           </div>
 
           <div className="p-8">
-            <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mb-8">Choose a post type:</p>
+            <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mb-8">{t("post.chooseType")}</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
               {POST_TYPES.map((type) => {
                 const Icon = type.icon;
@@ -431,7 +433,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               {userReviews.length > 0 && (
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <h3 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">
-                    Your Reviews ({userReviews.length})
+                    {t("post.yourReviews")} ({userReviews.length})
                   </h3>
                   <div className="space-y-1.5 max-h-32 overflow-y-auto">
                     {userReviews.map((review) => {
@@ -467,7 +469,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                               type="button"
                               onClick={() => handleEditReview(review)}
                               className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
-                              title="Edit review"
+                              title={t("post.editReview")}
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
@@ -475,7 +477,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                               type="button"
                               onClick={() => handleDeleteReview(review.id)}
                               className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-                              title="Delete review"
+                              title={t("post.deleteReview")}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -489,10 +491,10 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Select Book *
+                  {t("post.selectBook")}
                 </label>
                 {loadingBooks ? (
-                  <div className="p-2 text-center text-gray-500 text-sm">Loading books...</div>
+                  <div className="p-2 text-center text-gray-500 text-sm">{t("post.loadingBooks")}</div>
                 ) : (
                   <select
                     value={selectedBook?.id || ""}
@@ -516,7 +518,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                     className="w-full p-4 text-base rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                     required
                   >
-                    <option value="">Choose a book...</option>
+                    <option value="">{t("post.chooseBook")}</option>
                     {books.map((book) => {
                       const hasReview = userReviews.some(
                         (r) => (r.bookId || r.book?.id) === (book.id || book.Id)
@@ -559,14 +561,14 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Review * {editingReview && <span className="text-xs text-blue-600 dark:text-blue-400">(Editing)</span>}
+                  {t("post.reviewText")} {editingReview && <span className="text-xs text-blue-600 dark:text-blue-400">({t("common.edit")})</span>}
                 </label>
                 <textarea
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                   rows={4}
                   className="w-full p-2.5 text-sm rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white resize-none"
-                  placeholder="Share your thoughts about this book..."
+                  placeholder={t("post.reviewText")}
                   required
                 />
               </div>
@@ -578,10 +580,10 @@ export default function CreatePostModal({ onClose, onCreate }) {
             <>
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Select Book *
+                  {t("post.selectBook")}
                 </label>
                 {loadingBooks ? (
-                  <div className="p-4 text-center text-gray-500">Loading books...</div>
+                  <div className="p-4 text-center text-gray-500">{t("post.loadingBooks")}</div>
                 ) : (
                   <select
                     value={selectedBook?.id || ""}
@@ -592,7 +594,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                     className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                     required
                   >
-                    <option value="">Choose a book...</option>
+                    <option value="">{t("post.chooseBook")}</option>
                     {books.map((book) => (
                       <option key={book.id || book.Id} value={book.id || book.Id}>
                         {book.title || book.Title}
@@ -604,7 +606,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
           <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Quote Text *
+                  {t("post.quoteText")}
                 </label>
                 <textarea
                   value={quoteText}
@@ -618,7 +620,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
           <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Tag (Optional)
+                  {t("post.quoteTag")}
                 </label>
             <input
               type="text"
@@ -637,7 +639,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
             <>
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Reading Status *
+                  {t("post.status")}
                 </label>
                 <div className="grid grid-cols-3 gap-3">
                   {READING_STATUSES.map((status) => (
@@ -689,7 +691,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
             <>
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Post Text
+                  {t("post.postText")}
                 </label>
                 <textarea
                   value={postText}
@@ -702,7 +704,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
           <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Image (Optional)
+                  {t("post.postImage")}
                 </label>
                 <input
                   type="file"
@@ -711,11 +713,11 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                 />
                 {postImage && (
-                  <div className="mt-2">
+                  <div className="mt-2 flex justify-center">
                     <img
                       src={URL.createObjectURL(postImage)}
                       alt="Preview"
-                      className="w-full max-h-48 object-cover rounded-lg"
+                      className="max-w-full h-auto object-contain rounded-lg"
                     />
                   </div>
                 )}
@@ -730,7 +732,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               {userReviews.length > 0 && (
                 <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                    Your Reviews ({userReviews.length})
+                    {t("post.yourReviews")} ({userReviews.length})
                   </h3>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {userReviews.map((review) => {
@@ -766,7 +768,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                               type="button"
                               onClick={() => handleEditReview(review)}
                               className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
-                              title="Edit review"
+                              title={t("post.editReview")}
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
@@ -774,7 +776,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                               type="button"
                               onClick={() => handleDeleteReview(review.id)}
                               className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-                              title="Delete review"
+                              title={t("post.deleteReview")}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -788,10 +790,10 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Select Book *
+                  {t("post.selectBook")}
                 </label>
                 {loadingBooks ? (
-                  <div className="p-4 text-center text-gray-500">Loading books...</div>
+                  <div className="p-4 text-center text-gray-500">{t("post.loadingBooks")}</div>
                 ) : (
                   <select
                     value={selectedBook?.id || ""}
@@ -813,7 +815,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                     className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                     required
                   >
-                    <option value="">Choose a book...</option>
+                    <option value="">{t("post.chooseBook")}</option>
                     {books.map((book) => {
                       const hasReview = userReviews.some(
                         (r) => (r.bookId || r.book?.id) === (book.id || book.Id)
@@ -869,7 +871,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
             <>
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Goal Target *
+                  {t("post.goalTarget")}
                 </label>
                 <input
                   type="text"
@@ -883,7 +885,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Deadline (Optional)
+                  {t("post.goalDeadline")}
                 </label>
                 <input
                   type="date"
@@ -909,14 +911,14 @@ export default function CreatePostModal({ onClose, onCreate }) {
               className="px-6 py-3 text-base rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md"
               disabled={submitting}
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               className="px-6 py-3 text-base rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               disabled={submitting}
             >
-              {submitting ? "Publishing..." : "Publish"}
+              {submitting ? t("common.loading") : t("post.submit")}
             </button>
           </div>
         </form>

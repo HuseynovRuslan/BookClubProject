@@ -10,6 +10,7 @@ import { Camera, Edit2, LogOut, UserPlus, UserCheck, UserX, X } from "lucide-rea
 import SocialFeedPost from "./SocialFeedPost";
 import { useShelves } from "../context/ShelvesContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTranslation } from "../hooks/useTranslation";
 import {
   updateProfile as updateProfileApi,
   updateProfilePicture,
@@ -39,6 +40,7 @@ export default function ProfilePage({
   const { userId: urlParam } = useParams(); // Can be userId (UUID) or username
   const navigate = useNavigate();
   const location = useLocation();
+  const t = useTranslation();
   // Get user data passed from navigation state (from followers/following list)
   const passedUserData = location.state?.userData;
   const { user: authUser, refreshProfile } = useAuth();
@@ -204,7 +206,7 @@ export default function ProfilePage({
           
           // If still no profile, show error
           if (!freshProfile) {
-            setProfileError("User profile not found. The user may not exist.");
+            setProfileError(t("profile.userNotFound"));
             setProfileLoading(false);
             return null;
           }
@@ -236,7 +238,7 @@ export default function ProfilePage({
           console.log("Final profile after ProfilePage normalization:", freshProfile);
         } catch (err) {
           // If there's an error loading the profile, set error message
-          setProfileError(err.message || "Failed to load user profile. The user may not exist.");
+          setProfileError(err.message || t("profile.loadFailed"));
           setProfileLoading(false);
           return null;
         }
@@ -400,12 +402,12 @@ export default function ProfilePage({
         return freshProfile;
       }
     } catch (err) {
-      setProfileError(err.message || "Profil yüklənmədi");
+      setProfileError(err.message || t("profile.loadFailed"));
       throw err;
     } finally {
       setProfileLoading(false);
     }
-  }, [refreshProfile, urlParam, isOwnProfile, passedUserData]);
+  }, [refreshProfile, urlParam, isOwnProfile, passedUserData, t]);
 
   useEffect(() => {
     loadProfile();
@@ -413,12 +415,12 @@ export default function ProfilePage({
 
   const handleProfileSave = async () => {
     if (!editedUser?.name?.trim()) {
-      setProfileMessage("Ad boş ola bilməz");
+      setProfileMessage(t("profile.nameRequired"));
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (editedUser.email && !emailRegex.test(editedUser.email)) {
-      setProfileMessage("Email formatı düzgün deyil");
+      setProfileMessage(t("profile.emailInvalid"));
       return;
     }
     try {
@@ -453,12 +455,12 @@ export default function ProfilePage({
       // Also refresh from server to ensure we have the latest data
       await loadProfile();
       setIsEditing(false);
-      setProfileMessage("Profil yeniləndi");
+      setProfileMessage(t("profile.updated"));
       
       // Clear message after 3 seconds
       setTimeout(() => setProfileMessage(null), 3000);
     } catch (err) {
-      setProfileMessage(err.message || "Profil yenilənmədi");
+      setProfileMessage(err.message || t("profile.updateFailed"));
     }
   };
 
@@ -502,13 +504,13 @@ export default function ProfilePage({
       await loadProfile();
       setPreviewImage(null); // Clear preview after successful upload
       setImageError(false); // Reset image error state
-      setProfileMessage("Profil şəkli yeniləndi");
+      setProfileMessage(t("profile.avatarUpdated"));
       
       // Clear message after 3 seconds
       setTimeout(() => setProfileMessage(null), 3000);
     } catch (err) {
       setPreviewImage(null); // Clear preview on error
-      setProfileMessage(err.message || "Şəkil yüklənmədi");
+      setProfileMessage(err.message || t("profile.avatarFailed"));
     } finally {
       setAvatarUploading(false);
       // Reset file input to allow selecting the same file again
@@ -545,12 +547,12 @@ export default function ProfilePage({
       // Also refresh from server to ensure we have the latest data
       await loadProfile();
       setImageError(false); // Reset image error state
-      setProfileMessage("Profil şəkli silindi");
+      setProfileMessage(t("profile.avatarRemoved"));
       
       // Clear message after 3 seconds
       setTimeout(() => setProfileMessage(null), 3000);
     } catch (err) {
-      setProfileMessage(err.message || "Şəkil silinmədi");
+      setProfileMessage(err.message || t("profile.avatarRemoveFailed"));
     } finally {
       setAvatarUploading(false);
     }
@@ -572,7 +574,7 @@ export default function ProfilePage({
     
     const userId = profile.id || profile.Id || profile.userId || profile.UserId;
     if (!userId) {
-      setProfileMessage("User ID not found");
+      setProfileMessage(t("profile.error"));
       setTimeout(() => setProfileMessage(null), 3000);
       return;
     }
@@ -615,7 +617,7 @@ export default function ProfilePage({
         
         const result = await unfollowUser(userId);
         console.log("Unfollow result:", result);
-        setProfileMessage("Unfollowed successfully");
+        setProfileMessage(t("profile.unfollow"));
       } else {
         // Optimistically update: increase followers count for viewed user, increase following count for own profile
         if (!isOwnProfile) {
@@ -673,7 +675,7 @@ export default function ProfilePage({
         
         const result = await followUser(userId);
         console.log("Follow result:", result);
-        setProfileMessage("Following successfully");
+        setProfileMessage(t("profile.follow"));
       }
       
       // Refresh followers/following counts and follow status from backend after follow/unfollow
@@ -829,7 +831,7 @@ export default function ProfilePage({
       }
       
       // Extract error message from different possible formats
-      let errorMessage = "Failed to update follow status";
+      let errorMessage = t("profile.error");
       
       if (err.data) {
         if (Array.isArray(err.data.errorMessages) && err.data.errorMessages.length > 0) {
@@ -978,11 +980,11 @@ export default function ProfilePage({
 
   // Tabs: only show posts for other users, show shelves for own profile
   const tabs = isOwnProfile ? [
-    ...((profile || {}).role === "writer" ? [{ id: "my-books", label: `My Books (${userBooks.length})` }] : []),
-    { id: "shelves", label: `Shelves (${stats.shelves})` },
-    { id: "posts", label: `Posts (${stats.posts})` },
+    ...((profile || {}).role === "writer" ? [{ id: "my-books", label: `${t("profile.myBooks")} (${userBooks.length})` }] : []),
+    { id: "shelves", label: `${t("profile.shelves")} (${stats.shelves})` },
+    { id: "posts", label: `${t("profile.posts")} (${stats.posts})` },
   ] : [
-    { id: "posts", label: `Posts (${stats.posts})` },
+    { id: "posts", label: `${t("profile.posts")} (${stats.posts})` },
   ];
 
   const getRating = (book) => {
@@ -997,7 +999,7 @@ export default function ProfilePage({
             <div className="w-16 h-16 border-4 border-amber-200 dark:border-amber-200 rounded-full"></div>
             <div className="w-16 h-16 border-4 border-amber-600 dark:border-amber-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
           </div>
-          <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mt-6">Shelflər yüklənir...</p>
+          <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mt-6">{t("profile.shelvesLoading")}</p>
         </div>
       );
     }
@@ -1010,10 +1012,10 @@ export default function ProfilePage({
             </svg>
           </div>
           <h2 className="text-3xl font-black text-gray-900 dark:text-gray-900 mb-3">
-            No shelves yet
+            {t("profile.noShelves")}
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-600">
-            Hələ Shelf əlavə olunmayıb.
+            {t("profile.noShelvesDesc")}
           </p>
         </div>
       );
@@ -1032,7 +1034,7 @@ export default function ProfilePage({
                     {shelf.name}
                   </h3>
                   <p className="text-sm font-semibold text-gray-600 dark:text-gray-600 mt-1">
-                    {shelf.books?.length || 0} kitab
+                    {shelf.books?.length || 0} {shelf.books?.length === 1 ? t("profile.book") : t("profile.books")}
                   </p>
                 </div>
               </div>
@@ -1103,7 +1105,7 @@ export default function ProfilePage({
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-600 dark:text-gray-600 font-semibold">Shelf boşdur</p>
+              <p className="text-sm text-gray-600 dark:text-gray-600 font-semibold">{t("profile.shelfEmpty")}</p>
             )}
           </div>
         ))}
@@ -1123,10 +1125,10 @@ export default function ProfilePage({
               </svg>
             </div>
             <h2 className="text-3xl font-black text-gray-900 dark:text-gray-900 mb-3">
-              No posts yet
+              {t("profile.noPosts")}
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-600">
-              Hələ paylaşım yoxdur.
+              {t("profile.noPostsDesc")}
             </p>
           </div>
         ) : (
@@ -1146,10 +1148,10 @@ export default function ProfilePage({
             </svg>
           </div>
           <h2 className="text-3xl font-black text-gray-900 dark:text-gray-900 mb-3">
-            No books yet
+            {t("profile.noBooks")}
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-600">
-            Hələ kitab dərc etməmisən.
+            {t("profile.noBooksDesc")}
           </p>
         </div>
       ) : (
@@ -1243,10 +1245,10 @@ export default function ProfilePage({
             </div>
             <div className="flex-1">
               <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-none mb-3 drop-shadow-sm">
-                Profile
+                {t("profile.title")}
               </h1>
               <p className="text-gray-700 dark:text-gray-700 text-xl sm:text-2xl mt-3 font-semibold">
-                Manage your account and preferences
+                {t("profile.subtitle")}
               </p>
             </div>
           </div>
@@ -1302,7 +1304,7 @@ export default function ProfilePage({
                   className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-900 hover:bg-gradient-to-r hover:from-purple-50 hover:via-blue-50 hover:to-indigo-50 dark:hover:from-purple-50 dark:hover:via-blue-50 dark:hover:to-indigo-50 flex items-center gap-3 transition-all"
                 >
                   <Camera className="w-5 h-5 text-amber-600 dark:text-amber-600" />
-                  Select Image
+                  {t("profile.selectImage")}
                 </button>
                 {(profile?.avatarUrl || previewImage) && (
                   <button
@@ -1312,7 +1314,7 @@ export default function ProfilePage({
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                    Remove Image
+                    {t("profile.removeImage")}
                   </button>
                 )}
               </div>
@@ -1323,12 +1325,12 @@ export default function ProfilePage({
             {profileLoading ? (
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 border-3 border-amber-200 dark:border-amber-200 border-t-purple-600 dark:border-t-purple-600 rounded-full animate-spin"></div>
-                <p className="text-gray-600 dark:text-gray-600 font-semibold">Profil yüklənir...</p>
+                <p className="text-gray-600 dark:text-gray-600 font-semibold">{t("profile.loading")}</p>
               </div>
             ) : isEditing ? (
               <>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-900 dark:text-gray-900">Ad</label>
+                  <label className="text-sm font-bold text-gray-900 dark:text-gray-900">{t("profile.name")}</label>
                   <input
                     className="w-full p-4 rounded-xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-200 focus:border-purple-400 dark:focus:border-purple-400 transition-all shadow-sm"
                     value={editedUser?.name || ""}
@@ -1338,7 +1340,7 @@ export default function ProfilePage({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-900 dark:text-gray-900">Email</label>
+                  <label className="text-sm font-bold text-gray-900 dark:text-gray-900">{t("profile.email")}</label>
                   <input
                     className="w-full p-4 rounded-xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-200 focus:border-purple-400 dark:focus:border-purple-400 transition-all shadow-sm"
                     type="email"
@@ -1349,7 +1351,7 @@ export default function ProfilePage({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-900 dark:text-gray-900">Bio</label>
+                  <label className="text-sm font-bold text-gray-900 dark:text-gray-900">{t("profile.bio")}</label>
                   <textarea
                     rows={4}
                     className="w-full p-4 rounded-xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 border-2 border-gray-200 dark:border-gray-200 resize-none focus:outline-none focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-200 focus:border-purple-400 dark:focus:border-purple-400 transition-all shadow-sm"
@@ -1383,15 +1385,15 @@ export default function ProfilePage({
                           if (updatedProfile) {
                             setProfile(updatedProfile);
                           }
-                          setProfileMessage("Writer hesabına keçdiniz!");
+                          setProfileMessage(t("profile.writerSuccess"));
                           setTimeout(() => setProfileMessage(null), 3000);
                         } catch (err) {
-                          setProfileMessage(err.message || "Xəta baş verdi");
+                          setProfileMessage(err.message || t("profile.error"));
                         }
                       }}
                       className="px-6 py-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
                     >
-                      ✍️ Writer ol
+                      ✍️ {t("profile.becomeWriter")}
                     </button>
                   ) : (
                     <button
@@ -1415,15 +1417,15 @@ export default function ProfilePage({
                           if (updatedProfile) {
                             setProfile(updatedProfile);
                           }
-                          setProfileMessage("Reader hesabına qayıtdınız!");
+                          setProfileMessage(t("profile.readerSuccess"));
                           setTimeout(() => setProfileMessage(null), 3000);
                         } catch (err) {
-                          setProfileMessage(err.message || "Xəta baş verdi");
+                          setProfileMessage(err.message || t("profile.error"));
                         }
                       }}
                       className="px-6 py-3 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
                     >
-                      📚 Reader ol
+                      📚 {t("profile.becomeReader")}
                     </button>
                   )}
                 </div>
@@ -1435,7 +1437,7 @@ export default function ProfilePage({
                     {profile?.name || "User"}
                   </h1>
                   <span className="px-4 py-2 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 text-gray-900 dark:text-gray-900 text-sm font-bold border-2 border-amber-200 dark:border-amber-200 shadow-sm">
-                    {profile?.role === "writer" ? "✍️ Writer" : "📚 Reader"}
+                    {profile?.role === "writer" ? `✍️ ${t("profile.writer")}` : `📚 ${t("profile.reader")}`}
                   </span>
                   {!isOwnProfile && (
                     <button
@@ -1452,12 +1454,12 @@ export default function ProfilePage({
                       ) : isFollowingUser ? (
                         <>
                           <UserX className="w-4 h-4" />
-                          Following
+                          {t("profile.followingBtn")}
                         </>
                       ) : (
                         <>
                           <UserCheck className="w-4 h-4" />
-                          Follow
+                          {t("profile.follow")}
                         </>
                       )}
                     </button>
@@ -1469,12 +1471,12 @@ export default function ProfilePage({
                 <div className="flex gap-2 mt-2 flex-wrap">
                   <div className="px-2 py-1.5 rounded-md bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 border border-amber-200 dark:border-amber-200 shadow-sm">
                     <div className="text-base font-black text-amber-600 dark:text-amber-600">{stats.posts}</div>
-                    <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">Posts</div>
+                    <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">{t("profile.posts")}</div>
                   </div>
                   {isOwnProfile && (
                     <div className="px-2 py-1.5 rounded-md bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-50 dark:to-red-50 border border-blue-200 dark:border-blue-200 shadow-sm">
                       <div className="text-base font-black text-orange-600 dark:text-orange-600">{stats.shelves}</div>
-                      <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">Shelves</div>
+                      <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">{t("profile.shelves")}</div>
                     </div>
                   )}
                   <div 
@@ -1482,14 +1484,14 @@ export default function ProfilePage({
                     className="px-2 py-1.5 rounded-md bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-50 dark:to-indigo-50 border border-purple-200 dark:border-purple-200 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105"
                   >
                     <div className="text-base font-black text-purple-600 dark:text-purple-600">{followersCount}</div>
-                    <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">Followers</div>
+                    <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">{t("profile.followers")}</div>
                   </div>
                   <div 
                     onClick={handleFollowingClick}
                     className="px-2 py-1.5 rounded-md bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-50 dark:to-cyan-50 border border-blue-200 dark:border-blue-200 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105"
                   >
                     <div className="text-base font-black text-blue-600 dark:text-blue-600">{followingCount}</div>
-                    <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">Following</div>
+                    <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">{t("profile.following")}</div>
                   </div>
                 </div>
               </>
@@ -1504,7 +1506,7 @@ export default function ProfilePage({
                     onClick={handleProfileSave}
                     className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
-                    Yadda saxla
+                    {t("profile.save")}
                   </button>
                   <button
                     onClick={() => {
@@ -1522,7 +1524,7 @@ export default function ProfilePage({
                     }}
                     className="px-6 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md"
                   >
-                    Ləğv et
+                    {t("profile.cancel")}
                   </button>
                 </>
               ) : (
@@ -1542,21 +1544,21 @@ export default function ProfilePage({
                     className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-purple-700 hover:via-blue-700 hover:to-indigo-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
                   >
                     <Edit2 className="w-5 h-5" />
-                    Profili redaktə et
+                    {t("profile.edit")}
                   </button>
                   <button
                     onClick={onSwitchAccount}
                     className="px-6 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
                   >
                     <UserPlus className="w-5 h-5" />
-                    Hesabı dəyiş
+                    {t("profile.switchAccount")}
                   </button>
                   <button
                     onClick={onLogout}
                     className="px-6 py-3 rounded-xl border-2 border-red-200 dark:border-red-200 text-red-600 dark:text-red-600 hover:bg-red-50 dark:hover:bg-red-50 font-semibold transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
                   >
                     <LogOut className="w-5 h-5" />
-                    Çıxış
+                    {t("profile.logout")}
                   </button>
                 </>
               )
@@ -1602,7 +1604,7 @@ export default function ProfilePage({
         <div className="fixed inset-0 bg-black/50 dark:bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowFollowersModal(false)}>
           <div className="bg-white dark:bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b-2 border-gray-200 dark:border-gray-200">
-              <h2 className="text-2xl font-black text-gray-900 dark:text-gray-900">Followers</h2>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-gray-900">{t("profile.followersTitle")}</h2>
               <button
                 onClick={() => setShowFollowersModal(false)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-full transition-colors"
@@ -1617,7 +1619,7 @@ export default function ProfilePage({
                 </div>
               ) : followersList.length === 0 ? (
                 <div className="text-center py-20">
-                  <p className="text-gray-600 dark:text-gray-600 font-semibold">No followers yet</p>
+                  <p className="text-gray-600 dark:text-gray-600 font-semibold">{t("profile.noFollowers")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1704,7 +1706,7 @@ export default function ProfilePage({
         <div className="fixed inset-0 bg-black/50 dark:bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowFollowingModal(false)}>
           <div className="bg-white dark:bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b-2 border-gray-200 dark:border-gray-200">
-              <h2 className="text-2xl font-black text-gray-900 dark:text-gray-900">Following</h2>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-gray-900">{t("profile.followingTitle")}</h2>
               <button
                 onClick={() => setShowFollowingModal(false)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-full transition-colors"
@@ -1719,7 +1721,7 @@ export default function ProfilePage({
                 </div>
               ) : followingList.length === 0 ? (
                 <div className="text-center py-20">
-                  <p className="text-gray-600 dark:text-gray-600 font-semibold">Not following anyone yet</p>
+                  <p className="text-gray-600 dark:text-gray-600 font-semibold">{t("profile.noFollowing")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">

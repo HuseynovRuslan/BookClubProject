@@ -1,23 +1,23 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreatePost, onCreateBook, isOpen = false, onClose }) {
   const { user } = useAuth();
+  const t = useTranslation();
   const isWriter = user?.role === "writer";
 
   // Əsas menyu
   const mainMenuItems = [
-    { label: "Social Feed", to: "/social" },
-    { label: "My Reading List", to: "/reading-list" },
-    { label: "All Books", to: "/books" },
+    { label: t("nav.readingList"), to: "/reading-list" },
   ];
 
   // Əlavə linklər (Create Post-dan sonra gələcək)
   const extraMenuItems = [
-    { label: "Search", to: "/search" },
-    { label: "Categories", to: "/categories" },
-    { label: "What Should I Read?", to: "/recommendations" },
-    { label: "More", to: "/more" },
+    { label: t("nav.search"), to: "/search" },
+    { label: t("nav.categories"), to: "/categories" },
+    { label: t("nav.recommendations"), to: "/recommendations" },
+    { label: t("nav.more"), to: "/more" },
   ];
 
   return (
@@ -67,7 +67,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                   isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                 }`}
               >
-                Create Post
+                {t("nav.createPost")}
               </button>
             </li>
 
@@ -103,7 +103,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                     isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                   }`}
                 >
-                  New Book
+                  {t("nav.newBook")}
                 </button>
               </li>
             )}
@@ -148,7 +148,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                   isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                 }`}
               >
-                Create Post
+                {t("nav.createPost")}
               </button>
             </li>
 
@@ -180,7 +180,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                     isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
                   }`}
                 >
-                  New Book
+                  {t("nav.newBook")}
                 </button>
               </li>
             )}

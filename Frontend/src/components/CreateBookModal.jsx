@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useTranslation } from "../hooks/useTranslation";
 
 export default function CreateBookModal({ onClose, onCreate }) {
+  const t = useTranslation();
   const [title, setTitle] = useState("");
   const [genre, setGenre] = useState("");
   const [description, setDescription] = useState("");
@@ -17,7 +19,7 @@ export default function CreateBookModal({ onClose, onCreate }) {
     setError("");
 
     if (!title.trim() || !genre.trim() || !description.trim()) {
-      setError("Please fill in title, genre, and description.");
+      setError(t("book.fillRequired"));
       return;
     }
 
@@ -40,12 +42,12 @@ export default function CreateBookModal({ onClose, onCreate }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-gray-900 text-white rounded-xl p-6 w-full max-w-md shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">Add New Book</h2>
+        <h2 className="text-xl font-semibold mb-4">{t("book.addNew")}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Cover Image */}
           <div>
-            <label className="block text-sm mb-1">Book Cover Image</label>
+            <label className="block text-sm mb-1">{t("book.coverImage")}</label>
             <input
               type="file"
               accept="image/*"
@@ -54,18 +56,18 @@ export default function CreateBookModal({ onClose, onCreate }) {
             />
             {!imageFile && (
               <p className="text-xs text-gray-400 mt-1">
-                No image selected. A default cover will be used.
+                {t("book.noImageSelected")}
               </p>
             )}
           </div>
 
           {/* Title */}
           <div>
-            <label className="block text-sm mb-1">Book Title</label>
+            <label className="block text-sm mb-1">{t("book.title")}</label>
             <input
               type="text"
               value={title}
-              placeholder="Enter book title"
+              placeholder={t("book.title")}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full bg-gray-800 p-2 rounded text-white"
             />
@@ -73,11 +75,11 @@ export default function CreateBookModal({ onClose, onCreate }) {
 
           {/* Genre */}
           <div>
-            <label className="block text-sm mb-1">Genre</label>
+            <label className="block text-sm mb-1">{t("book.genre")}</label>
             <input
               type="text"
               value={genre}
-              placeholder="e.g., Fiction, Mystery, Romance"
+              placeholder={t("book.genre")}
               onChange={(e) => setGenre(e.target.value)}
               className="w-full bg-gray-800 p-2 rounded text-white"
             />
@@ -85,11 +87,11 @@ export default function CreateBookModal({ onClose, onCreate }) {
 
           {/* Description */}
           <div>
-            <label className="block text-sm mb-1">Description</label>
+            <label className="block text-sm mb-1">{t("book.description")}</label>
             <textarea
               value={description}
               rows={3}
-              placeholder="Enter a short description"
+              placeholder={t("book.description")}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full bg-gray-800 p-2 rounded text-white"
             />
@@ -105,13 +107,13 @@ export default function CreateBookModal({ onClose, onCreate }) {
               onClick={onClose}
               className="px-4 py-2 rounded-full bg-gray-700 hover:bg-gray-600"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
               className="px-4 py-2 rounded-full bg-gray-900 dark:bg-purple-600 hover:bg-gray-800 dark:hover:bg-purple-700 text-white"
             >
-              Publish Book
+              {t("common.save")}
             </button>
           </div>
         </form>

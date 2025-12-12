@@ -5,6 +5,28 @@ import SocialFeedPost from "./SocialFeedPost";
 import ReviewDetailModal from "./reviews/ReviewDetailModal";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getFollowing } from "../api/userFollows";
+import { useTranslation } from "../hooks/useTranslation";
+
+const STORAGE_KEY = "bookverse_social_feed";
+
+// localStorage helper functions
+const saveToStorage = (posts) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+  } catch (err) {
+    console.error("Error saving to localStorage:", err);
+  }
+};
+
+const loadFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (err) {
+    console.error("Error loading from localStorage:", err);
+    return [];
+  }
+};
 
 export default function SocialFeedPage({
   currentUsername,
@@ -13,12 +35,14 @@ export default function SocialFeedPage({
   onDeleteComment,
 }) {
   const { user: authUser } = useAuth();
-  const [remotePosts, setRemotePosts] = useState([]);
+  const t = useTranslation();
+  const [remotePosts, setRemotePosts] = useState(() => {
+    // Load saved posts from localStorage on initial state
+    const saved = loadFromStorage();
+    return saved;
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
-  const pageSize = 10;
-  const [hasMore, setHasMore] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewDetail, setReviewDetail] = useState(null);
   const [reviewModalError, setReviewModalError] = useState(null);
@@ -71,7 +95,8 @@ export default function SocialFeedPage({
     setLoading(true);
     setError(null);
     try {
-      const response = await getFeed({ page, pageSize });
+      // Fetch a large number of posts since pagination is removed
+      const response = await getFeed({ page: 1, pageSize: 100 });
       // getFeed already returns normalized format: { items, total, page, pageSize }
       let items = response.items || [];
       
@@ -89,18 +114,35 @@ export default function SocialFeedPage({
         });
       }
       
-      const totalCount = response.total || 0;
-      setRemotePosts(items);
-      setHasMore(
-        totalCount ? page * pageSize < totalCount : items.length === pageSize
+      // Merge with current remotePosts (which may contain saved posts)
+      const newPostIds = new Set(items.map(p => p.id));
+      
+      // Combine new API posts with existing posts, prioritizing existing versions (which have comments, likes, etc.)
+      const mergedPosts = items.map(newPost => {
+        const existingPost = remotePosts.find(ep => ep.id === newPost.id);
+        if (existingPost) {
+          // Use existing version (has comments, likes, etc.) but update with new data
+          return { ...newPost, ...existingPost };
+        }
+        return newPost;
+      });
+      
+      // Add existing posts that aren't in new API feed (local posts or old saved posts)
+      const additionalPosts = remotePosts.filter(ep => 
+        !newPostIds.has(ep.id)
       );
+      
+      setRemotePosts([...mergedPosts, ...additionalPosts]);
     } catch (err) {
       console.error("Error fetching feed:", err);
       setError(err.message || "Failed to load feed.");
+      // On error, load from localStorage
+      const saved = loadFromStorage();
+      setRemotePosts(saved);
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, followingUsers, authUser]);
+  }, [followingUsers, authUser]);
 
   useEffect(() => {
     if (!followingLoading && followingUsers.length >= 0) {
@@ -112,10 +154,21 @@ export default function SocialFeedPage({
     // Combine local and remote posts
     const allPosts = [...localPosts, ...remotePosts];
     
+    // Remove duplicates (prioritize localPosts > remotePosts)
+    const uniquePosts = [];
+    const seenIds = new Set();
+    
+    for (const post of allPosts) {
+      if (!seenIds.has(post.id)) {
+        seenIds.add(post.id);
+        uniquePosts.push(post);
+      }
+    }
+    
     // Filter to only show posts from followed users (including own posts)
     if (followingUsers.length > 0) {
       const currentUserId = authUser?.id || authUser?.Id;
-      return allPosts.filter(post => {
+      return uniquePosts.filter(post => {
         // Local posts are always from current user, so include them
         if (post.isLocal) return true;
         
@@ -130,8 +183,15 @@ export default function SocialFeedPage({
     }
     
     // If no following list loaded yet, show all posts
-    return allPosts;
+    return uniquePosts;
   }, [localPosts, remotePosts, followingUsers, authUser]);
+
+  // Save posts to localStorage whenever they change
+  useEffect(() => {
+    if (posts.length > 0) {
+      saveToStorage(posts);
+    }
+  }, [posts]);
 
   const handleRemoteCommentAdd = useCallback(
     (postId, text) => {
@@ -141,23 +201,23 @@ export default function SocialFeedPage({
         text,
         timestamp: "Just now",
       };
-      setRemotePosts((prev) =>
-        prev.map((post) =>
+      setRemotePosts((prev) => {
+        return prev.map((post) =>
           post.id === postId
             ? {
                 ...post,
                 comments: [...(post.comments || []), newComment],
               }
             : post
-        )
-      );
+        );
+      });
     },
     [currentUsername]
   );
 
   const handleRemoteCommentDelete = useCallback((postId, commentId) => {
-    setRemotePosts((prev) =>
-      prev.map((post) =>
+    setRemotePosts((prev) => {
+      return prev.map((post) =>
         post.id === postId
           ? {
               ...post,
@@ -166,19 +226,9 @@ export default function SocialFeedPage({
               ),
             }
           : post
-      )
-    );
+      );
+    });
   }, []);
-
-  const handlePreviousPage = () => {
-    setPage((prev) => Math.max(prev - 1, 1));
-  };
-
-  const handleNextPage = () => {
-    if (hasMore) {
-      setPage((prev) => prev + 1);
-    }
-  };
 
   const handleViewReview = useCallback(
     async (item) => {
@@ -223,10 +273,10 @@ export default function SocialFeedPage({
               </div>
               <div className="flex-1">
                 <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-none mb-3 drop-shadow-sm">
-                  Social Feed
+                  {t("feed.title")}
                 </h1>
                 <p className="text-gray-700 dark:text-gray-700 text-xl sm:text-2xl mt-3 font-semibold">
-                  Discover what others are reading
+                  {t("feed.subtitle")}
                 </p>
               </div>
             </div>
@@ -234,7 +284,7 @@ export default function SocialFeedPage({
               onClick={fetchFeed}
               className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              Refresh
+              {t("feed.refresh")}
             </button>
           </div>
         </div>
@@ -247,7 +297,7 @@ export default function SocialFeedPage({
             <div className="w-16 h-16 border-4 border-amber-200 dark:border-amber-200 rounded-full"></div>
             <div className="w-16 h-16 border-4 border-purple-600 dark:border-purple-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
           </div>
-          <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mt-6">Loading feed...</p>
+          <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mt-6">{t("feed.loading")}</p>
         </div>
       )}
 
@@ -259,7 +309,7 @@ export default function SocialFeedPage({
             className="px-6 py-3 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             onClick={fetchFeed}
           >
-            Try Again
+            {t("common.error")} - {t("feed.refresh")}
           </button>
         </div>
       )}
@@ -273,58 +323,45 @@ export default function SocialFeedPage({
             </svg>
           </div>
           <h2 className="text-3xl font-black text-gray-900 dark:text-gray-900 mb-3">
-            No posts yet
+            {t("feed.noPosts")}
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-600">
-            Create one from the sidebar!
+            {t("feed.createPost")}
           </p>
         </div>
       )}
 
       {/* Posts */}
       {!loading && !error && posts.length > 0 && (
-        <>
-          <div className="space-y-6">
-            {posts.map((post) => (
-              <SocialFeedPost
-                key={post.id}
-                post={post}
-                currentUsername={currentUsername}
-                enableInteractions
-                onAddComment={(text) =>
-                  post.isLocal
-                    ? onAddComment?.(post.id, text)
-                    : handleRemoteCommentAdd(post.id, text)
-                }
-                onDeleteComment={(commentId) =>
-                  post.isLocal
-                    ? onDeleteComment?.(post.id, commentId)
-                    : handleRemoteCommentDelete(post.id, commentId)
-                }
-                onViewReview={handleViewReview}
-              />
-            ))}
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between mt-12 pt-8 border-t-2 border-gray-100 dark:border-gray-200">
-            <button
-              onClick={handlePreviousPage}
-              disabled={page === 1}
-              className="px-6 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-            >
-              Previous
-            </button>
-            <span className="text-lg font-bold text-gray-900 dark:text-gray-900">Page {page}</span>
-            <button
-              onClick={handleNextPage}
-              disabled={!hasMore}
-              className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              Next
-            </button>
-          </div>
-        </>
+        <div className="space-y-6">
+          {posts.map((post) => (
+            <SocialFeedPost
+              key={post.id}
+              post={post}
+              currentUsername={currentUsername}
+              enableInteractions
+              onAddComment={(text) =>
+                post.isLocal
+                  ? onAddComment?.(post.id, text)
+                  : handleRemoteCommentAdd(post.id, text)
+              }
+              onDeleteComment={(commentId) =>
+                post.isLocal
+                  ? onDeleteComment?.(post.id, commentId)
+                  : handleRemoteCommentDelete(post.id, commentId)
+              }
+              onViewReview={handleViewReview}
+              onLikeChange={(postId, likes, isLiked) => {
+                // Update post likes in state
+                setRemotePosts((prev) => {
+                  return prev.map((p) =>
+                    p.id === postId ? { ...p, likes, isLiked } : p
+                  );
+                });
+              }}
+            />
+          ))}
+        </div>
       )}
 
       {reviewModalOpen && reviewDetail && (

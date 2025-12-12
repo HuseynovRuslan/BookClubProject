@@ -11,11 +11,11 @@ import Sidebar from "./components/Sidebar";
 import HomePage from "./components/HomePage";
 import SocialFeedPage from "./components/SocialFeedPage";
 import ReadingListPage from "./components/ReadingListPage";
-import AllBooksPage from "./components/AllBooksPage";
 import ProfilePage from "./components/ProfilePage";
 import SearchPage from "./components/SearchPage";
 import CategoriesPage from "./components/CategoriesPage";
 import RecommendationsPage from "./components/RecommendationsPage";
+import MorePage from "./components/MorePage";
 import LoginPage from "./components/LoginPage";
 import SignUpPage from "./components/SignUp";
 import CreatePostModal from "./components/CreatePostModal";
@@ -79,7 +79,17 @@ function App() {
       timestamp: "Just now",
       isLocal: true,
     };
-    setLocalPosts((prev) => [postWithUser, ...prev]);
+    setLocalPosts((prev) => {
+      const updated = [postWithUser, ...prev];
+      // Save to localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+        localStorage.setItem("bookverse_social_feed", JSON.stringify([...updated, ...existing]));
+      } catch (err) {
+        console.error("Error saving post to localStorage:", err);
+      }
+      return updated;
+    });
     setUserPosts((prev) => [postWithUser, ...prev]);
   };
 
@@ -114,26 +124,62 @@ function App() {
       text: commentText,
       timestamp: "Just now",
     };
-    setLocalPosts((prev) =>
-      prev.map((post) =>
+    setLocalPosts((prev) => {
+      const updated = prev.map((post) =>
         post.id === postId
           ? { ...post, comments: [...post.comments, newComment] }
           : post
-      )
-    );
+      );
+      // Save to localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+        const merged = existing.map(p => {
+          const localPost = updated.find(lp => lp.id === p.id);
+          return localPost || p;
+        });
+        // Add new local posts that aren't in existing
+        updated.forEach(lp => {
+          if (!merged.find(p => p.id === lp.id)) {
+            merged.push(lp);
+          }
+        });
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(merged));
+      } catch (err) {
+        console.error("Error saving comment to localStorage:", err);
+      }
+      return updated;
+    });
   };
 
   const handleDeleteComment = (postId, commentId) => {
-    setLocalPosts((prev) =>
-      prev.map((post) =>
+    setLocalPosts((prev) => {
+      const updated = prev.map((post) =>
         post.id === postId
           ? {
               ...post,
               comments: post.comments.filter((c) => c.id !== commentId),
             }
           : post
-      )
-    );
+      );
+      // Save to localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+        const merged = existing.map(p => {
+          const localPost = updated.find(lp => lp.id === p.id);
+          return localPost || p;
+        });
+        // Add new local posts that aren't in existing
+        updated.forEach(lp => {
+          if (!merged.find(p => p.id === lp.id)) {
+            merged.push(lp);
+          }
+        });
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(merged));
+      } catch (err) {
+        console.error("Error saving comment deletion to localStorage:", err);
+      }
+      return updated;
+    });
   };
 
   const handleBookClick = (book) => {
@@ -201,7 +247,14 @@ function App() {
           <Routes>
             <Route
               path="/"
-              element={<RecommendationsPage onBookClick={handleBookClick} />}
+              element={
+                <SocialFeedPage
+                  currentUsername={currentUser?.name || "Guest"}
+                  localPosts={localPosts}
+                  onAddComment={handleAddComment}
+                  onDeleteComment={handleDeleteComment}
+                />
+              }
             />
             <Route
               path="/home"
@@ -220,10 +273,6 @@ function App() {
             />
             <Route path="/reading-list" element={<ReadingListPage />} />
             <Route
-              path="/books"
-              element={<AllBooksPage onBookClick={handleBookClick} />}
-            />
-            <Route
               path="/search"
               element={<SearchPage onBookClick={handleBookClick} />}
             />
@@ -234,6 +283,10 @@ function App() {
             <Route
               path="/recommendations"
               element={<RecommendationsPage onBookClick={handleBookClick} />}
+            />
+            <Route
+              path="/more"
+              element={<MorePage />}
             />
             <Route
               path="/profile"

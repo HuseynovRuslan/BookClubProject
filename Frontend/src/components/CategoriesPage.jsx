@@ -1,11 +1,37 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getGenres } from "../api/genres";
-import { getBooksByGenre } from "../api/books";
+import { getAllBooks, getBooksByGenre } from "../api/books";
 import { getImageUrl } from "../api/config";
+import { useTranslation } from "../hooks/useTranslation";
+
+// Category icons mapping
+const CATEGORY_ICONS = {
+  Fiction: "📖",
+  Mystery: "🔍",
+  "Self-Help": "💪",
+  Romance: "💕",
+  Science: "🔬",
+  History: "📜",
+  Fantasy: "✨",
+  Biography: "👤",
+  Horror: "👻",
+  Adventure: "🗺️",
+  Drama: "🎭",
+  Comedy: "😄",
+  Thriller: "⚡",
+  Philosophy: "🤔",
+  Technology: "💻",
+  Business: "💼",
+  Health: "💚",
+  Education: "🎓",
+  Art: "🎨",
+  Music: "🎵",
+  Default: "📚"
+};
 
 export default function CategoriesPage({ onBookClick }) {
   const navigate = useNavigate();
+  const t = useTranslation();
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryBooks, setCategoryBooks] = useState([]);
@@ -21,9 +47,64 @@ export default function CategoriesPage({ onBookClick }) {
     setLoadingCategories(true);
     setError(null);
     try {
-      const response = await getGenres({ page: 1, pageSize: 100 });
-      const items = response?.items || response?.Items || response || [];
-      setCategories(items);
+      // Fetch all books from database
+      const allItems = [];
+      let page = 1;
+      let hasMore = true;
+      
+      while (hasMore && page <= 10) { // Limit to 10 pages (500 books max)
+        const response = await getAllBooks({ page, pageSize: 50 });
+        const items = Array.isArray(response)
+          ? response
+          : response?.items || response?.Items || response?.data || [];
+        
+        if (Array.isArray(items) && items.length > 0) {
+          allItems.push(...items);
+          if (items.length < 50) {
+            hasMore = false;
+          }
+        } else {
+          hasMore = false;
+        }
+        page++;
+      }
+
+      // Extract unique genres from books
+      const genreMap = new Map();
+      
+      allItems.forEach(book => {
+        let genres = [];
+        
+        // Handle different genre formats
+        if (book.genres && Array.isArray(book.genres)) {
+          genres = book.genres;
+        } else if (book.genre) {
+          genres = Array.isArray(book.genre) ? book.genre : [book.genre];
+        }
+        
+        genres.forEach(genre => {
+          const genreName = typeof genre === 'string' 
+            ? genre 
+            : (genre?.name || genre?.Name || genre);
+          
+          if (genreName) {
+            if (!genreMap.has(genreName)) {
+              genreMap.set(genreName, {
+                name: genreName,
+                count: 0,
+                id: genreName.toLowerCase().replace(/\s+/g, '-')
+              });
+            }
+            genreMap.get(genreName).count++;
+          }
+        });
+      });
+
+      // Convert to array and sort by count (most books first)
+      const categoriesList = Array.from(genreMap.values())
+        .sort((a, b) => b.count - a.count);
+      
+      setCategories(categoriesList);
     } catch (err) {
       console.error("Error loading categories:", err);
       setError(err.message || "Failed to load categories");
@@ -38,11 +119,10 @@ export default function CategoriesPage({ onBookClick }) {
     setError(null);
 
     try {
-      const categoryId = category.id || category.Id;
       const categoryName = category.name || category.Name;
       
-      // Try by genre name first (as per backend API)
-      const response = await getBooksByGenre(categoryName, { page: 1, pageSize: 100 });
+      // Fetch books by genre name
+      const response = await getBooksByGenre(categoryName, { page: 1, pageSize: 50 });
       const items = response?.items || response?.Items || response || [];
       setCategoryBooks(items);
     } catch (err) {
@@ -86,11 +166,58 @@ export default function CategoriesPage({ onBookClick }) {
         return book.author.name || book.author.Name;
       }
     }
-    return book.authorName || "Unknown author";
+    return book.authorName || t("profile.unknownAuthor");
   };
 
   const getRating = (book) => {
     return book.rating || book.averageRating || book.avgRating || 0;
+  };
+
+  const getCategoryIcon = (categoryName) => {
+    return CATEGORY_ICONS[categoryName] || CATEGORY_ICONS.Default;
+  };
+
+  const translateCategoryName = (categoryName) => {
+    // Map English category names to translation keys
+    const categoryMap = {
+      "Fiction": t("category.fiction"),
+      "Mystery": t("category.mystery"),
+      "Self-Help": t("category.selfHelp"),
+      "Romance": t("category.romance"),
+      "Science": t("category.science"),
+      "History": t("category.history"),
+      "Fantasy": t("category.fantasy"),
+      "Biography": t("category.biography"),
+      "Horror": t("category.horror"),
+      "Adventure": t("category.adventure"),
+      "Drama": t("category.drama"),
+      "Comedy": t("category.comedy"),
+      "Thriller": t("category.thriller"),
+      "Philosophy": t("category.philosophy"),
+      "Technology": t("category.technology"),
+      "Business": t("category.business"),
+      "Health": t("category.health"),
+      "Education": t("category.education"),
+      "Art": t("category.art"),
+      "Music": t("category.music"),
+    };
+    return categoryMap[categoryName] || categoryName;
+  };
+
+  const getCategoryColor = (index) => {
+    const colors = [
+      "from-amber-500 via-orange-500 to-red-600",
+      "from-purple-500 via-pink-500 to-rose-600",
+      "from-blue-500 via-cyan-500 to-teal-600",
+      "from-green-500 via-emerald-500 to-lime-600",
+      "from-indigo-500 via-violet-500 to-purple-600",
+      "from-red-500 via-orange-500 to-amber-600",
+      "from-teal-500 via-cyan-500 to-blue-600",
+      "from-pink-500 via-rose-500 to-red-600",
+      "from-yellow-500 via-amber-500 to-orange-600",
+      "from-emerald-500 via-green-500 to-teal-600",
+    ];
+    return colors[index % colors.length];
   };
 
   return (
@@ -109,10 +236,13 @@ export default function CategoriesPage({ onBookClick }) {
                 </div>
                 <div className="flex-1">
                   <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-none mb-3 drop-shadow-sm">
-                    Categories
+                    {t("categories.title")}
                   </h1>
                   <p className="text-gray-700 dark:text-gray-700 text-xl sm:text-2xl mt-3 font-semibold">
-                    Browse books by category
+                    {categories.length > 0 
+                      ? `${t("categories.subtitle")} - ${categories.length} ${t("categories.title").toLowerCase()}`
+                      : t("categories.subtitle")
+                    }
                   </p>
                 </div>
               </div>
@@ -126,7 +256,7 @@ export default function CategoriesPage({ onBookClick }) {
                 <div className="w-16 h-16 border-4 border-amber-200 dark:border-amber-200 rounded-full"></div>
                 <div className="w-16 h-16 border-4 border-amber-600 dark:border-amber-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
               </div>
-              <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mt-6">Loading categories...</p>
+              <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mt-6">{t("categories.loading")}</p>
             </div>
           )}
 
@@ -139,26 +269,49 @@ export default function CategoriesPage({ onBookClick }) {
 
           {/* Categories Grid */}
           {!loadingCategories && !error && categories.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
               {categories.map((category, index) => {
-                const categoryName = category.name || category.Name || "Unknown";
-                const categoryId = category.id || category.Id;
+                const categoryName = category.name || "Unknown";
+                const categoryId = category.id || categoryName.toLowerCase().replace(/\s+/g, '-');
+                const bookCount = category.count || 0;
+                const icon = getCategoryIcon(categoryName);
+                const gradientColor = getCategoryColor(index);
+                
                 return (
                   <button
                     key={categoryId}
                     onClick={() => handleCategoryClick(category)}
-                    className="p-6 bg-white dark:bg-white rounded-2xl border-2 border-gray-200 dark:border-gray-200 hover:border-amber-400 dark:hover:border-amber-400 hover:bg-gradient-to-br hover:from-amber-50 hover:via-orange-50 hover:to-red-50 dark:hover:from-amber-50 dark:hover:via-orange-50 dark:hover:to-red-50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl group"
+                    className="group relative p-6 bg-white dark:bg-white rounded-3xl border-2 border-gray-200 dark:border-gray-200 hover:border-transparent transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 shadow-xl hover:shadow-2xl overflow-hidden"
                     style={{ 
-                      animationDelay: `${index * 30}ms`,
-                      animation: 'fadeInUp 0.6s ease-out forwards'
+                      animationDelay: `${index * 50}ms`,
                     }}
                   >
-                    <div className="text-center">
-                      <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">📚</div>
-                      <h3 className="font-bold text-gray-900 dark:text-gray-900 text-sm break-words group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-amber-600 group-hover:to-orange-600 transition-all duration-300">
-                        {categoryName}
+                    {/* Gradient Background on Hover */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${gradientColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10`}></div>
+                    
+                    {/* Shine Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none"></div>
+                    
+                    {/* Content */}
+                    <div className="relative z-10 text-center">
+                      <div className="text-5xl mb-4 group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 transform">
+                        {icon}
+                      </div>
+                      <h3 className="font-black text-gray-900 dark:text-gray-900 text-base mb-2 group-hover:text-white transition-colors duration-300 line-clamp-2">
+                        {translateCategoryName(categoryName)}
                       </h3>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span className="text-xs font-bold text-gray-600 dark:text-gray-600 group-hover:text-white/90 transition-colors duration-300">
+                          {bookCount}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-500 group-hover:text-white/80 transition-colors duration-300">
+                          {bookCount === 1 ? t("categories.book") : t("categories.books")}
+                        </span>
+                      </div>
                     </div>
+                    
+                    {/* Decorative Corner */}
+                    <div className="absolute top-2 right-2 w-3 h-3 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform group-hover:scale-150"></div>
                   </button>
                 );
               })}
@@ -174,10 +327,10 @@ export default function CategoriesPage({ onBookClick }) {
                 </svg>
               </div>
               <h2 className="text-3xl font-black text-gray-900 dark:text-gray-900 mb-3">
-                No categories found
+                {t("categories.noCategories")}
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-600">
-                Categories will appear here once they are added
+                {t("categories.subtitle")}
               </p>
             </div>
           )}
@@ -204,7 +357,7 @@ export default function CategoriesPage({ onBookClick }) {
                 >
                   <path d="M15 19l-7-7 7-7"></path>
                 </svg>
-                Back to Categories
+                {t("categories.backToCategories")}
               </button>
               <div className="flex items-center gap-5 mb-5">
                 <div className="relative">
@@ -213,10 +366,10 @@ export default function CategoriesPage({ onBookClick }) {
                 </div>
                 <div className="flex-1">
                   <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-none mb-3 drop-shadow-sm">
-                    {selectedCategory.name || selectedCategory.Name}
+                    {translateCategoryName(selectedCategory.name || selectedCategory.Name)}
                   </h1>
                   <p className="text-gray-700 dark:text-gray-700 text-xl sm:text-2xl mt-3 font-semibold">
-                    Books in this category
+                    {t("categories.booksInCategory")}
                   </p>
                 </div>
               </div>
@@ -230,7 +383,7 @@ export default function CategoriesPage({ onBookClick }) {
                 <div className="w-16 h-16 border-4 border-amber-200 dark:border-amber-200 rounded-full"></div>
                 <div className="w-16 h-16 border-4 border-amber-600 dark:border-amber-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
               </div>
-              <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mt-6">Loading books...</p>
+              <p className="text-lg font-semibold text-gray-700 dark:text-gray-700 mt-6">{t("common.loading")}</p>
             </div>
           )}
 
@@ -249,8 +402,8 @@ export default function CategoriesPage({ onBookClick }) {
                   <div className="w-1 h-8 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full"></div>
                 </div>
                 <p className="text-xl font-black text-gray-900 dark:text-gray-900">
-                  Found <span className="text-amber-600 dark:text-amber-600">{categoryBooks.length}</span>{" "}
-                  {categoryBooks.length === 1 ? "book" : "books"}
+                  {t("categories.found")} <span className="text-amber-600 dark:text-amber-600">{categoryBooks.length}</span>{" "}
+                  {categoryBooks.length === 1 ? t("categories.book") : t("categories.books")}
                 </p>
               </div>
 
@@ -350,10 +503,10 @@ export default function CategoriesPage({ onBookClick }) {
                 </svg>
               </div>
               <h2 className="text-3xl font-black text-gray-900 dark:text-gray-900 mb-3">
-                No books found
+                {t("categories.noBooks")}
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-600">
-                This category doesn't have any books yet
+                {t("categories.booksInCategory")}
               </p>
             </div>
           )}
