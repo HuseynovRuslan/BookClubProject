@@ -369,8 +369,13 @@ function App() {
   return (
     <Router>
       {initializing ? (
-        <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
-          <p>Preparing your library...</p>
+        <div className="flex items-center justify-center min-h-screen bg-white dark:bg-white">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 border-4 border-amber-200 dark:border-amber-200 rounded-full mb-4">
+              <div className="w-12 h-12 border-4 border-amber-600 dark:border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-gray-600 dark:text-gray-600 font-semibold">Preparing your library...</p>
+          </div>
         </div>
       ) : (!isAuthenticated && !isGuest) || showAuthFromGuest ? (
         <div className="min-h-screen">

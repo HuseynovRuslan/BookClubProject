@@ -250,6 +250,7 @@ export default function SocialFeedPage({
     });
     
     // Then, merge local posts (prioritize local posts)
+    // Local posts should appear first (newest at top)
     localPosts.forEach(post => {
       const existingPost = postMap.get(post.id);
       if (existingPost) {
@@ -259,19 +260,32 @@ export default function SocialFeedPage({
         postMap.set(post.id, {
           ...existingPost,
           ...post, // Local post takes priority
-          comments: [...(existingPost.comments || []), ...newComments]
+          comments: [...(existingPost.comments || []), ...newComments],
+          isLocal: true // Ensure local flag is set
         });
       } else {
-        postMap.set(post.id, { ...post });
+        postMap.set(post.id, { ...post, isLocal: true });
       }
     });
     
     const uniquePosts = Array.from(postMap.values());
     
+    // Sort posts by timestamp (newest first) - local posts first, then by timestamp
+    const sortedPosts = uniquePosts.sort((a, b) => {
+      // Local posts (newly created) should be at the top
+      if (a.isLocal && !b.isLocal) return -1;
+      if (!a.isLocal && b.isLocal) return 1;
+      
+      // Then sort by timestamp (newest first)
+      const timeA = new Date(a.timestamp || a.createdAt || a.CreatedAt || 0).getTime();
+      const timeB = new Date(b.timestamp || b.createdAt || b.CreatedAt || 0).getTime();
+      return timeB - timeA; // Descending order (newest first)
+    });
+    
     // Filter to only show posts from followed users (including own posts)
     if (followingUsers.length > 0) {
       const currentUserId = authUser?.id || authUser?.Id;
-      return uniquePosts.filter(post => {
+      return sortedPosts.filter(post => {
         // Local posts are always from current user, so include them
         if (post.isLocal) return true;
         
@@ -286,7 +300,7 @@ export default function SocialFeedPage({
     }
     
     // If no following list loaded yet, show all posts
-    return uniquePosts;
+    return sortedPosts;
   }, [localPosts, remotePosts, followingUsers, authUser]);
 
   // Save posts to localStorage whenever they change
