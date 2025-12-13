@@ -30,6 +30,7 @@ import {
   getUserFollowing,
   isFollowing as checkIsFollowing,
 } from "../api/userFollows";
+import { createComment, deleteComment } from "../api/comments";
 
 export default function ProfilePage({
   user,
@@ -469,20 +470,30 @@ export default function ProfilePage({
             // For now, we'll use getMyReviews as a placeholder
             // In a real implementation, you'd have getUserReviews(userId)
             const reviews = await getMyReviews();
+            // Load saved posts from localStorage to get comments
+            const savedPosts = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+            
             // Filter reviews by user if possible, or use all reviews as placeholder
-            setViewedUserPosts(reviews.map(review => ({
-              id: review.id,
-              type: "review",
-              username: freshProfile.name,
-              bookTitle: review.book?.title || "",
-              bookCover: review.book?.coverImageUrl || "",
-              review: review.text,
-              rating: review.rating,
-              reviewId: review.id,
-              likes: 0,
-              comments: [],
-              timestamp: review.createdAt || "Just now",
-            })));
+            const mappedPosts = reviews.map(review => {
+              // Find saved post with comments
+              const savedPost = savedPosts.find(sp => sp.id === review.id || sp.reviewId === review.id);
+              
+              return {
+                id: review.id,
+                type: "review",
+                username: freshProfile.name,
+                bookTitle: review.book?.title || "",
+                bookCover: review.book?.coverImageUrl || "",
+                review: review.text,
+                rating: review.rating,
+                reviewId: review.id,
+                likes: savedPost?.likes || 0,
+                comments: savedPost?.comments || [],
+                timestamp: review.createdAt || "Just now",
+              };
+            });
+            
+            setViewedUserPosts(mappedPosts);
           } catch (err) {
             // Silently handle errors - set empty posts
             setViewedUserPosts([]);
@@ -506,6 +517,84 @@ export default function ProfilePage({
     loadProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlParam]);
+
+  // Load comments from localStorage and merge with posts on mount and when posts change
+  useEffect(() => {
+    try {
+      const savedPosts = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+      
+      if (isOwnProfile) {
+        // For own profile, merge comments with userPosts
+        if (userPosts.length > 0) {
+          const postMap = new Map();
+          
+          // First, add all userPosts
+          userPosts.forEach(post => {
+            postMap.set(post.id, { ...post });
+          });
+          
+          // Then, update with saved posts (which have comments and deletions)
+          savedPosts.forEach(savedPost => {
+            // For reviews, check both id and reviewId to match posts
+            let existingPost = postMap.get(savedPost.id);
+            if (!existingPost && savedPost.type === 'review' && savedPost.reviewId) {
+              // Try to find by reviewId
+              for (const [id, post] of postMap.entries()) {
+                if (post.type === 'review' && (post.id === savedPost.reviewId || post.reviewId === savedPost.reviewId)) {
+                  existingPost = post;
+                  break;
+                }
+              }
+            }
+            
+            if (existingPost) {
+              // Merge: keep existing post but update with saved comments
+              // Use saved comments (which may have deletions) instead of existing comments
+              postMap.set(existingPost.id, {
+                ...existingPost,
+                comments: savedPost.comments || existingPost.comments || [],
+                likes: savedPost.likes !== undefined ? savedPost.likes : existingPost.likes,
+                isLiked: savedPost.isLiked !== undefined ? savedPost.isLiked : existingPost.isLiked,
+              });
+            }
+          });
+          
+          const mergedPosts = Array.from(postMap.values());
+          // Only update if there are actual changes (to avoid infinite loops)
+          setViewedUserPosts((prev) => {
+            const prevIds = new Set(prev.map(p => p.id));
+            const newIds = new Set(mergedPosts.map(p => p.id));
+            const idsChanged = prevIds.size !== newIds.size || ![...prevIds].every(id => newIds.has(id));
+            
+            if (idsChanged) {
+              return mergedPosts;
+            }
+            
+            // Check if comments changed (including deletions)
+            const commentsChanged = mergedPosts.some(newPost => {
+              const oldPost = prev.find(p => p.id === newPost.id);
+              if (!oldPost) return true;
+              const oldComments = oldPost.comments || [];
+              const newComments = newPost.comments || [];
+              // Check if length changed or any comment IDs are different
+              if (oldComments.length !== newComments.length) return true;
+              const oldCommentIds = new Set(oldComments.map(c => c.id));
+              const newCommentIds = new Set(newComments.map(c => c.id));
+              return oldCommentIds.size !== newCommentIds.size || 
+                     ![...oldCommentIds].every(id => newCommentIds.has(id));
+            });
+            
+            return commentsChanged ? mergedPosts : prev;
+          });
+        }
+      } else {
+        // For other users' profiles, merge comments with viewedUserPosts when they're loaded
+        // This is handled in loadProfile function
+      }
+    } catch (err) {
+      console.error("Error loading comments from localStorage:", err);
+    }
+  }, [userPosts, isOwnProfile]); // Run when userPosts changes or isOwnProfile changes
 
   const handleProfileSave = async () => {
     if (!editedUser?.name?.trim()) {
@@ -1184,10 +1273,52 @@ export default function ProfilePage({
     }
   };
 
+  // Calculate posts count - only include posts created by the profile owner
+  const getProfileOwnerId = () => {
+    if (isOwnProfile) {
+      return authUser?.id || authUser?.Id;
+    }
+    return profile?.id || profile?.Id || profile?.userId || profile?.UserId;
+  };
+
+  const profileOwnerId = getProfileOwnerId();
+
+  // Filter posts to only count posts from the profile owner
+  const filterPostsByOwner = (posts) => {
+    return posts.filter(post => {
+      // Get post author ID - try different possible field names
+      const postUserId = post.userId || post.UserId || 
+                        post.user?.id || post.User?.Id ||
+                        post.user?.userId || post.User?.UserId;
+      
+      // Get post author username/name for comparison
+      const postUsername = post.username || post.user?.name || post.user?.username;
+      const profileUsername = profile?.username || profile?.name;
+      
+      // Match by ID if both are available
+      if (profileOwnerId && postUserId) {
+        return String(postUserId) === String(profileOwnerId);
+      }
+      
+      // Match by username if IDs don't match or aren't available
+      if (profileUsername && postUsername) {
+        return String(postUsername).toLowerCase() === String(profileUsername).toLowerCase();
+      }
+      
+      // For local posts, check if they belong to the current user (own profile only)
+      if (post.isLocal && isOwnProfile) {
+        return true; // Local posts are always from current user
+      }
+      
+      // If we can't determine ownership, exclude the post to be safe
+      return false;
+    });
+  };
+
   const stats = {
     posts: isOwnProfile 
-      ? userPosts.length 
-      : viewedUserPosts.filter(post => post.type !== "post").length, // Başqa user üçün normal postları sayma
+      ? filterPostsByOwner(userPosts).length
+      : filterPostsByOwner(viewedUserPosts).filter(post => post.type !== "post").length, // Başqa user üçün normal postları sayma
     shelves: shelves?.length || 0,
   };
 
@@ -1224,99 +1355,281 @@ export default function ProfilePage({
     }
   };
 
-  // Handle comment addition - sync with localStorage and parent
+  // Handle comment addition - save to backend API and sync with localStorage and parent
   const handleAddComment = async (postId, commentText) => {
-    // For own profile posts: Call parent's handler (it will update userPosts prop)
-    // For other users' posts: Update local state and localStorage
-    if (isOwnProfile) {
-      // Own profile: Let parent handle the update (userPosts prop will be updated)
-      if (onAddComment) {
-        try {
-          await onAddComment(postId, commentText);
-        } catch (err) {
-          console.error("Error adding comment:", err);
-          throw err;
+    if (!commentText || !commentText.trim()) {
+      throw new Error("Comment text cannot be empty");
+    }
+
+    // Find the post to determine its type
+    const post = isOwnProfile 
+      ? userPosts.find(p => p.id === postId)
+      : viewedUserPosts.find(p => p.id === postId);
+    
+    const postType = post?.type || 'review'; // Default to 'review' if type is unknown
+
+    // Create comment object for optimistic update
+    const newComment = {
+      id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // More unique ID
+      username: authUser?.name || authUser?.username || authUser?.firstName || "You",
+      userAvatar: authUser?.avatarUrl || authUser?.AvatarUrl || authUser?.profilePictureUrl || authUser?.ProfilePictureUrl || null,
+      text: commentText.trim(),
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+
+    // Optimistic update: Update UI immediately
+    const updateLocalState = (commentToAdd) => {
+      if (isOwnProfile) {
+        // For own profile, update is handled by parent's onAddComment
+        // But we can also update viewedUserPosts for consistency
+        setViewedUserPosts((prev) => {
+          return prev.map((p) =>
+            p.id === postId
+              ? { ...p, comments: [...(p.comments || []), commentToAdd] }
+              : p
+          );
+        });
+      } else {
+        // Other user's profile: Update local state
+        setViewedUserPosts((prev) => {
+          return prev.map((p) =>
+            p.id === postId
+              ? { ...p, comments: [...(p.comments || []), commentToAdd] }
+              : p
+          );
+        });
+      }
+    };
+
+    // Update UI optimistically
+    updateLocalState(newComment);
+
+    let savedComment = null;
+    try {
+      // Try to save to backend API
+      savedComment = await createComment(postId, commentText.trim(), postType);
+      
+      if (savedComment) {
+        // Backend API available - use the saved comment data
+        const backendComment = {
+          id: savedComment.id || savedComment.Id || newComment.id,
+          username: savedComment.username || savedComment.Username || newComment.username,
+          userAvatar: savedComment.userAvatar || savedComment.UserAvatar || savedComment.user?.avatarUrl || savedComment.User?.AvatarUrl || newComment.userAvatar,
+          text: savedComment.text || savedComment.Text || savedComment.commentText || savedComment.CommentText || commentText.trim(),
+          timestamp: savedComment.timestamp || savedComment.createdAt || savedComment.CreatedAt || newComment.timestamp,
+          createdAt: savedComment.createdAt || savedComment.CreatedAt || newComment.createdAt,
+        };
+        
+        // Replace temporary comment with backend comment
+        if (isOwnProfile) {
+          setViewedUserPosts((prev) => {
+            return prev.map((p) =>
+              p.id === postId
+                ? { 
+                    ...p, 
+                    comments: p.comments?.map(c => c.id === newComment.id ? backendComment : c) || [backendComment]
+                  }
+                : p
+            );
+          });
+        } else {
+          setViewedUserPosts((prev) => {
+            return prev.map((p) =>
+              p.id === postId
+                ? { 
+                    ...p, 
+                    comments: p.comments?.map(c => c.id === newComment.id ? backendComment : c) || [backendComment]
+                  }
+                : p
+            );
+          });
         }
       }
-    } else {
-      // Other user's profile: Update local state and localStorage
-      const newComment = {
-        id: Date.now().toString(),
-        username: authUser?.name || authUser?.username || "You",
-        userAvatar: authUser?.avatarUrl || authUser?.AvatarUrl || authUser?.profilePictureUrl || authUser?.ProfilePictureUrl || null,
-        text: commentText,
-        timestamp: new Date().toISOString(),
-      };
-      
-      // Update local state
-      setViewedUserPosts((prev) => {
-        return prev.map((post) =>
-          post.id === postId
-            ? { ...post, comments: [...(post.comments || []), newComment] }
-            : post
-        );
-      });
-      
-      // Sync with localStorage
-      try {
-        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
-        const postIndex = existing.findIndex((post) => post.id === postId);
-        
-        if (postIndex !== -1) {
-          // Post exists, update it
-          const updated = existing.map((post) =>
-            post.id === postId
-              ? { ...post, comments: [...(post.comments || []), newComment] }
-              : post
-          );
-          localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
+      // If savedComment is null, API not available, continue with localStorage fallback
+    } catch (err) {
+      // If API call fails (except 404), revert optimistic update
+      if (err.status !== 404) {
+        console.error("Error saving comment to backend:", err);
+        // Revert optimistic update
+        if (isOwnProfile) {
+          setViewedUserPosts((prev) => {
+            return prev.map((p) =>
+              p.id === postId
+                ? { ...p, comments: p.comments?.filter(c => c.id !== newComment.id) || [] }
+                : p
+            );
+          });
         } else {
-          // Post doesn't exist in localStorage, add it with the comment
-          const postToAdd = viewedUserPosts.find((p) => p.id === postId);
-          if (postToAdd) {
-            const postWithComment = {
-              ...postToAdd,
-              comments: [...(postToAdd.comments || []), newComment],
-            };
-            existing.push(postWithComment);
-            localStorage.setItem("bookverse_social_feed", JSON.stringify(existing));
-          }
+          setViewedUserPosts((prev) => {
+            return prev.map((p) =>
+              p.id === postId
+                ? { ...p, comments: p.comments?.filter(c => c.id !== newComment.id) || [] }
+                : p
+            );
+          });
         }
+        throw err;
+      }
+      // 404 means API not available, continue with localStorage fallback
+    }
+
+    // Save to localStorage as fallback or backup
+    try {
+      const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+      // For reviews, check both id and reviewId to find the post
+      const postIndex = existing.findIndex((post) => 
+        post.id === postId || 
+        (post.type === 'review' && (post.reviewId === postId || post.reviewId === post.reviewId))
+      );
+      
+      const commentToSave = savedComment ? {
+        id: savedComment.id || savedComment.Id || newComment.id,
+        username: savedComment.username || savedComment.Username || newComment.username,
+        userAvatar: savedComment.userAvatar || savedComment.UserAvatar || savedComment.user?.avatarUrl || savedComment.User?.AvatarUrl || newComment.userAvatar,
+        text: savedComment.text || savedComment.Text || savedComment.commentText || savedComment.CommentText || commentText.trim(),
+        timestamp: savedComment.timestamp || savedComment.createdAt || savedComment.CreatedAt || newComment.timestamp,
+      } : newComment;
+      
+      if (postIndex !== -1) {
+        // Post exists, update it
+        const updated = existing.map((post) => {
+          // Check if this is the post we're looking for (by id or reviewId)
+          const isTargetPost = post.id === postId || 
+            (post.type === 'review' && (post.reviewId === postId || post.id === postId));
+          
+          if (isTargetPost) {
+            return { ...post, comments: [...(post.comments || []), commentToSave] };
+          }
+          return post;
+        });
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
+      } else {
+        // Post doesn't exist in localStorage, add it with the comment
+        const postToAdd = viewedUserPosts.find((p) => p.id === postId) || userPosts.find((p) => p.id === postId);
+        if (postToAdd) {
+          const postWithComment = {
+            ...postToAdd,
+            // Ensure reviewId is set for reviews
+            ...(postToAdd.type === 'review' && !postToAdd.reviewId ? { reviewId: postToAdd.id } : {}),
+            comments: [...(postToAdd.comments || []), commentToSave],
+          };
+          existing.push(postWithComment);
+          localStorage.setItem("bookverse_social_feed", JSON.stringify(existing));
+        }
+      }
+    } catch (err) {
+      console.error("Error saving comment to localStorage:", err);
+      // Don't throw - localStorage is just a fallback
+    }
+
+    // For own profile, also call parent's handler to sync with App.jsx
+    if (isOwnProfile && onAddComment) {
+      try {
+        await onAddComment(postId, commentText);
       } catch (err) {
-        console.error("Error saving comment to localStorage:", err);
+        console.error("Error adding comment via parent handler:", err);
+        // Don't throw - we've already updated local state
       }
     }
     
     return Promise.resolve();
   };
 
-  // Handle comment deletion - sync with localStorage and parent
-  const handleDeleteComment = (postId, commentId) => {
-    // Update local state
-    if (isOwnProfile) {
-      setViewedUserPosts((prev) => {
-        return prev.map((post) =>
+  // Handle comment deletion - delete from backend API and sync with localStorage and parent
+  const handleDeleteComment = async (postId, commentId) => {
+    // Find the comment to check permissions - check both userPosts and viewedUserPosts
+    const post = isOwnProfile 
+      ? (userPosts.find(p => p.id === postId) || viewedUserPosts.find(p => p.id === postId))
+      : viewedUserPosts.find(p => p.id === postId);
+    
+    const comment = post?.comments?.find(c => c.id === commentId);
+    
+    if (!comment) {
+      console.warn("Comment not found for deletion:", commentId);
+      return;
+    }
+
+    // Check permissions: comment owner OR post owner can delete
+    const commentOwnerUsername = comment.username;
+    const postOwnerUsername = post?.username || post?.user?.name || post?.user?.username;
+    const currentUsername = authUser?.name || authUser?.username || authUser?.firstName;
+    const isCommentOwner = commentOwnerUsername === currentUsername;
+    const isPostOwner = postOwnerUsername === currentUsername || 
+                       (post?.userId && authUser?.id && String(post.userId) === String(authUser.id)) ||
+                       (post?.isLocal && isOwnProfile);
+    
+    if (!isCommentOwner && !isPostOwner) {
+      console.error("User does not have permission to delete this comment");
+      alert("Bu comment-i silmək üçün icazəniz yoxdur");
+      return;
+    }
+
+    // Optimistic update: Remove comment from UI immediately
+    // Update viewedUserPosts immediately
+    setViewedUserPosts((prev) => {
+      const updated = prev.map((p) =>
+        p.id === postId
+          ? { ...p, comments: p.comments?.filter(c => c.id !== commentId) || [] }
+          : p
+      );
+      // Also save to localStorage immediately to ensure persistence
+      try {
+        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+        const updatedStorage = existing.map((post) =>
           post.id === postId
             ? { ...post, comments: post.comments?.filter(c => c.id !== commentId) || [] }
             : post
         );
-      });
-    } else {
-      setViewedUserPosts((prev) => {
-        return prev.map((post) =>
-          post.id === postId
-            ? { ...post, comments: post.comments?.filter(c => c.id !== commentId) || [] }
-            : post
-        );
-      });
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(updatedStorage));
+      } catch (err) {
+        console.error("Error saving comment deletion to localStorage:", err);
+      }
+      return updated;
+    });
+
+    try {
+      // Try to delete from backend API
+      const result = await deleteComment(commentId);
+      
+      // If API returns null, it means endpoint doesn't exist (404), continue with localStorage
+      if (result === null) {
+        console.log("Comments delete API not available, using localStorage only");
+      }
+    } catch (err) {
+      // If API call fails (except 404), revert optimistic update
+      if (err.status !== 404) {
+        console.error("Error deleting comment from backend:", err);
+        // Revert optimistic update by re-adding the comment
+        setViewedUserPosts((prev) => {
+          return prev.map((p) =>
+            p.id === postId
+              ? { ...p, comments: [...(p.comments || []), comment] }
+              : p
+          );
+        });
+        alert("Comment silinərkən xəta baş verdi. Yenidən cəhd edin.");
+        return;
+      }
+      // 404 means API not available, continue with localStorage fallback
     }
     
-    // Call parent's handler if available
+    // Call parent's handler if available (for App.jsx to sync with localPosts and userPosts)
+    // This is important for own profile to update userPosts prop
     if (onDeleteComment) {
-      onDeleteComment(postId, commentId);
+      try {
+        // Check if parent handler is async
+        const result = onDeleteComment(postId, commentId);
+        if (result && typeof result.then === 'function') {
+          await result;
+        }
+      } catch (err) {
+        console.error("Error deleting comment via parent handler:", err);
+        // Don't throw - we've already updated local state
+      }
     }
     
-    // Also sync with localStorage
+    // Ensure localStorage is updated (already done in optimistic update, but double-check)
     try {
       const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
       const updated = existing.map((post) =>
@@ -1327,6 +1640,7 @@ export default function ProfilePage({
       localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
     } catch (err) {
       console.error("Error deleting comment from localStorage:", err);
+      // Don't throw - localStorage is just a fallback
     }
   };
 

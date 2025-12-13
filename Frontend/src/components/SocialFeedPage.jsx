@@ -218,13 +218,41 @@ export default function SocialFeedPage({
       // Merge with saved posts from localStorage (which may contain quotes and local posts)
       const newPostIds = new Set(items.map(p => p.id));
       
-      // Combine new API posts with existing posts, prioritizing existing versions (which have comments, likes, etc.)
+      // Combine new API posts with existing posts, prioritizing saved versions (which have comments, likes, etc.)
       const mergedPosts = items.map(newPost => {
-        const existingPost = remotePosts.find(ep => ep.id === newPost.id) || savedPosts.find(sp => sp.id === newPost.id);
-        if (existingPost) {
-          // Use existing version (has comments, likes, etc.) but update with new data
-          return { ...newPost, ...existingPost };
+        // First check savedPosts (localStorage) - it has the most up-to-date comments and deletions
+        // For reviews, check both id and reviewId to match posts
+        let savedPost = savedPosts.find(sp => sp.id === newPost.id);
+        if (!savedPost && newPost.type === 'review' && newPost.reviewId) {
+          // Try to find by reviewId
+          savedPost = savedPosts.find(sp => 
+            (sp.type === 'review' && sp.reviewId === newPost.reviewId) ||
+            (sp.type === 'review' && sp.id === newPost.reviewId)
+          );
         }
+        
+        if (savedPost) {
+          // Merge: use new post data but keep comments, likes, and other local data from saved post
+          // CRITICAL: Always use savedPost.comments to preserve comments and deletions from ProfilePage
+          return { 
+            ...newPost, 
+            comments: savedPost.comments || [], // Always use saved comments (from ProfilePage or SocialFeed)
+            likes: savedPost.likes !== undefined ? savedPost.likes : (newPost.likes || 0),
+            isLiked: savedPost.isLiked !== undefined ? savedPost.isLiked : (newPost.isLiked || false),
+          };
+        }
+        
+        // If not in savedPosts, check remotePosts (current state)
+        const existingPost = remotePosts.find(ep => ep.id === newPost.id);
+        if (existingPost) {
+          return { 
+            ...newPost, 
+            comments: existingPost.comments || newPost.comments || [],
+            likes: existingPost.likes !== undefined ? existingPost.likes : (newPost.likes || 0),
+            isLiked: existingPost.isLiked !== undefined ? existingPost.isLiked : (newPost.isLiked || false),
+          };
+        }
+        
         return newPost;
       });
       
@@ -234,7 +262,8 @@ export default function SocialFeedPage({
         !newPostIds.has(ep.id) && (
           ep.isLocal || // Local posts (including quotes)
           ep.type === 'quote' || // Quotes from localStorage
-          ep.type === 'post' // Normal posts from localStorage
+          ep.type === 'post' || // Normal posts from localStorage
+          ep.type === 'review' // Reviews from localStorage
         )
       );
       
@@ -339,6 +368,57 @@ export default function SocialFeedPage({
     }
   }, [posts]);
 
+  // Ensure comments are properly loaded from localStorage on mount and after refresh
+  useEffect(() => {
+    // Load comments from localStorage and merge with remotePosts
+    const savedPosts = loadFromStorage();
+    if (savedPosts.length > 0) {
+      setRemotePosts((prev) => {
+        // Merge saved posts with current posts, prioritizing saved posts (which have comments and deletions)
+        const postMap = new Map();
+        
+        // First, add all current posts
+        prev.forEach(post => {
+          postMap.set(post.id, post);
+        });
+        
+        // Then, update with saved posts (which have comments, deletions, and other local data)
+        savedPosts.forEach(savedPost => {
+          // For reviews, check both id and reviewId to match posts
+          let existingPost = postMap.get(savedPost.id);
+          if (!existingPost && savedPost.type === 'review' && savedPost.reviewId) {
+            // Try to find by reviewId
+            for (const [id, post] of postMap.entries()) {
+              if (post.type === 'review' && (post.id === savedPost.reviewId || post.reviewId === savedPost.reviewId)) {
+                existingPost = post;
+                break;
+              }
+            }
+          }
+          
+          if (existingPost) {
+            // Merge: keep existing post but update with saved comments (which may have deletions)
+            // Prioritize saved comments as they are more up-to-date
+            postMap.set(existingPost.id, {
+              ...existingPost,
+              comments: savedPost.comments || existingPost.comments || [],
+              likes: savedPost.likes !== undefined ? savedPost.likes : existingPost.likes,
+              isLiked: savedPost.isLiked !== undefined ? savedPost.isLiked : existingPost.isLiked,
+            });
+          } else {
+            // Add new saved post (local posts, quotes, etc.) - but only if it has meaningful data
+            // Don't add minimal posts that only have comments
+            if (savedPost.type || savedPost.username || savedPost.user || savedPost.text || savedPost.title) {
+              postMap.set(savedPost.id, savedPost);
+            }
+          }
+        });
+        
+        return Array.from(postMap.values());
+      });
+    }
+  }, []); // Run only on mount
+
   // Sync localPosts to remotePosts so they persist after page reload
   useEffect(() => {
     if (localPosts.length > 0) {
@@ -376,20 +456,158 @@ export default function SocialFeedPage({
         timestamp: new Date().toISOString(),
       };
       
-      // Update state optimistically
+      // First, update localStorage immediately to ensure persistence
+      try {
+        const savedPosts = loadFromStorage();
+        const postIndex = savedPosts.findIndex((post) => post.id === postId);
+        
+        if (postIndex !== -1) {
+          // Post exists in localStorage, add comment
+          const updated = savedPosts.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  comments: [...(post.comments || []), newComment],
+                }
+              : post
+          );
+          saveToStorage(updated);
+        } else {
+          // Post doesn't exist in localStorage, try to find it in current state
+          setRemotePosts((prev) => {
+            const existingPost = prev.find(p => p.id === postId);
+            if (existingPost) {
+              // Post exists in state, add it to localStorage with comment
+              const postWithComment = {
+                ...existingPost,
+                comments: [...(existingPost.comments || []), newComment],
+              };
+              savedPosts.push(postWithComment);
+              saveToStorage(savedPosts);
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        console.error("Error saving comment to localStorage:", err);
+      }
+      
+      // Update state optimistically - ALWAYS update state to show comment immediately
+      // Use functional update to ensure we have the latest state
       setRemotePosts((prev) => {
-        const updated = prev.map((post) =>
-          post.id === postId
-            ? {
-                ...post,
-                comments: [...(post.comments || []), newComment],
+        // First, reload from localStorage to get the most up-to-date data (including the comment we just saved)
+        const savedPosts = loadFromStorage();
+        // For reviews, check both id and reviewId to find the post
+        let savedPost = savedPosts.find(p => p.id === postId);
+        if (!savedPost) {
+          // Try to find by reviewId for reviews
+          savedPost = savedPosts.find(p => 
+            p.type === 'review' && (p.reviewId === postId || p.id === postId)
+          );
+        }
+        
+        if (savedPost) {
+          // Post exists in localStorage (with the new comment we just added)
+          const existingPost = prev.find(p => p.id === postId || (p.type === 'review' && p.reviewId === postId));
+          
+          if (existingPost) {
+            // Post exists in state, update it with the comment from localStorage
+            return prev.map((post) => {
+              const isTargetPost = post.id === postId || (post.type === 'review' && post.reviewId === postId);
+              if (isTargetPost) {
+                return {
+                  ...post,
+                  comments: savedPost.comments || post.comments || [],
+                };
               }
-            : post
-        );
-        // Save to localStorage immediately
-        saveToStorage(updated);
-        return updated;
+              return post;
+            });
+          } else {
+            // Post doesn't exist in state, add it from localStorage (with the new comment)
+            return [...prev, savedPost];
+          }
+        } else {
+          // Post doesn't exist in localStorage (shouldn't happen, but handle it)
+          const existingPost = prev.find(p => p.id === postId || (p.type === 'review' && p.reviewId === postId));
+          if (existingPost) {
+            // Post exists in state, add comment
+            return prev.map((post) => {
+              const isTargetPost = post.id === postId || (post.type === 'review' && post.reviewId === postId);
+              if (isTargetPost) {
+                return {
+                  ...post,
+                  comments: [...(post.comments || []), newComment],
+                };
+              }
+              return post;
+            });
+          }
+          // Post doesn't exist anywhere - return prev
+          return prev;
+        }
       });
+      
+      // Try to save to backend API
+      let savedComment = null;
+      let postType = 'post'; // Default post type
+      try {
+        const { createComment } = await import("../api/comments");
+        // Determine post type from the post itself - use setRemotePosts callback to get latest state
+        setRemotePosts((prev) => {
+          const post = prev.find(p => p.id === postId);
+          postType = post?.type === 'quote' ? 'quote' : (post?.type === 'review' ? 'review' : 'post');
+          return prev; // Don't change state, just read it
+        });
+        savedComment = await createComment(postId, text, postType);
+        
+        if (savedComment) {
+          // Backend API available - use the saved comment data
+          const backendComment = {
+            id: savedComment.id || savedComment.Id || newComment.id,
+            username: savedComment.username || savedComment.Username || savedComment.user?.name || savedComment.User?.Name || newComment.username,
+            userAvatar: savedComment.userAvatar || savedComment.UserAvatar || savedComment.user?.avatarUrl || savedComment.User?.AvatarUrl || newComment.userAvatar,
+            text: savedComment.text || savedComment.Text || savedComment.commentText || savedComment.CommentText || text,
+            timestamp: savedComment.timestamp || savedComment.createdAt || savedComment.CreatedAt || newComment.timestamp,
+            createdAt: savedComment.createdAt || savedComment.CreatedAt || newComment.timestamp,
+          };
+          
+          // Replace temporary comment with backend comment
+          setRemotePosts((prev) => {
+            const updated = prev.map((post) =>
+              post.id === postId
+                ? {
+                    ...post,
+                    comments: post.comments?.map(c => c.id === newComment.id ? backendComment : c) || [backendComment],
+                  }
+                : post
+            );
+            // Save to localStorage with backend comment
+            saveToStorage(updated);
+            return updated;
+          });
+        }
+        // If savedComment is null, API not available, continue with localStorage fallback
+      } catch (err) {
+        // If API call fails (except 404), revert optimistic update
+        if (err.status !== 404) {
+          console.error("Error creating comment via API:", err);
+          setRemotePosts((prev) => {
+            const updated = prev.map((post) =>
+              post.id === postId
+                ? {
+                    ...post,
+                    comments: post.comments?.filter(c => c.id !== newComment.id) || [],
+                  }
+                : post
+            );
+            saveToStorage(updated);
+            return updated;
+          });
+          alert("Comment yazılarkən xəta baş verdi. Yenidən cəhd edin.");
+          throw err;
+        }
+        // 404 means API not available, continue with localStorage fallback
+      }
       
       // Also call parent's onAddComment if available (for App.jsx to sync with localPosts and userPosts)
       if (onAddComment) {
@@ -414,15 +632,101 @@ export default function SocialFeedPage({
         }
       }
       
+      // Final sync: Ensure localStorage and state are in sync with the final comment
+      // This is important for refresh scenarios where post might not be in state
+      try {
+        const savedPosts = loadFromStorage();
+        const commentToSave = savedComment ? {
+          id: savedComment.id || savedComment.Id || newComment.id,
+          username: savedComment.username || savedComment.Username || savedComment.user?.name || savedComment.User?.Name || newComment.username,
+          userAvatar: savedComment.userAvatar || savedComment.UserAvatar || savedComment.user?.avatarUrl || savedComment.User?.AvatarUrl || newComment.userAvatar,
+          text: savedComment.text || savedComment.Text || savedComment.commentText || savedComment.CommentText || text,
+          timestamp: savedComment.timestamp || savedComment.createdAt || savedComment.CreatedAt || newComment.timestamp,
+        } : newComment;
+        
+        // Update state one final time to ensure comment is visible
+        setRemotePosts((prev) => {
+          const existingPost = prev.find(p => p.id === postId);
+          if (existingPost) {
+            // Post exists, ensure comment is there
+            const hasComment = existingPost.comments?.some(c => 
+              c.id === commentToSave.id || 
+              (c.id === newComment.id && !savedComment) ||
+              (c.text === text && c.username === commentToSave.username)
+            );
+            if (!hasComment) {
+              return prev.map((post) =>
+                post.id === postId
+                  ? {
+                      ...post,
+                      comments: [...(post.comments || []), commentToSave],
+                    }
+                  : post
+              );
+            }
+            return prev;
+          } else {
+            // Post doesn't exist in state, try to load from localStorage
+            const savedPost = savedPosts.find(p => p.id === postId);
+            if (savedPost) {
+              return [...prev, savedPost];
+            }
+            return prev;
+          }
+        });
+      } catch (err) {
+        console.error("Error in final comment sync:", err);
+      }
+      
       // Return success
       return Promise.resolve();
     },
     [currentUsername, authUser, onAddComment]
   );
 
-  const handleRemoteCommentDelete = useCallback((postId, commentId) => {
+  const handleRemoteCommentDelete = useCallback(async (postId, commentId) => {
+    // Find the post and comment to check permissions
+    let post = null;
+    let comment = null;
+    
+    // Get current state
     setRemotePosts((prev) => {
-      return prev.map((post) =>
+      post = prev.find(p => p.id === postId);
+      comment = post?.comments?.find(c => c.id === commentId);
+      return prev;
+    });
+    
+    // If not found in state, try localStorage
+    if (!comment) {
+      const savedPosts = loadFromStorage();
+      post = savedPosts.find(p => p.id === postId);
+      comment = post?.comments?.find(c => c.id === commentId);
+    }
+    
+    if (!comment || !post) {
+      console.warn("Comment not found for deletion:", commentId);
+      alert("Comment tapılmadı");
+      return;
+    }
+
+    // Check permissions: comment owner OR post owner can delete
+    const commentOwnerUsername = comment.username;
+    const postOwnerUsername = post?.username || post?.user?.name || post?.user?.username;
+    const currentUsername = authUser?.name || authUser?.username || authUser?.firstName;
+    const isCommentOwner = commentOwnerUsername === currentUsername;
+    const isPostOwner = postOwnerUsername === currentUsername || 
+                       (post?.userId && authUser?.id && String(post.userId) === String(authUser.id)) ||
+                       (post?.isLocal && currentUsername);
+    
+    if (!isCommentOwner && !isPostOwner) {
+      console.error("User does not have permission to delete this comment");
+      alert("Bu comment-i silmək üçün icazəniz yoxdur");
+      return;
+    }
+
+    // Optimistic update: Remove comment from UI immediately
+    setRemotePosts((prev) => {
+      const updated = prev.map((post) =>
         post.id === postId
           ? {
               ...post,
@@ -432,8 +736,75 @@ export default function SocialFeedPage({
             }
           : post
       );
+      // Save to localStorage immediately
+      saveToStorage(updated);
+      return updated;
     });
-  }, []);
+
+    try {
+      // Try to delete from backend API
+      const { deleteComment } = await import("../api/comments");
+      const result = await deleteComment(commentId);
+      
+      // If API returns null, it means endpoint doesn't exist (404), continue with localStorage
+      if (result === null) {
+        console.log("Comments delete API not available, using localStorage only");
+      }
+    } catch (err) {
+      // If API call fails (except 404), revert optimistic update
+      if (err.status !== 404) {
+        console.error("Error deleting comment from backend:", err);
+        // Revert optimistic update by re-adding the comment
+        setRemotePosts((prev) => {
+          const updated = prev.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  comments: [...(post.comments || []), comment],
+                }
+              : post
+          );
+          saveToStorage(updated);
+          return updated;
+        });
+        alert("Comment silinərkən xəta baş verdi. Yenidən cəhd edin.");
+        return;
+      }
+      // 404 means API not available, continue with localStorage fallback
+    }
+    
+    // Also update localStorage directly to ensure persistence
+    try {
+      const savedPosts = loadFromStorage();
+      const updated = savedPosts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: (post.comments || []).filter(
+                (comment) => comment.id !== commentId
+              ),
+            }
+          : post
+      );
+      saveToStorage(updated);
+    } catch (err) {
+      console.error("Error updating localStorage for comment deletion:", err);
+    }
+    
+    // Call parent's handler if available (for App.jsx to sync with localPosts and userPosts)
+    if (onDeleteComment) {
+      try {
+        // Check if parent handler is async
+        const result = onDeleteComment(postId, commentId);
+        if (result && typeof result.then === 'function') {
+          await result;
+        }
+      } catch (err) {
+        console.error("Error deleting comment via parent handler:", err);
+        // Don't throw - we've already updated local state
+      }
+    }
+  }, [authUser, onDeleteComment]);
 
   const handleRemotePostUpdate = useCallback(async (postId, updatedPost) => {
     // Update post in remote posts state
@@ -626,11 +997,20 @@ export default function SocialFeedPage({
                   return handleRemoteCommentAdd(postId, text);
               }
               }}
-              onDeleteComment={(commentId) =>
-                post.isLocal
-                  ? onDeleteComment?.(post.id, commentId)
-                  : handleRemoteCommentDelete(post.id, commentId)
-              }
+              onDeleteComment={async (postId, commentId) => {
+                if (post.isLocal) {
+                  // For local posts, use parent's handler
+                  if (onDeleteComment) {
+                    const result = onDeleteComment(postId, commentId);
+                    if (result && typeof result.then === 'function') {
+                      await result;
+                    }
+                  }
+                } else {
+                  // For remote posts, use handleRemoteCommentDelete
+                  await handleRemoteCommentDelete(postId, commentId);
+                }
+              }}
               // Social Feed: 3 dots menu should NOT appear at all
               onDeletePost={undefined}
               onReportPost={undefined}

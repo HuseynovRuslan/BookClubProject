@@ -163,24 +163,61 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
       return;
     }
     
+    const bookId = bookDetails.id || bookDetails._id;
+    if (!bookId) {
+      setStatus({
+        type: "error",
+        message: "Kitab ID-si tapılmadı",
+      });
+      setTimeout(() => setStatus(null), 2500);
+      return;
+    }
+    
+    // Check if shelf is a default shelf
+    const isDefaultShelf = targetShelf.isDefault === true || targetShelf.IsDefault === true || targetShelf.type === 'default';
+    
     try {
-      await addBookToShelf(shelfId, bookDetails);
+      if (isDefaultShelf) {
+        // For default shelves, use updateBookStatus API
+        const shelfName = targetShelf.name;
+        await updateBookStatus(bookId, shelfName);
+      } else {
+        // For custom shelves, use addBookToShelf API
+        await addBookToShelf(shelfId, bookDetails);
+      }
+      
       if (typeof refreshShelves === "function") {
         await refreshShelves();
       }
+      
       setStatus({
         type: "success",
         message: `"${bookDetails.title || 'Kitab'}" ${targetShelf.name} siyahısına əlavə olundu`,
       });
+      
       // Refresh shelves to update Reading List page
       if (window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('shelfUpdated'));
       }
     } catch (err) {
       console.error("Error adding book to shelf:", err);
+      
+      // Handle specific error messages
+      let errorMessage = "Shelf-ə əlavə etmək alınmadı";
+      if (err.status === 409) {
+        // Check if it's the default shelf error
+        if (err.detail && err.detail.includes("default shelf")) {
+          errorMessage = "Default shelf-lərə kitab əlavə etmək mümkün deyil. Xahiş edirik öz shelf-inizi yaradın.";
+        } else {
+          errorMessage = err.detail || err.message || "Bu kitab artıq bu shelf-də mövcuddur.";
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setStatus({
         type: "error",
-        message: err.message || "Shelf-ə əlavə etmək alınmadı",
+        message: errorMessage,
       });
     } finally {
       setTimeout(() => setStatus(null), 2500);
@@ -381,10 +418,14 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
 
               <button
                 onClick={handleAddToReadingList}
-                className="flex items-center gap-2 px-6 py-3 text-white rounded-lg transition-all shadow-md hover:shadow-lg font-medium bg-gray-900 hover:bg-gray-800"
+                className="group relative flex items-center justify-center gap-3 px-8 py-4 text-white rounded-2xl transition-all duration-300 shadow-lg hover:shadow-2xl font-bold text-lg bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 transform hover:scale-105 active:scale-95 overflow-hidden"
               >
-                <span className="text-xl">+</span>
-                <span>{t("bookDetail.addToReadingList")}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <svg className="w-6 h-6 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="relative z-10">{t("bookDetail.addToReadingList")}</span>
+                <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </button>
 
               {status && (
