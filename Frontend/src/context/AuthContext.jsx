@@ -35,10 +35,15 @@ export function AuthProvider({ children }) {
   const fetchProfile = useCallback(async () => {
     try {
       const profile = await getCurrentUserProfile();
-      // Only update if profile actually changed to prevent unnecessary re-renders
+      // Update if profile actually changed (including avatarUrl changes)
       setUser(prevUser => {
         if (prevUser?.id === profile?.id && prevUser?.email === profile?.email) {
-          return prevUser; // Return same reference if nothing changed
+          // Check if avatarUrl changed - if so, update even if id/email are same
+          const prevAvatar = prevUser?.avatarUrl || prevUser?.AvatarUrl || prevUser?.profilePictureUrl || prevUser?.ProfilePictureUrl;
+          const newAvatar = profile?.avatarUrl || profile?.AvatarUrl || profile?.profilePictureUrl || profile?.ProfilePictureUrl;
+          if (prevAvatar === newAvatar) {
+            return prevUser; // Return same reference if nothing changed
+          }
         }
         return profile;
       });
