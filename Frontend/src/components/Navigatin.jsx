@@ -1,8 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Search, Bell } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getImageUrl } from "../api/config";
 import NotificationDropdown from "./NotificationDropdown";
