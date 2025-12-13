@@ -52,11 +52,13 @@ export async function getFollowers() {
     const response = await apiRequest("/api/UserFollows/followers", {
       method: "GET",
     });
-    // Handle both array and wrapped response
+    // Backend returns PagedResult with Items property
     if (Array.isArray(response)) {
       return response;
     }
-    return response?.items || response?.Items || [];
+    // Handle PagedResult format: { items: [...], totalCount: ... }
+    const items = response?.items || response?.Items || [];
+    return Array.isArray(items) ? items : [];
   } catch (error) {
     // If endpoint doesn't exist or returns error, return empty array
     console.warn("Failed to load followers list:", error);
@@ -74,11 +76,13 @@ export async function getFollowing() {
     const response = await apiRequest("/api/UserFollows/following", {
       method: "GET",
     });
-    // Handle both array and wrapped response
+    // Backend returns PagedResult with Items property
     if (Array.isArray(response)) {
       return response;
     }
-    return response?.items || response?.Items || [];
+    // Handle PagedResult format: { items: [...], totalCount: ... }
+    const items = response?.items || response?.Items || [];
+    return Array.isArray(items) ? items : [];
   } catch (error) {
     // If endpoint doesn't exist or returns error, return empty array
     console.warn("Failed to load following list:", error);
@@ -97,10 +101,13 @@ export async function getUserFollowers(userId) {
     const response = await apiRequest(`/api/UserFollows/followers/${encodeURIComponent(userId)}`, {
       method: "GET",
     });
+    // Backend returns PagedResult with Items property
     if (Array.isArray(response)) {
       return response;
     }
-    return response?.items || response?.Items || response?.data || [];
+    // Handle PagedResult format: { items: [...], totalCount: ... }
+    const items = response?.items || response?.Items || response?.data || [];
+    return Array.isArray(items) ? items : [];
   } catch (error) {
     // If endpoint doesn't exist (404) or other error, return empty array
     console.warn(`Failed to load followers for user ${userId}:`, error);
@@ -119,10 +126,13 @@ export async function getUserFollowing(userId) {
     const response = await apiRequest(`/api/UserFollows/following/${encodeURIComponent(userId)}`, {
       method: "GET",
     });
+    // Backend returns PagedResult with Items property
     if (Array.isArray(response)) {
       return response;
     }
-    return response?.items || response?.Items || response?.data || [];
+    // Handle PagedResult format: { items: [...], totalCount: ... }
+    const items = response?.items || response?.Items || response?.data || [];
+    return Array.isArray(items) ? items : [];
   } catch (error) {
     // If endpoint doesn't exist (404) or other error, return empty array
     console.warn(`Failed to load following for user ${userId}:`, error);

@@ -1,14 +1,14 @@
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:7050";
-// Mock dataları aktif et - Backend API problemli
-const USE_API_MOCKS = true; // Mock datalar aktif, backend API kapalı
+  import.meta.env.VITE_API_BASE_URL || "https://localhost:7050";
+// Mock dataları deaktiv et - Real API istifadə olunur
+const USE_API_MOCKS = false; // Real API aktiv
 
 // Console'da API durumunu göster
 if (USE_API_MOCKS) {
   console.log("⚠️ Mock datalar aktif - API yerine localStorage kullanılıyor");
 } else {
-  console.log("✅ Backend API aktif - Gerçek API kullanılıyor");
+  console.log("✅ Backend API aktif - Gerçek API kullanılıyor:", API_BASE_URL);
 }
 
 const ACCESS_TOKEN_KEY = "bookverse_access_token";

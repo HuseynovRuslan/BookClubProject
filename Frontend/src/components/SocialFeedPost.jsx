@@ -21,7 +21,7 @@ export default function SocialFeedPost({
 }) {
   const t = useTranslation();
   const navigate = useNavigate();
-  const { isGuest } = useAuth();
+  const { isGuest, user: authUser } = useAuth();
   const [showGuestModal, setShowGuestModal] = useState(false);
   const initials = post.username
     ? post.username
@@ -55,9 +55,16 @@ export default function SocialFeedPost({
   const isQuote = post.type === "quote" || Boolean(post.quoteId);
   
   // Check if current user is the post owner
+  // Check by username, user ID, or post userId
+  const postUserId = post.userId || post.UserId || 
+                     post.user?.id || post.User?.Id ||
+                     post.user?.userId || post.User?.UserId;
+  const currentUserId = authUser?.id || authUser?.Id;
   const isPostOwner = post.username === currentUsername || 
                       post.user?.name === currentUsername ||
-                      post.user?.username === currentUsername;
+                      post.user?.username === currentUsername ||
+                      (currentUserId && postUserId && currentUserId === postUserId) ||
+                      (post.isLocal && currentUsername); // Local posts are always from current user
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -450,9 +457,11 @@ export default function SocialFeedPost({
             );
           })() : (() => {
             // Allow blob URLs for newly created posts (they're valid until page reload)
-            const postImageUrl = post.postImage && post.postImage.startsWith('blob:') 
-              ? post.postImage 
-              : getImageUrl(post.postImage);
+            // But prefer postImageUrl (backend URL) if it exists
+            const imageToUse = post.postImageUrl || post.postImage;
+            const postImageUrl = imageToUse && imageToUse.startsWith('blob:') 
+              ? imageToUse 
+              : getImageUrl(imageToUse);
             if (!postImageUrl) return null;
             return (
               // Regular post image - Facebook style: maintain aspect ratio, reasonable max size

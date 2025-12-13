@@ -5,28 +5,20 @@ using Goodreads.Infrastructure.Configurations;
 using Goodreads.Infrastructure.Persistence;
 using Hangfire;
 using HangfireBasicAuthenticationFilter;
-//using Scalar.AspNetCore;
-using Goodreads.Application.Common.Interfaces; // IBlobStorageService
+using Goodreads.Application.Common.Interfaces;
 using Goodreads.Infrastructure.Repositories;
-using Goodreads.Application.Common.Mappings; // AwsBlobStorageService
+using Goodreads.Application.Common.Mappings; 
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-// Bind BlobStorage settings (AWS)
 builder.Services.Configure<LocalStorageSettings>(
     builder.Configuration.GetSection(LocalStorageSettings.Section)
 );
 
 builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
-
-// Register UnitOfWork and other services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-// AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
-
-// MediatR handlers
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<Goodreads.Application.Books.Commands.CreateBook.CreateBookCommandHandler>()
 );
@@ -42,11 +34,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    //app.MapScalarApiReference(options =>
-    //{
-    //    options.Title = "Goodreads API";
-    //    options.OpenApiRoutePattern = "/swagger/v1/swagger.json";
-    //});
+  
 }
 
 if (builder.Configuration.GetValue<bool>("RunMigrations"))
@@ -59,10 +47,8 @@ app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
-// Enable CORS
-app.UseCors("AllowFrontend");
 
-// Enable static files for images
+app.UseCors("AllowFrontend");
 app.UseStaticFiles();
 
 app.UseAuthentication();
