@@ -849,10 +849,22 @@ export default function SocialFeedPost({
                   </p>
                   <span className="text-xs text-gray-600 dark:text-gray-600">{formatTimestamp(comment.timestamp || comment.createdAt || comment.CreatedAt)}</span>
                 </div>
-                {comment.username === currentUsername && onDeleteComment && (
+                {/* Show delete button if comment belongs to current user OR post owner is current user */}
+                {((comment.username === currentUsername) || isPostOwner) && onDeleteComment && (
                   <button
                     className="text-xs font-semibold text-red-600 dark:text-red-600 hover:text-red-700 dark:hover:text-red-700 px-1.5 py-0.5 rounded hover:bg-red-50 dark:hover:bg-red-50 transition-all flex-shrink-0"
-                    onClick={() => onDeleteComment(post.id, comment.id)}
+                    onClick={async () => {
+                      try {
+                        const result = onDeleteComment(post.id, comment.id);
+                        // If it's a promise, await it
+                        if (result && typeof result.then === 'function') {
+                          await result;
+                        }
+                      } catch (err) {
+                        console.error("Error deleting comment:", err);
+                        // Error is already handled in the handler
+                      }
+                    }}
                   >
                     {t("post.delete")}
                   </button>

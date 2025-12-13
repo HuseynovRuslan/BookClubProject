@@ -30,12 +30,40 @@ export default function ShelfSelectionModal({
   if (!isOpen) return null;
 
   // Filter shelves based on mode
+  // For "add" mode, show default shelves first, then custom shelves
   const availableShelves = shelves.filter((shelf) => {
     if (mode === "move" && currentShelfId) {
       // For move mode, exclude current shelf
       return shelf.id !== currentShelfId;
     }
+    if (mode === "add") {
+      // For add mode, show ALL shelves (both default and custom)
+      return true;
+    }
     return true;
+  }).sort((a, b) => {
+    // Sort: default shelves first (Want to Read, Currently Reading, Read), then custom shelves
+    if (mode === "add") {
+      const isADefault = a.isDefault === true || a.IsDefault === true;
+      const isBDefault = b.isDefault === true || b.IsDefault === true;
+      
+      if (isADefault && !isBDefault) return -1;
+      if (!isADefault && isBDefault) return 1;
+      
+      // If both are default, sort by name order: Want to Read, Currently Reading, Read
+      if (isADefault && isBDefault) {
+        const defaultOrder = ["Want to Read", "Currently Reading", "Read"];
+        const aIndex = defaultOrder.indexOf(a.name);
+        const bIndex = defaultOrder.indexOf(b.name);
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+      }
+      
+      // Custom shelves: sort alphabetically
+      return (a.name || "").localeCompare(b.name || "");
+    }
+    return 0;
   });
 
   const handleConfirm = () => {
@@ -98,7 +126,15 @@ export default function ShelfSelectionModal({
               {availableShelves.map((shelf) => (
                 <button
                   key={shelf.id}
-                  onClick={() => setSelectedShelfId(shelf.id)}
+                  onClick={() => {
+                    setSelectedShelfId(shelf.id);
+                    // Immediately call onSelect when shelf is clicked (no need to click confirm button)
+                    if (onSelect) {
+                      onSelect(shelf.id);
+                      setSelectedShelfId(null);
+                      onClose();
+                    }
+                  }}
                   className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                     selectedShelfId === shelf.id
                       ? "border-amber-500 bg-amber-50 dark:bg-amber-50 shadow-md"
@@ -111,7 +147,7 @@ export default function ShelfSelectionModal({
                         {translateShelfName(shelf.name)}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-600 mt-1">
-                        {shelf.books?.length || 0} {shelf.books?.length === 1 ? t("shelfSelection.book") : t("shelfSelection.books")}
+                        {shelf.books?.length || shelf.bookCount || 0} {(shelf.books?.length || shelf.bookCount || 0) === 1 ? t("shelfSelection.book") : t("shelfSelection.books")}
                       </p>
                     </div>
                     {selectedShelfId === shelf.id && (

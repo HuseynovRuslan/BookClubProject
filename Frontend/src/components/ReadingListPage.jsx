@@ -112,21 +112,61 @@ export default function ReadingListPage() {
         return;
       }
       
+      // Check if book is already in target shelf
       const bookId = book.id || book._id;
+      const isAlreadyInTarget = targetShelf.books?.some(b => (b.id || b._id) === bookId);
       
-      // First, remove from current shelf
-      if (currentShelfId) {
-        await removeBookFromShelf(currentShelfId, bookId);
+      if (isAlreadyInTarget) {
+        setActionMessage(`"${book.title}" artıq ${targetShelf.name} siyahısındadır.`);
+        setTimeout(() => setActionMessage(null), 2500);
+        return;
+      }
+      
+      // Check if target shelf is a default shelf
+      const isDefaultShelf = targetShelf.isDefault === true || targetShelf.IsDefault === true || targetShelf.type === 'default';
+      
+      // First, remove from current shelf (if it's not a default shelf)
+      if (currentShelfId && currentShelfId !== targetShelfId) {
+        const currentShelf = shelves.find(s => s.id === currentShelfId);
+        const isCurrentDefault = currentShelf?.isDefault === true || currentShelf?.IsDefault === true || currentShelf?.type === 'default';
+        
+        // Only remove from current shelf if it's a custom shelf
+        if (!isCurrentDefault) {
+          await removeBookFromShelf(currentShelfId, bookId);
+        }
       }
       
       // Then, add to target shelf
-      await addBookToShelf(targetShelfId, book);
+      if (isDefaultShelf) {
+        // For default shelves, use updateBookStatus
+        const { updateBookStatus } = await import("../api/books");
+        await updateBookStatus(bookId, targetShelf.name);
+      } else {
+        // For custom shelves, use addBookToShelf
+        await addBookToShelf(targetShelfId, book);
+      }
       
       setActionMessage(`"${book.title}" ${t("readingList.bookMovedTo")} ${targetShelf.name}`);
       await refreshShelves();
       setTimeout(() => setActionMessage(null), 2500);
     } catch (err) {
-      setActionMessage(err.message || t("readingList.moveFailed"));
+      console.error("Error moving book:", err);
+      
+      // Handle specific error messages
+      let errorMessage = t("readingList.moveFailed");
+      if (err.status === 409) {
+        if (err.detail && err.detail.includes("default shelf")) {
+          errorMessage = "Default shelf-lərə kitab əlavə etmək mümkün deyil.";
+        } else if (err.detail && err.detail.includes("already exists") || err.detail && err.detail.includes("mövcuddur")) {
+          errorMessage = "Bu kitab artıq bu shelf-də mövcuddur.";
+        } else {
+          errorMessage = err.detail || err.message || "Bu kitab artıq bu shelf-də mövcuddur.";
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setActionMessage(errorMessage);
       setTimeout(() => setActionMessage(null), 2500);
     }
   };
@@ -283,12 +323,6 @@ export default function ReadingListPage() {
               )}
               {editingShelfId !== shelf.id && (
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => startRename(shelf)}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 text-gray-900 dark:text-gray-900 text-sm font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105"
-                  >
-                    {t("readingList.refresh")}
-                  </button>
                   {shelf.type !== "default" && (
                     <button
                       onClick={() => deleteShelf(shelf.id)}

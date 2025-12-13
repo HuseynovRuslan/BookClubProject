@@ -287,6 +287,7 @@ function App() {
   };
 
   const handleDeleteComment = (postId, commentId) => {
+    // Update localPosts
     setLocalPosts((prev) => {
       const updated = prev.map((post) =>
         post.id === postId
@@ -296,36 +297,48 @@ function App() {
             }
           : post
       );
-      // Save to localStorage
-      try {
-        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
-        const merged = existing.map(p => {
-          const localPost = updated.find(lp => lp.id === p.id);
-          return localPost || p;
-        });
-        // Add new local posts that aren't in existing
-        updated.forEach(lp => {
-          if (!merged.find(p => p.id === lp.id)) {
-            merged.push(lp);
-          }
-        });
-        // Remove blob URLs before saving - they're invalid after page reload
-        const cleanedMerged = merged.map(post => {
-          const cleaned = { ...post };
-          if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
-            cleaned.postImage = null;
-          }
-          if (cleaned.bookCover && cleaned.bookCover.startsWith('blob:')) {
-            cleaned.bookCover = null;
-          }
-          return cleaned;
-        });
-        localStorage.setItem("bookverse_social_feed", JSON.stringify(cleanedMerged));
-      } catch (err) {
-        console.error("Error saving comment deletion to localStorage:", err);
-      }
       return updated;
     });
+    
+    // Also update userPosts state (for Profile Page)
+    setUserPosts((prev) => {
+      return prev.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: (post.comments || []).filter((c) => c.id !== commentId),
+            }
+          : post
+      );
+    });
+    
+    // Save to localStorage
+    try {
+      const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+      const updated = existing.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: (post.comments || []).filter((c) => c.id !== commentId),
+            }
+          : post
+      );
+      
+      // Remove blob URLs before saving - they're invalid after page reload
+      const cleanedMerged = updated.map(post => {
+        const cleaned = { ...post };
+        if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
+          cleaned.postImage = null;
+        }
+        if (cleaned.bookCover && cleaned.bookCover.startsWith('blob:')) {
+          cleaned.bookCover = null;
+        }
+        return cleaned;
+      });
+      localStorage.setItem("bookverse_social_feed", JSON.stringify(cleanedMerged));
+    } catch (err) {
+      console.error("Error saving comment deletion to localStorage:", err);
+    }
   };
 
   const handlePostUpdate = (postId, updatedPost) => {
