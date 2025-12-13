@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 export default function SignUpPage({ onSwitchToSignIn }) {
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
@@ -60,15 +62,27 @@ export default function SignUpPage({ onSwitchToSignIn }) {
         role: "reader"
       });
 
-      setSuccess("Account created! Please check your inbox to confirm and sign in.");
+      // Show success message
+      setSuccess("Qeydiyyatdan uğurla keçdiniz! Giriş səhifəsinə yönləndirilirsiniz...");
+      setIsSubmitting(false);
+      
+      // Clear form
       setUsername("");
       setName("");
       setSurname("");
       setEmail("");
       setPassword("");
+
+      // Redirect to login page after showing success message (2 seconds delay)
+      setTimeout(() => {
+        if (onSwitchToSignIn) {
+          onSwitchToSignIn();
+        } else {
+          navigate("/login");
+        }
+      }, 2000);
     } catch (err) {
       setError(err.message || "Failed to create account. Please try again.");
-    } finally {
       setIsSubmitting(false);
     }
   };
