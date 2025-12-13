@@ -852,7 +852,7 @@ export default function SocialFeedPost({
                 {comment.username === currentUsername && onDeleteComment && (
                   <button
                     className="text-xs font-semibold text-red-600 dark:text-red-600 hover:text-red-700 dark:hover:text-red-700 px-1.5 py-0.5 rounded hover:bg-red-50 dark:hover:bg-red-50 transition-all flex-shrink-0"
-                    onClick={() => onDeleteComment(comment.id)}
+                    onClick={() => onDeleteComment(post.id, comment.id)}
                   >
                     {t("post.delete")}
                   </button>

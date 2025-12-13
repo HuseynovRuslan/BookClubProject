@@ -111,11 +111,33 @@ export default function SearchPage({ onBookClick }) {
     const username = user.username || user.Username || user.userName || user.UserName || user.email?.split("@")[0];
     const userId = user.id || user.Id || user.userId || user.UserId;
     
+    // Prepare user data to pass via navigation state (avoids API call)
+    const userData = {
+      id: userId,
+      name: user.name || user.Name || username || "User",
+      username: username || "",
+      email: user.email || user.Email || "",
+      bio: user.bio || user.Bio || "",
+      role: user.role || user.Role || "reader",
+      avatarUrl: user.avatarUrl || user.AvatarUrl || user.profilePictureUrl || user.ProfilePictureUrl || null,
+      firstName: user.firstName || user.FirstName || "",
+      surname: user.surname || user.Surname || user.lastName || user.LastName || "",
+    };
+    
     // Əvvəlcə username ilə cəhd edək, yoxdursa userId
+    // Pass user data as state to avoid API call
     if (username) {
-      navigate(`/profile/${username}`);
+      navigate(`/profile/${username}`, { 
+        state: { 
+          userData: userData
+        } 
+      });
     } else if (userId) {
-      navigate(`/profile/${userId}`);
+      navigate(`/profile/${userId}`, { 
+        state: { 
+          userData: userData
+        } 
+      });
     } else {
       console.error("User ID or username not found:", user);
     }
