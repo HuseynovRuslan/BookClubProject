@@ -1685,7 +1685,7 @@ export default function ProfilePage({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 ${
+              className={`px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 ripple-effect ${
                 activeTab === tab.id 
                   ? "bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 text-white shadow-xl scale-105" 
                   : "bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:border-purple-300 dark:hover:border-purple-300"
@@ -1696,9 +1696,11 @@ export default function ProfilePage({
           ))}
         </div>
 
-        {activeTab === "shelves" && isOwnProfile && renderShelvesTab()}
-        {activeTab === "posts" && renderPostsTab()}
-        {activeTab === "my-books" && isOwnProfile && renderMyBooksTab()}
+        <div className="animate-fadeIn">
+          {activeTab === "shelves" && isOwnProfile && renderShelvesTab()}
+          {activeTab === "posts" && renderPostsTab()}
+          {activeTab === "my-books" && isOwnProfile && renderMyBooksTab()}
+        </div>
       </div>
 
       {/* Followers Modal */}

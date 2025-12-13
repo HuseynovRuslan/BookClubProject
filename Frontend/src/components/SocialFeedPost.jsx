@@ -45,6 +45,7 @@ export default function SocialFeedPost({
   const [likes, setLikes] = useState(post.likes || 0);
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [isLiking, setIsLiking] = useState(false);
+  const [likeAnimation, setLikeAnimation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.review || "");
@@ -92,6 +93,11 @@ export default function SocialFeedPost({
       setShowGuestModal(true);
       return;
     }
+    
+    // Trigger animation
+    setLikeAnimation(true);
+    setTimeout(() => setLikeAnimation(false), 400);
+    
     // Only Quote-lər üçün like API-si var
     if (!isQuote || !post.quoteId) {
       // Review və ya BookAdded üçün yalnız local state dəyişirik
@@ -577,10 +583,12 @@ export default function SocialFeedPost({
             isLiked 
               ? 'bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-50 dark:to-pink-50 text-red-600 dark:text-red-600 border border-red-200 dark:border-red-200' 
               : 'bg-white dark:bg-white text-gray-700 dark:text-gray-700 border border-gray-200 dark:border-gray-200 hover:border-amber-300 dark:hover:border-amber-300'
-          } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
+          } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''} ${likeAnimation ? 'animate-heartPulse' : ''}`}
         >
-          <span className="text-base">{isLiked ? "❤️" : "🤍"}</span>
-          <span>{likes}</span>
+          <span className={`text-base transition-transform ${likeAnimation ? 'animate-heartPulse' : ''}`}>
+            {isLiked ? "❤️" : "🤍"}
+          </span>
+          <span className="transition-all">{likes}</span>
         </button>
         <button
           onClick={() => {
@@ -693,7 +701,7 @@ export default function SocialFeedPost({
                   {t("post.writeComment") || "Write a comment..."}
                 </button>
               ) : (
-                <form className="flex flex-col gap-2" onSubmit={handleSubmit}>
+                <form className="flex flex-col gap-2 animate-slideDown" onSubmit={handleSubmit}>
                   <textarea
                     className="w-full p-2 rounded-lg bg-white dark:bg-white text-gray-900 dark:text-gray-900 text-sm border border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all resize-none"
                     placeholder={t("post.writeComment")}

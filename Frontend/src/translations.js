@@ -11,6 +11,7 @@ export const translations = {
     "common.error": "Error",
     "common.success": "Success",
     "common.retry": "Retry",
+    "common.dismiss": "Dismiss",
     "error.default": "An error occurred",
     "error.network": "Could not connect to backend server. Please check if the backend server is running.",
     "error.400": "The data sent is incorrect. Please enter correct information.",
@@ -48,6 +49,13 @@ export const translations = {
     "nav.recommendations": "What Should I Read?",
     "nav.more": "More",
     "nav.createPost": "Create Post",
+    
+    // Notifications
+    "notifications.title": "Notifications",
+    "notifications.noNotifications": "No new notifications",
+    "notifications.followedYou": "started following you",
+    "notifications.followBack": "Follow Back",
+    "notifications.alreadyFollowing": "Following",
     "nav.newBook": "New Book",
     "nav.admin": "Admin Panel",
     
@@ -440,6 +448,7 @@ export const translations = {
     "common.error": "Ошибка",
     "common.success": "Успешно",
     "common.retry": "Повторить",
+    "common.dismiss": "Отклонить",
     "error.default": "Произошла ошибка",
     "error.network": "Не удалось подключиться к серверу. Пожалуйста, проверьте, работает ли сервер.",
     "error.400": "Отправленные данные неверны. Пожалуйста, введите правильную информацию.",
@@ -477,6 +486,13 @@ export const translations = {
     "nav.recommendations": "Что мне почитать?",
     "nav.more": "Еще",
     "nav.createPost": "Создать пост",
+    
+    // Notifications
+    "notifications.title": "Уведомления",
+    "notifications.noNotifications": "Нет новых уведомлений",
+    "notifications.followedYou": "начал(а) подписываться на вас",
+    "notifications.followBack": "Подписаться",
+    "notifications.alreadyFollowing": "Подписан",
     "nav.newBook": "Новая книга",
     "nav.admin": "Панель администратора",
     
@@ -1231,6 +1247,7 @@ export const translations = {
     "common.error": "Xəta",
     "common.success": "Uğurlu",
     "common.retry": "Yenidən cəhd et",
+    "common.dismiss": "Ləğv et",
     "error.default": "Xəta baş verdi",
     "error.network": "Backend server ilə əlaqə qurula bilmədi. Zəhmət olmasa backend serverin işlədiyini yoxlayın.",
     "error.400": "Göndərilən məlumatlar yanlışdır. Zəhmət olmasa düzgün məlumat daxil edin.",
@@ -1270,6 +1287,13 @@ export const translations = {
     "nav.createPost": "Post Yarat",
     "nav.newBook": "Yeni Kitab",
     "nav.admin": "Admin Paneli",
+    
+    // Notifications
+    "notifications.title": "Bildirişlər",
+    "notifications.noNotifications": "Yeni bildiriş yoxdur",
+    "notifications.followedYou": "sizə takip etməyə başladı",
+    "notifications.followBack": "Takip Et",
+    "notifications.alreadyFollowing": "Takip edirsiniz",
     
     // Social Feed
     "feed.title": "Sosial Xəbərlər",
