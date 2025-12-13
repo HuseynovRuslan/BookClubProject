@@ -8,8 +8,7 @@ public class BooksMappingProfile : Profile
     {
         CreateMap<Book, BookDto>()
             .ForMember(dest => dest.AuthorName, opt => opt.MapFrom(src => src.Author.Name))
-            .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.BookGenres.Select(bg => bg.Genre)))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
+            .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.BookGenres.Select(bg => bg.Genre)));
 
         CreateMap<Book, BookDetailDto>()
             .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.BookGenres.Select(bg => bg.Genre)));

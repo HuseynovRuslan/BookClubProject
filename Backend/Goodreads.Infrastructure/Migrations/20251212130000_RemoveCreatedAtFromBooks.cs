@@ -5,10 +5,18 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Goodreads.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCreatedAtToBooks : Migration
+    public partial class RemoveCreatedAtFromBooks : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "CreatedAt",
+                table: "Books");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<DateTime>(
                 name: "CreatedAt",
@@ -16,14 +24,6 @@ namespace Goodreads.Infrastructure.Migrations
                 type: "datetime2",
                 nullable: false,
                 defaultValueSql: "GETUTCDATE()");
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "CreatedAt",
-                table: "Books");
         }
     }
 }
