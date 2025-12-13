@@ -8,3 +8,4 @@ export function useTranslation() {
     return translations[language]?.[key] || translations.en[key] || key;
   };
 }
+

@@ -1648,3 +1648,4 @@ export const translations = {
 };
 
 // useTranslation hook will be imported from a separate file or used directly in components
+

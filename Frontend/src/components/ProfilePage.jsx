@@ -568,23 +568,39 @@ export default function ProfilePage({
       // Update profile picture and get updated profile
       const updatedProfile = await updateProfilePicture(file);
       
-      // Immediately update local state
+      // Immediately update local state with new avatar URL
       if (updatedProfile) {
-        setProfile(updatedProfile);
         const fullName = updatedProfile.firstName 
           ? `${updatedProfile.firstName}${updatedProfile.surname ? ` ${updatedProfile.surname}` : ""}`.trim()
           : updatedProfile.name || "";
+        
+        // Update profile state immediately with new avatar
+        setProfile({
+          ...updatedProfile,
+          name: fullName,
+          avatarUrl: updatedProfile.avatarUrl || updatedProfile.AvatarUrl || updatedProfile.profilePictureUrl || updatedProfile.ProfilePictureUrl,
+        });
+        
         setEditedUser({
           ...updatedProfile,
           name: fullName,
           email: updatedProfile.email || editedUser.email || "",
+          avatarUrl: updatedProfile.avatarUrl || updatedProfile.AvatarUrl || updatedProfile.profilePictureUrl || updatedProfile.ProfilePictureUrl,
         });
+        
+        // Clear preview and show new image immediately
+        setPreviewImage(null);
+        setImageError(false);
       }
       
-      // Also refresh from server to ensure we have the latest data
-      await loadProfile();
-      setPreviewImage(null); // Clear preview after successful upload
-      setImageError(false); // Reset image error state
+      // Refresh auth context to update user globally (without waiting for loadProfile)
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+      
+      // Also refresh from server in background (non-blocking)
+      loadProfile().catch(err => console.error("Background profile refresh error:", err));
+      
       setProfileMessage(t("profile.avatarUpdated"));
       
       // Clear message after 3 seconds
@@ -612,22 +628,38 @@ export default function ProfilePage({
       // Delete profile picture and get updated profile
       const updatedProfile = await deleteProfilePicture();
       
-      // Immediately update local state
+      // Immediately update local state with removed avatar
       if (updatedProfile) {
-        setProfile(updatedProfile);
         const fullName = updatedProfile.firstName 
           ? `${updatedProfile.firstName}${updatedProfile.surname ? ` ${updatedProfile.surname}` : ""}`.trim()
           : updatedProfile.name || "";
+        
+        // Update profile state immediately (avatar removed)
+        setProfile({
+          ...updatedProfile,
+          name: fullName,
+          avatarUrl: null,
+        });
+        
         setEditedUser({
           ...updatedProfile,
           name: fullName,
           email: updatedProfile.email || editedUser.email || "",
+          avatarUrl: null,
         });
+        
+        // Reset image error state
+        setImageError(false);
       }
       
-      // Also refresh from server to ensure we have the latest data
-      await loadProfile();
-      setImageError(false); // Reset image error state
+      // Refresh auth context to update user globally (without waiting for loadProfile)
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+      
+      // Also refresh from server in background (non-blocking)
+      loadProfile().catch(err => console.error("Background profile refresh error:", err));
+      
       setProfileMessage(t("profile.avatarRemoved"));
       
       // Clear message after 3 seconds
@@ -1406,7 +1438,7 @@ export default function ProfilePage({
       {/* Profile Card */}
       <div className="bg-white dark:bg-white text-gray-900 dark:text-gray-900 rounded-3xl p-8 mb-8 shadow-xl border-2 border-gray-100 dark:border-gray-200">
         <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="relative" ref={avatarMenuRef}>
+          <div className="relative z-50" ref={avatarMenuRef}>
             <div
               onClick={isOwnProfile ? handleAvatarClick : undefined}
               className={`relative group ${isOwnProfile ? "cursor-pointer" : ""}`}
@@ -1446,7 +1478,7 @@ export default function ProfilePage({
             </div>
             
             {isOwnProfile && showAvatarMenu && !avatarUploading && (
-              <div className="absolute top-full left-0 mt-3 bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 rounded-2xl shadow-2xl z-10 min-w-[180px] overflow-hidden">
+              <div className="absolute top-full left-0 mt-3 bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 rounded-2xl shadow-2xl z-[100] min-w-[180px] overflow-hidden">
                 <button
                   onClick={handleSelectImage}
                   className="w-full px-5 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-900 hover:bg-gradient-to-r hover:from-purple-50 hover:via-blue-50 hover:to-indigo-50 dark:hover:from-purple-50 dark:hover:via-blue-50 dark:hover:to-indigo-50 flex items-center gap-3 transition-all"
@@ -1622,13 +1654,6 @@ export default function ProfilePage({
                   >
                     <Edit2 className="w-5 h-5" />
                     {t("profile.edit")}
-                  </button>
-                  <button
-                    onClick={onSwitchAccount}
-                    className="px-6 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
-                  >
-                    <UserPlus className="w-5 h-5" />
-                    {t("profile.switchAccount")}
                   </button>
                   <button
                     onClick={onLogout}

@@ -254,7 +254,8 @@ export default function SearchPage({ onBookClick }) {
                     {results.filter(user => {
                       // Filter out admin users on frontend as well
                       const role = user.role || user.Role || "reader";
-                      return role !== "Admin" && role !== "admin";
+                      const roleLower = role.toString().toLowerCase().trim();
+                      return roleLower !== "admin";
                     }).map((user, index) => {
                       const avatarUrl = getImageUrl(user.avatarUrl);
                       const displayName = user.name || user.username || "User";

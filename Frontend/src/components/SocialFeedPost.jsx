@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Trash2, MoreVertical, Edit, X } from "lucide-react";
+import { Send, Trash2, MoreVertical, Edit, X, Flag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { likeQuote, updateQuote } from "../api/quotes";
 import { useTranslation } from "../hooks/useTranslation";
@@ -192,6 +192,30 @@ export default function SocialFeedPost({
     }
   };
 
+  const handleReportPost = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowMenu(false);
+    
+    if (!onDeletePost) return;
+    
+    // Confirm report
+    if (!window.confirm(t("post.confirmReport") || "Are you sure you want to report this post? It will be removed from the feed.")) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      // Report = Delete the post
+      await onDeletePost(post.id, post);
+    } catch (err) {
+      console.error("Error reporting post:", err);
+      alert(t("post.reportError") || "Failed to report post. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleEditPost = () => {
     setShowMenu(false);
     setIsEditing(true);
@@ -298,8 +322,8 @@ export default function SocialFeedPost({
             {formatTimestamp(post.timestamp || post.createdAt || post.CreatedAt)}
           </div>
         </div>
-        {/* 3 dots menu - only show for post owner */}
-        {isPostOwner && onDeletePost && (
+        {/* 3 dots menu - show for all users */}
+        {onDeletePost && (
           <div className="relative ml-auto" ref={menuRef}>
             <button
               onClick={(e) => {
@@ -314,24 +338,39 @@ export default function SocialFeedPost({
             {/* Dropdown menu */}
             {showMenu && (
               <div className="absolute right-0 top-full mt-1 bg-white dark:bg-white rounded-lg shadow-lg border border-gray-200 dark:border-gray-200 z-50 min-w-[120px]">
-                {isQuote && (
-                  <button
-                    onClick={handleEditPost}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-100 flex items-center gap-2 transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                    {t("post.edit") || t("common.edit") || "Edit"}
-                  </button>
-                )}
-                {onDeletePost && (
-                  <button
-                    onClick={handleDeletePost}
-                    disabled={isDeleting}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-600 hover:bg-red-50 dark:hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    {t("post.delete") || t("common.delete") || "Delete"}
-                  </button>
+                {isPostOwner ? (
+                  <>
+                    {/* Owner sees Edit and Delete */}
+                    {isQuote && (
+                      <button
+                        onClick={handleEditPost}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                        {t("post.edit") || t("common.edit") || "Edit"}
+                      </button>
+                    )}
+                    <button
+                      onClick={handleDeletePost}
+                      disabled={isDeleting}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-600 hover:bg-red-50 dark:hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {t("post.delete") || t("common.delete") || "Delete"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {/* Others see Report */}
+                    <button
+                      onClick={handleReportPost}
+                      disabled={isDeleting}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-600 hover:bg-red-50 dark:hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Flag className="w-4 h-4" />
+                      {t("post.report") || "Report"}
+                    </button>
+                  </>
                 )}
               </div>
             )}
