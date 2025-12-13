@@ -155,7 +155,7 @@ function BookCard({ book, onClick, enableShelfControls = true, priority = false 
   return (
     <div
       ref={cardRef}
-      className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer border border-gray-100 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-600/50 transform hover:-translate-y-2"
+      className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer border border-gray-100 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-600/50 transform hover:-translate-y-2 hover-gentle-scale"
       onClick={onClick}
       style={{
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',

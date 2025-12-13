@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus, Shield } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
@@ -8,9 +8,18 @@ import { useState } from "react";
 export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, onClose, onShowLogin, onShowRegister }) {
   const { user, isGuest } = useAuth();
   const t = useTranslation();
+  const location = useLocation();
   const [showGuestModal, setShowGuestModal] = useState(false);
   const isWriter = user?.role === "writer";
   const isAdmin = user?.role === "Admin" || user?.role === "admin";
+  
+  // Check if a path is active
+  const isActive = (path) => {
+    if (path === "/") {
+      return location.pathname === "/" || location.pathname === "/social";
+    }
+    return location.pathname === path || location.pathname.startsWith(path + "/");
+  };
   
   // Debug: Check user role
   if (user) {
@@ -61,7 +70,11 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
                   <Link
                     to={to}
                     onClick={onClose}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+                      isActive(to)
+                        ? "bg-gray-200 text-gray-900 font-semibold"
+                        : "text-gray-900 hover:bg-gray-100"
+                    }`}
                   >
                     {Icon && <Icon className="w-5 h-5" />}
                     {label}
@@ -116,7 +129,11 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
                     <Link
                       to={to}
                       onClick={onClose}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+                        isActive(to)
+                          ? "bg-gray-200 text-gray-900 font-semibold"
+                          : "text-gray-900 hover:bg-gray-100"
+                      }`}
                     >
                       {Icon && <Icon className="w-5 h-5" />}
                       {label}
@@ -132,7 +149,11 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
                 <Link
                   to="/admin"
                   onClick={onClose}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+                    isActive("/admin")
+                      ? "bg-gray-200 text-gray-900 font-semibold"
+                      : "text-gray-900 hover:bg-gray-100"
+                  }`}
                 >
                   <Shield className="w-5 h-5" />
                   {t("nav.admin") || "Admin Panel"}
@@ -181,7 +202,11 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
                 ) : (
                   <Link
                     to={to}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+                      isActive(to)
+                        ? "bg-gray-200 text-gray-900 font-semibold"
+                        : "text-gray-900 hover:bg-gray-100"
+                    }`}
                   >
                     {Icon && <Icon className="w-5 h-5" />}
                     {label}
@@ -232,7 +257,11 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
                   ) : (
                     <Link
                       to={to}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+                        isActive(to)
+                          ? "bg-gray-200 text-gray-900 font-semibold"
+                          : "text-gray-900 hover:bg-gray-100"
+                      }`}
                     >
                       {Icon && <Icon className="w-5 h-5" />}
                       {label}
@@ -247,7 +276,11 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
               <li>
                 <Link
                   to="/admin"
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+                    isActive("/admin")
+                      ? "bg-gray-200 text-gray-900 font-semibold"
+                      : "text-gray-900 hover:bg-gray-100"
+                  }`}
                 >
                   <Shield className="w-5 h-5" />
                   {t("nav.admin") || "Admin Panel"}

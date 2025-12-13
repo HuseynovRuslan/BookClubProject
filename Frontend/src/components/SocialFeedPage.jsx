@@ -609,9 +609,13 @@ export default function SocialFeedPage({
       {/* Posts */}
       {!loading && !error && posts.length > 0 && (
         <div className="space-y-4">
-          {posts.map((post) => (
-            <SocialFeedPost
+          {posts.map((post, index) => (
+            <div
               key={post.id}
+              className="animate-slideInFromBottom"
+              style={{
+                animationDelay: `${index * 100}ms`,
+                opacity: 0
               post={post}
               currentUsername={currentUsername}
               enableInteractions
@@ -659,9 +663,36 @@ export default function SocialFeedPage({
                   onLikeChange(postId, likes, isLiked);
                 }
               }}
-              onShowLogin={onShowLogin}
-              onShowRegister={onShowRegister}
-            />
+            >
+              <SocialFeedPost
+                post={post}
+                currentUsername={currentUsername}
+                enableInteractions
+                onAddComment={(postId, text) =>
+                  post.isLocal
+                    ? onAddComment?.(postId, text)
+                    : handleRemoteCommentAdd(postId, text)
+                }
+                onDeleteComment={(commentId) =>
+                  post.isLocal
+                    ? onDeleteComment?.(post.id, commentId)
+                    : handleRemoteCommentDelete(post.id, commentId)
+                }
+                onDeletePost={handleRemotePostDelete}
+                onViewReview={handleViewReview}
+                onPostUpdate={post.isLocal ? undefined : handleRemotePostUpdate}
+                onLikeChange={(postId, likes, isLiked) => {
+                  // Update post likes in state
+                  setRemotePosts((prev) => {
+                    return prev.map((p) =>
+                      p.id === postId ? { ...p, likes, isLiked } : p
+                    );
+                  });
+                }}
+                onShowLogin={onShowLogin}
+                onShowRegister={onShowRegister}
+              />
+            </div>
           ))}
         </div>
       )}
