@@ -287,6 +287,8 @@ export async function searchUsers(query) {
     return matches;
   }
   
+  // Request backend to filter out admin users
+  // Note: Backend should ideally filter admin users, but we also filter on frontend for safety
   const response = await apiRequest(`/api/Users/get-all-users?searchTerm=${encodeURIComponent(query.trim())}`, {
     method: "GET",
   });
@@ -338,8 +340,11 @@ export async function searchUsers(query) {
       };
     })
     .filter(user => {
-      // Filter out admin users
-      const isAdmin = user.role === "Admin" || user.role === "admin";
+      // Filter out admin users (both frontend and backend should filter)
+      // Check multiple possible role formats
+      const role = user.role || user.Role || "";
+      const roleLower = String(role).toLowerCase().trim();
+      const isAdmin = roleLower === "admin" || role === "Admin" || role === "ADMIN";
       if (isAdmin) return false;
       
       // Filter: yalnız username və ya name-ə görə match edən userləri göstər

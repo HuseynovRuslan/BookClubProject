@@ -62,17 +62,34 @@ function App() {
     }
   }, [user, showAuthFromGuest]);
 
+  // Helper function to get reported posts from localStorage
+  const getReportedPosts = () => {
+    try {
+      const reported = localStorage.getItem("bookverse_reported_posts");
+      if (!reported) return [];
+      return JSON.parse(reported);
+    } catch (err) {
+      console.error("Error loading reported posts:", err);
+      return [];
+    }
+  };
+
   // Load userPosts from localStorage on mount and when user changes
   useEffect(() => {
     if (!currentUser?.id) return;
     
     try {
       const stored = localStorage.getItem("bookverse_social_feed");
+      const reportedPosts = getReportedPosts();
       if (stored) {
         const posts = JSON.parse(stored);
         // Filter posts that belong to current user (quotes, reviews, posts)
+        // Also filter out reported posts
         const currentUserId = currentUser.id || currentUser.Id;
         const userPostsFromStorage = posts.filter(post => {
+          // Skip reported posts
+          if (reportedPosts.includes(post.id)) return false;
+          
           // Check if post is from current user
           const postUserId = post.userId || post.UserId || 
                            post.user?.id || post.User?.Id ||
@@ -203,44 +220,67 @@ function App() {
       timestamp: new Date().toISOString(),
     };
     
-    // Update state optimistically
+    // Update localPosts state optimistically
     setLocalPosts((prev) => {
       const updated = prev.map((post) =>
         post.id === postId
           ? { ...post, comments: [...(post.comments || []), newComment] }
           : post
       );
-      // Save to localStorage
-      try {
-        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
-        const merged = existing.map(p => {
-          const localPost = updated.find(lp => lp.id === p.id);
-          return localPost || p;
-        });
-        // Add new local posts that aren't in existing
-        updated.forEach(lp => {
-          if (!merged.find(p => p.id === lp.id)) {
-            merged.push(lp);
-          }
-        });
-        // Remove blob URLs before saving - they're invalid after page reload
-        const cleanedMerged = merged.map(post => {
-          const cleaned = { ...post };
-          if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
-            cleaned.postImage = null;
-          }
-          if (cleaned.bookCover && cleaned.bookCover.startsWith('blob:')) {
-            cleaned.bookCover = null;
-          }
-          return cleaned;
-        });
-        localStorage.setItem("bookverse_social_feed", JSON.stringify(cleanedMerged));
-      } catch (err) {
-        console.error("Error saving comment to localStorage:", err);
-        throw err; // Re-throw to let component handle error
-      }
       return updated;
     });
+    
+    // Also update userPosts state (for Profile Page)
+    setUserPosts((prev) => {
+      return prev.map((post) =>
+        post.id === postId
+          ? { ...post, comments: [...(post.comments || []), newComment] }
+          : post
+      );
+    });
+    
+    // Save to localStorage - update the post's comments in localStorage
+    try {
+      const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+      
+      // Update the post in localStorage with the new comment
+      const updated = existing.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: [...(post.comments || []), newComment]
+          };
+        }
+        return post;
+      });
+      
+      // Also add any localPosts that aren't in existing
+      setLocalPosts((prev) => {
+        prev.forEach(localPost => {
+          if (!updated.find(p => p.id === localPost.id)) {
+            updated.push(localPost);
+          }
+        });
+        return prev;
+      });
+      
+      // Remove blob URLs before saving - they're invalid after page reload
+      const cleanedMerged = updated.map(post => {
+        const cleaned = { ...post };
+        if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
+          cleaned.postImage = null;
+        }
+        if (cleaned.bookCover && cleaned.bookCover.startsWith('blob:')) {
+          cleaned.bookCover = null;
+        }
+        return cleaned;
+      });
+      
+      localStorage.setItem("bookverse_social_feed", JSON.stringify(cleanedMerged));
+    } catch (err) {
+      console.error("Error saving comment to localStorage:", err);
+      throw err; // Re-throw to let component handle error
+    }
     
     // Return success
     return Promise.resolve();
@@ -286,6 +326,100 @@ function App() {
       }
       return updated;
     });
+  };
+
+  const handlePostUpdate = (postId, updatedPost) => {
+    // Update local posts
+    setLocalPosts((prev) => {
+      const updated = prev.map((post) =>
+        post.id === postId ? { ...post, ...updatedPost } : post
+      );
+      // Save to localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+        const merged = existing.map((p) => {
+          const updatedPost = updated.find((up) => up.id === p.id);
+          return updatedPost || p;
+        });
+        // Add new posts that aren't in existing
+        updated.forEach((up) => {
+          if (!merged.find((p) => p.id === up.id)) {
+            merged.push(up);
+          }
+        });
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(merged));
+      } catch (err) {
+        console.error("Error saving post update to localStorage:", err);
+      }
+      return updated;
+    });
+    
+    // Also update userPosts
+    setUserPosts((prev) => {
+      return prev.map((post) =>
+        post.id === postId ? { ...post, ...updatedPost } : post
+      );
+    });
+  };
+
+  const handleLikeChange = (postId, likes, isLiked) => {
+    // Update localPosts state
+    setLocalPosts((prev) => {
+      const updated = prev.map((post) =>
+        post.id === postId ? { ...post, likes, isLiked } : post
+      );
+      return updated;
+    });
+    
+    // Also update userPosts state (for Profile Page)
+    setUserPosts((prev) => {
+      return prev.map((post) =>
+        post.id === postId ? { ...post, likes, isLiked } : post
+      );
+    });
+    
+    // Save to localStorage - update ALL posts (including userPosts)
+    try {
+      const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+      
+      // Update the post in localStorage with the new like status
+      const updated = existing.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            likes,
+            isLiked
+          };
+        }
+        return post;
+      });
+      
+      // Also add any localPosts that aren't in existing
+      setLocalPosts((prev) => {
+        prev.forEach(localPost => {
+          if (!updated.find(p => p.id === localPost.id)) {
+            updated.push(localPost);
+          }
+        });
+        return prev;
+      });
+      
+      // Remove blob URLs before saving - they're invalid after page reload
+      const cleanedMerged = updated.map(post => {
+        const cleaned = { ...post };
+        if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
+          cleaned.postImage = null;
+        }
+        if (cleaned.bookCover && cleaned.bookCover.startsWith('blob:')) {
+          cleaned.bookCover = null;
+        }
+        return cleaned;
+      });
+      
+      localStorage.setItem("bookverse_social_feed", JSON.stringify(cleanedMerged));
+    } catch (err) {
+      console.error("Error saving like to localStorage:", err);
+    }
   };
 
   const handleDeletePost = async (postId, post) => {
@@ -366,6 +500,25 @@ function App() {
     setSelectedBook(book);
   };
 
+  const handleReportPost = async (postId, post) => {
+    try {
+      // Save reported post to localStorage (only hides from current user's feed)
+      const reportedPosts = getReportedPosts();
+      if (!reportedPosts.includes(postId)) {
+        reportedPosts.push(postId);
+        localStorage.setItem("bookverse_reported_posts", JSON.stringify(reportedPosts));
+      }
+      
+      // Remove from userPosts if it exists there
+      setUserPosts((prev) => prev.filter((p) => p.id !== postId));
+      
+      // Note: We don't delete from backend - post is only hidden from this user's view
+    } catch (err) {
+      console.error("Error reporting post:", err);
+      throw err;
+    }
+  };
+
   return (
     <Router>
       {initializing ? (
@@ -433,6 +586,9 @@ function App() {
                   onAddComment={handleAddComment}
                   onDeleteComment={handleDeleteComment}
                   onDeletePost={handleDeletePost}
+                  onReportPost={handleReportPost}
+                  onPostUpdate={handlePostUpdate}
+                  onLikeChange={handleLikeChange}
                   onShowLogin={() => {
                     setShowAuthFromGuest(true);
                     setAuthMode("login");
@@ -457,6 +613,9 @@ function App() {
                   onAddComment={handleAddComment}
                   onDeleteComment={handleDeleteComment}
                   onDeletePost={handleDeletePost}
+                  onReportPost={handleReportPost}
+                  onPostUpdate={handlePostUpdate}
+                  onLikeChange={handleLikeChange}
                   onShowLogin={() => {
                     setShowAuthFromGuest(true);
                     setAuthMode("login");
@@ -503,6 +662,10 @@ function App() {
                   userPosts={userPosts}
                   userBooks={userBooks}
                   onDeletePost={handleDeletePost}
+                  onAddComment={handleAddComment}
+                  onDeleteComment={handleDeleteComment}
+                  onPostUpdate={handlePostUpdate}
+                  onLikeChange={handleLikeChange}
                   onShowLogin={() => {
                     setShowAuthFromGuest(true);
                     setAuthMode("login");

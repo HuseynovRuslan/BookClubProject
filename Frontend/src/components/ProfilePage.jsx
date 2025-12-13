@@ -38,6 +38,10 @@ export default function ProfilePage({
   userPosts = [],
   userBooks = [],
   onDeletePost,
+  onAddComment,
+  onDeleteComment,
+  onPostUpdate,
+  onLikeChange,
   onShowLogin,
   onShowRegister,
 }) {
@@ -77,6 +81,7 @@ export default function ProfilePage({
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [imageError, setImageError] = useState(false);
+  const [avatarKey, setAvatarKey] = useState(0); // Force image reload when avatar changes
   const [viewedUserPosts, setViewedUserPosts] = useState([]);
   // Helper functions for localStorage
   // Separate storage keys for own profile vs other users' profiles
@@ -591,11 +596,39 @@ export default function ProfilePage({
         // Clear preview and show new image immediately
         setPreviewImage(null);
         setImageError(false);
+        // Force image reload by updating key
+        setAvatarKey(prev => prev + 1);
       }
       
-      // Refresh auth context to update user globally (without waiting for loadProfile)
+      // Immediately update AuthContext to update Navigation and other components
+      // This ensures the avatar appears instantly without manual refresh
       if (refreshProfile) {
-        await refreshProfile();
+        try {
+          const refreshedUser = await refreshProfile();
+          // Update local state with refreshed user data
+          if (refreshedUser) {
+            const fullName = refreshedUser.firstName 
+              ? `${refreshedUser.firstName}${refreshedUser.surname ? ` ${refreshedUser.surname}` : ""}`.trim()
+              : refreshedUser.name || "";
+            
+            const refreshedAvatarUrl = refreshedUser.avatarUrl || refreshedUser.AvatarUrl || refreshedUser.profilePictureUrl || refreshedUser.ProfilePictureUrl;
+            
+            setProfile({
+              ...refreshedUser,
+              name: fullName,
+              avatarUrl: refreshedAvatarUrl,
+            });
+            
+            setEditedUser({
+              ...refreshedUser,
+              name: fullName,
+              email: refreshedUser.email || editedUser.email || "",
+              avatarUrl: refreshedAvatarUrl,
+            });
+          }
+        } catch (err) {
+          console.error("Error refreshing profile:", err);
+        }
       }
       
       // Also refresh from server in background (non-blocking)
@@ -650,11 +683,37 @@ export default function ProfilePage({
         
         // Reset image error state
         setImageError(false);
+        // Force image reload by updating key (to show placeholder)
+        setAvatarKey(prev => prev + 1);
       }
       
-      // Refresh auth context to update user globally (without waiting for loadProfile)
+      // Immediately update AuthContext to update Navigation and other components
+      // This ensures the avatar removal appears instantly without manual refresh
       if (refreshProfile) {
-        await refreshProfile();
+        try {
+          const refreshedUser = await refreshProfile();
+          // Update local state with refreshed user data
+          if (refreshedUser) {
+            const fullName = refreshedUser.firstName 
+              ? `${refreshedUser.firstName}${refreshedUser.surname ? ` ${refreshedUser.surname}` : ""}`.trim()
+              : refreshedUser.name || "";
+            
+            setProfile({
+              ...refreshedUser,
+              name: fullName,
+              avatarUrl: null, // Explicitly set to null when deleted
+            });
+            
+            setEditedUser({
+              ...refreshedUser,
+              name: fullName,
+              email: refreshedUser.email || editedUser.email || "",
+              avatarUrl: null, // Explicitly set to null when deleted
+            });
+          }
+        } catch (err) {
+          console.error("Error refreshing profile:", err);
+        }
       }
       
       // Also refresh from server in background (non-blocking)
@@ -1157,6 +1216,119 @@ export default function ProfilePage({
     }
   };
 
+  // Handle comment addition - sync with localStorage and parent
+  const handleAddComment = async (postId, commentText) => {
+    // For own profile posts: Call parent's handler (it will update userPosts prop)
+    // For other users' posts: Update local state and localStorage
+    if (isOwnProfile) {
+      // Own profile: Let parent handle the update (userPosts prop will be updated)
+      if (onAddComment) {
+        try {
+          await onAddComment(postId, commentText);
+        } catch (err) {
+          console.error("Error adding comment:", err);
+          throw err;
+        }
+      }
+    } else {
+      // Other user's profile: Update local state and localStorage
+      const newComment = {
+        id: Date.now().toString(),
+        username: authUser?.name || authUser?.username || "You",
+        userAvatar: authUser?.avatarUrl || authUser?.AvatarUrl || authUser?.profilePictureUrl || authUser?.ProfilePictureUrl || null,
+        text: commentText,
+        timestamp: new Date().toISOString(),
+      };
+      
+      // Update local state
+      setViewedUserPosts((prev) => {
+        return prev.map((post) =>
+          post.id === postId
+            ? { ...post, comments: [...(post.comments || []), newComment] }
+            : post
+        );
+      });
+      
+      // Sync with localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+        const updated = existing.map((post) =>
+          post.id === postId
+            ? { ...post, comments: [...(post.comments || []), newComment] }
+            : post
+        );
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
+      } catch (err) {
+        console.error("Error saving comment to localStorage:", err);
+      }
+    }
+    
+    return Promise.resolve();
+  };
+
+  // Handle comment deletion - sync with localStorage and parent
+  const handleDeleteComment = (postId, commentId) => {
+    // Update local state
+    if (isOwnProfile) {
+      setViewedUserPosts((prev) => {
+        return prev.map((post) =>
+          post.id === postId
+            ? { ...post, comments: post.comments?.filter(c => c.id !== commentId) || [] }
+            : post
+        );
+      });
+    } else {
+      setViewedUserPosts((prev) => {
+        return prev.map((post) =>
+          post.id === postId
+            ? { ...post, comments: post.comments?.filter(c => c.id !== commentId) || [] }
+            : post
+        );
+      });
+    }
+    
+    // Call parent's handler if available
+    if (onDeleteComment) {
+      onDeleteComment(postId, commentId);
+    }
+    
+    // Also sync with localStorage
+    try {
+      const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+      const updated = existing.map((post) =>
+        post.id === postId
+          ? { ...post, comments: post.comments?.filter(c => c.id !== commentId) || [] }
+          : post
+      );
+      localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
+    } catch (err) {
+      console.error("Error deleting comment from localStorage:", err);
+    }
+  };
+
+  // Handle like change - sync with localStorage and parent
+  const handleLikeChange = (postId, likes, isLiked) => {
+    // Update local state
+    if (isOwnProfile) {
+      setViewedUserPosts((prev) => {
+        return prev.map((post) =>
+          post.id === postId ? { ...post, likes, isLiked } : post
+        );
+      });
+    } else {
+      setViewedUserPosts((prev) => {
+        return prev.map((post) =>
+          post.id === postId ? { ...post, likes, isLiked } : post
+        );
+      });
+    }
+    
+    // Call parent's onLikeChange if available (for App.jsx to sync with localPosts and userPosts)
+    if (onLikeChange) {
+      onLikeChange(postId, likes, isLiked);
+    }
+  };
+
   const renderShelvesTab = () => {
     if (shelvesLoading) {
       return (
@@ -1310,7 +1482,23 @@ export default function ProfilePage({
               key={post.id} 
               post={post} 
               currentUsername={isOwnProfile ? (authUser?.name || authUser?.username) : (profile?.name || profile?.username)}
+              enableInteractions={true}
+              allowEditDelete={isOwnProfile}
               onDeletePost={isOwnProfile ? handleDeletePost : undefined}
+              onReportPost={!isOwnProfile ? handleReportPost : undefined}
+              onAddComment={handleAddComment}
+              onDeleteComment={handleDeleteComment}
+              onLikeChange={handleLikeChange}
+              onPostUpdate={isOwnProfile ? async (postId, updatedPost) => {
+                // Update viewedUserPosts when post is edited
+                setViewedUserPosts((prev) => {
+                  return prev.map((p) => (p.id === postId ? { ...p, ...updatedPost } : p));
+                });
+                // Also call parent's onPostUpdate if available
+                if (onPostUpdate) {
+                  await onPostUpdate(postId, updatedPost);
+                }
+              } : undefined}
             />
           ))
         )}
@@ -1451,8 +1639,14 @@ export default function ProfilePage({
                 />
               ) : profile?.avatarUrl && !imageError ? (
                 <img
-                  key={profile.avatarUrl}
-                  src={getImageUrl(profile.avatarUrl)}
+                  key={`profile-avatar-${profile.avatarUrl}-${avatarKey}`}
+                  src={(() => {
+                    const imageUrl = getImageUrl(profile.avatarUrl);
+                    if (!imageUrl) return '';
+                    // Add cache-busting parameter to force refresh when avatar changes
+                    const separator = imageUrl.includes('?') ? '&' : '?';
+                    return `${imageUrl}${separator}v=${avatarKey}`;
+                  })()}
                   alt={profile?.name || "Profile"}
                   className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-200 group-hover:border-purple-400 dark:group-hover:border-purple-400 transition-all duration-300 shadow-xl group-hover:shadow-2xl group-hover:scale-105"
                   onError={() => {

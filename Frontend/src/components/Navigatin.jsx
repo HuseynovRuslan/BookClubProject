@@ -1,6 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Search, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getImageUrl } from "../api/config";
 import NotificationDropdown from "./NotificationDropdown";
@@ -15,6 +17,15 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const notificationRef = useRef(null);
+  const [avatarKey, setAvatarKey] = useState(0); // Force image reload when avatar changes
+  
+  // Update avatar key when user avatar changes to force image reload
+  useEffect(() => {
+    if (user?.avatarUrl) {
+      setAvatarKey(prev => prev + 1);
+      setImageError(false); // Reset error state when avatar changes
+    }
+  }, [user?.avatarUrl]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -231,12 +242,19 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
               >
                 {user?.avatarUrl && !imageError ? (
                   <img
-                    src={getImageUrl(user.avatarUrl)}
+                    src={(() => {
+                      const imageUrl = getImageUrl(user.avatarUrl);
+                      if (!imageUrl) return '';
+                      // Add cache-busting parameter to force refresh when avatar changes
+                      const separator = imageUrl.includes('?') ? '&' : '?';
+                      return `${imageUrl}${separator}v=${avatarKey}`;
+                    })()}
                     alt={user?.name || "Profile"}
                     className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-200 group-hover:border-amber-400 dark:group-hover:border-amber-400 transition-all duration-300 shadow-lg group-hover:shadow-xl group-hover:scale-110"
                     onError={() => {
                       setImageError(true);
                     }}
+                    key={`avatar-${user.avatarUrl}-${avatarKey}`} // Force re-render when avatarUrl or key changes
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 flex items-center justify-center text-sm font-black text-white border-2 border-gray-200 dark:border-gray-200 group-hover:border-amber-400 dark:group-hover:border-amber-400 transition-all duration-300 shadow-lg group-hover:shadow-xl group-hover:scale-110">
