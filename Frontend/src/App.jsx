@@ -57,6 +57,33 @@ function App() {
     setCurrentUser(user);
   }, [user]);
 
+  // Load userPosts from localStorage on mount and when user changes
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    
+    try {
+      const stored = localStorage.getItem("bookverse_social_feed");
+      if (stored) {
+        const posts = JSON.parse(stored);
+        // Filter posts that belong to current user (quotes, reviews, posts)
+        const currentUserId = currentUser.id || currentUser.Id;
+        const userPostsFromStorage = posts.filter(post => {
+          // Check if post is from current user
+          const postUserId = post.userId || post.UserId || 
+                           post.user?.id || post.User?.Id ||
+                           post.user?.userId || post.User?.UserId;
+          // Also include posts with isLocal flag (they're from current user)
+          return post.isLocal || postUserId === currentUserId || 
+                 (post.type === 'quote' && post.quoteId) || // Quotes created by current user
+                 (post.type === 'review' && post.reviewId); // Reviews created by current user
+        });
+        setUserPosts(userPostsFromStorage);
+      }
+    } catch (err) {
+      console.error("Error loading userPosts from localStorage:", err);
+    }
+  }, [currentUser]);
+
         // Disabled: One-time cleanup - user requested to keep posts after page reload
         // useEffect(() => {
         //   try {
@@ -97,14 +124,15 @@ function App() {
   const handleCreatePost = (newPost) => {
     // For new posts, keep blob URLs for immediate display (they're valid until page reload)
     // Only clean blob URLs when saving to localStorage (they won't persist after reload anyway)
+    // For quotes, use the backend quoteId as the post id so it matches and persists
     const postWithUser = {
       ...newPost,
-      id: `local-${Date.now()}`,
+      id: newPost.id || `local-${Date.now()}`, // Use existing id if provided (e.g., quoteId for quotes)
       username: currentUser?.name || "You",
       likes: newPost.likes ?? 0,
       comments: [],
-      timestamp: new Date().toISOString(),
-      isLocal: true,
+      timestamp: newPost.timestamp || new Date().toISOString(),
+      isLocal: !newPost.id || newPost.id.startsWith('local-'), // Only mark as local if id starts with 'local-'
     };
     
     setLocalPosts((prev) => {
@@ -113,9 +141,15 @@ function App() {
       try {
         const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
         // Remove blob URLs before saving - they're invalid after page reload
+        // But keep postImageUrl if it exists (backend URL)
         const cleanPost = { ...postWithUser };
         if (cleanPost.postImage && cleanPost.postImage.startsWith('blob:')) {
-          cleanPost.postImage = null;
+          // If we have postImageUrl (backend URL), use it instead of blob URL
+          if (cleanPost.postImageUrl) {
+            cleanPost.postImage = cleanPost.postImageUrl;
+          } else {
+            cleanPost.postImage = null;
+          }
         }
         if (cleanPost.bookCover && cleanPost.bookCover.startsWith('blob:')) {
           cleanPost.bookCover = null;
@@ -123,7 +157,12 @@ function App() {
         const cleanedExisting = existing.map(post => {
           const cleaned = { ...post };
           if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
-            cleaned.postImage = null;
+            // If we have postImageUrl (backend URL), use it instead of blob URL
+            if (cleaned.postImageUrl) {
+              cleaned.postImage = cleaned.postImageUrl;
+            } else {
+              cleaned.postImage = null;
+            }
           }
           if (cleaned.bookCover && cleaned.bookCover.startsWith('blob:')) {
             cleaned.bookCover = null;
@@ -300,6 +339,8 @@ function App() {
         console.log("Deleting quote with ID:", quoteId);
         await deleteQuote(quoteId);
       }
+      // For normal posts (type: "post"), status updates, and other local posts, just remove from localStorage
+      // No backend deletion needed as they're stored locally
       
       // Remove from local state
       setLocalPosts((prev) => {
@@ -447,6 +488,7 @@ function App() {
                   }}
                   userPosts={userPosts}
                   userBooks={userBooks}
+                  onDeletePost={handleDeletePost}
                 />
               }
             />

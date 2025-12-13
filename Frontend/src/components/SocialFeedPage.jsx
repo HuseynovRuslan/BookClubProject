@@ -62,10 +62,11 @@ const loadFromStorage = () => {
                                 (quoteIdObj.toString && quoteIdObj.toString() !== '[object Object]' ? quoteIdObj.toString() : null) ||
                                 String(quoteIdObj);
           
-          // If still contains [object Object], set to null (will be filtered out)
+          // If still contains [object Object], try to keep the original value as string
           if (cleanedPost.quoteId && cleanedPost.quoteId.includes('[object')) {
-            console.warn("quoteId contains [object Object], removing post. Original:", quoteIdObj);
-            cleanedPost.quoteId = null;
+            console.warn("quoteId contains [object Object], keeping original value. Original:", quoteIdObj);
+            // Keep the original object as string representation instead of null
+            cleanedPost.quoteId = String(quoteIdObj);
           }
         }
         // Ensure reviewId is a string
@@ -73,14 +74,6 @@ const loadFromStorage = () => {
           cleanedPost.reviewId = cleanedPost.reviewId.id || cleanedPost.reviewId.Id || String(cleanedPost.reviewId);
         }
         return cleanedPost;
-      })
-      .filter(post => {
-        // Remove posts that are quotes but have invalid quoteId
-        if (post.type === 'quote' && (!post.quoteId || post.quoteId.includes('[object'))) {
-          console.log("Removing quote post with invalid quoteId:", post.id);
-          return false;
-        }
-        return true;
       });
     
     // Save cleaned posts back to localStorage to prevent future errors
@@ -169,6 +162,9 @@ export default function SocialFeedPage({
     setLoading(true);
     setError(null);
     try {
+      // Load saved posts from localStorage first to ensure quotes persist
+      const savedPosts = loadFromStorage();
+      
       // Fetch a large number of posts since pagination is removed
       const response = await getFeed({ page: 1, pageSize: 100 });
       // getFeed already returns normalized format: { items, total, page, pageSize }
@@ -188,12 +184,12 @@ export default function SocialFeedPage({
         });
       }
       
-      // Merge with current remotePosts (which may contain saved posts)
+      // Merge with saved posts from localStorage (which may contain quotes and local posts)
       const newPostIds = new Set(items.map(p => p.id));
       
       // Combine new API posts with existing posts, prioritizing existing versions (which have comments, likes, etc.)
       const mergedPosts = items.map(newPost => {
-        const existingPost = remotePosts.find(ep => ep.id === newPost.id);
+        const existingPost = remotePosts.find(ep => ep.id === newPost.id) || savedPosts.find(sp => sp.id === newPost.id);
         if (existingPost) {
           // Use existing version (has comments, likes, etc.) but update with new data
           return { ...newPost, ...existingPost };
@@ -201,16 +197,26 @@ export default function SocialFeedPage({
         return newPost;
       });
       
-      // Add existing posts that aren't in new API feed (local posts or old saved posts)
-      const additionalPosts = remotePosts.filter(ep => 
-        !newPostIds.has(ep.id)
+      // Add saved posts that aren't in new API feed (local posts, quotes, or old saved posts)
+      // This ensures quotes and other local posts persist even if they're not in the API feed yet
+      const additionalPosts = [...remotePosts, ...savedPosts].filter(ep => 
+        !newPostIds.has(ep.id) && (
+          ep.isLocal || // Local posts (including quotes)
+          ep.type === 'quote' || // Quotes from localStorage
+          ep.type === 'post' // Normal posts from localStorage
+        )
+      );
+      
+      // Remove duplicates from additionalPosts (in case remotePosts and savedPosts have same posts)
+      const uniqueAdditionalPosts = Array.from(
+        new Map(additionalPosts.map(post => [post.id, post])).values()
       );
       
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/45687df3-eadd-450e-98a3-bb43b3daaefc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SocialFeedPage.jsx:135',message:'mergedPosts before setState',data:{mergedPostsCount:mergedPosts.length,firstPostUserAvatar:mergedPosts[0]?.userAvatar,additionalPostsCount:additionalPosts.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/45687df3-eadd-450e-98a3-bb43b3daaefc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SocialFeedPage.jsx:135',message:'mergedPosts before setState',data:{mergedPostsCount:mergedPosts.length,firstPostUserAvatar:mergedPosts[0]?.userAvatar,additionalPostsCount:uniqueAdditionalPosts.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
       // #endregion
       
-      setRemotePosts([...mergedPosts, ...additionalPosts]);
+      setRemotePosts([...mergedPosts, ...uniqueAdditionalPosts]);
     } catch (err) {
       console.error("Error fetching feed:", err);
       setError(err.message || "Failed to load feed.");
@@ -383,58 +389,16 @@ export default function SocialFeedPage({
 
   const handleRemotePostDelete = useCallback(async (postId, post) => {
     try {
-      // Delete from backend if it's a review or quote
-      if (post.type === "review" && post.reviewId) {
-        const { deleteReview } = await import("../api/reviews");
-        const reviewId = String(post.reviewId || post.reviewId?.id || post.reviewId?.Id || post.reviewId);
-        await deleteReview(reviewId);
-      } else if (post.type === "quote" && post.quoteId) {
-        const { deleteQuote } = await import("../api/quotes");
-        // Ensure quoteId is a string, not an object
-        let quoteId = null;
-        
-        // Log the structure for debugging
-        console.log("post.quoteId structure:", post.quoteId, "Type:", typeof post.quoteId);
-        
-        if (typeof post.quoteId === 'string') {
-          quoteId = post.quoteId.trim();
-        } else if (typeof post.quoteId === 'object' && post.quoteId !== null) {
-          // Try all possible ways to extract the ID from the object
-          quoteId = post.quoteId.id || 
-                   post.quoteId.Id || 
-                   post.quoteId.quoteId ||
-                   post.quoteId.QuoteId ||
-                   post.quoteId.data?.id ||
-                   post.quoteId.data?.Id ||
-                   post.quoteId.Data?.id ||
-                   post.quoteId.Data?.Id ||
-                   (post.quoteId.toString && post.quoteId.toString() !== '[object Object]' ? post.quoteId.toString() : null);
-          
-          if (quoteId) {
-            quoteId = String(quoteId).trim();
-          } else {
-            // If we can't extract, try JSON.stringify to see the structure
-            console.error("Cannot extract quoteId from object:", JSON.stringify(post.quoteId, null, 2));
-            console.error("Full post object:", JSON.stringify(post, null, 2));
-            throw new Error("quoteId is an object but cannot extract ID. Object keys: " + Object.keys(post.quoteId).join(', '));
-          }
-        } else {
-          throw new Error("quoteId is not a string or object: " + typeof post.quoteId);
-        }
-        
-        if (!quoteId || quoteId === 'null' || quoteId === 'undefined' || quoteId.includes('[object')) {
-          console.error("Invalid quoteId detected:", { quoteId, postQuoteId: post.quoteId, postType: typeof post.quoteId, post });
-          throw new Error("Invalid quoteId: " + quoteId);
-        }
-        
-        console.log("Deleting quote with ID:", quoteId);
-        await deleteQuote(quoteId);
+      // Call parent's onDeletePost if available (for App.jsx to handle deletion)
+      // This will handle backend deletion, localStorage, localPosts, and userPosts
+      if (onDeletePost) {
+        await onDeletePost(postId, post);
       }
       
-      // Remove from remote posts state
+      // Also remove from remote posts state (for SocialFeedPage's own state)
       setRemotePosts((prev) => {
         const updated = prev.filter((p) => p.id !== postId);
-        // Save to localStorage
+        // Save to localStorage (onDeletePost already does this, but we do it here too for safety)
         try {
           const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
           const filtered = existing.filter((p) => p.id !== postId);
@@ -448,7 +412,7 @@ export default function SocialFeedPage({
       console.error("Error deleting remote post:", err);
       throw err; // Re-throw to let component handle error display
     }
-  }, []);
+  }, [onDeletePost]);
 
   const handleViewReview = useCallback(
     async (item) => {
@@ -562,7 +526,7 @@ export default function SocialFeedPage({
                   ? onDeleteComment?.(post.id, commentId)
                   : handleRemoteCommentDelete(post.id, commentId)
               }
-              onDeletePost={post.isLocal ? onDeletePost : handleRemotePostDelete}
+              onDeletePost={handleRemotePostDelete}
               onViewReview={handleViewReview}
               onPostUpdate={post.isLocal ? undefined : handleRemotePostUpdate}
               onLikeChange={(postId, likes, isLiked) => {

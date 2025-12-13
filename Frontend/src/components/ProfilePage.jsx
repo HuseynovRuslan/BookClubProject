@@ -37,6 +37,7 @@ export default function ProfilePage({
   onSwitchAccount,
   userPosts = [],
   userBooks = [],
+  onDeletePost,
 }) {
   const { userId: urlParam } = useParams(); // Can be userId (UUID) or username
   const navigate = useNavigate();
@@ -1083,7 +1084,9 @@ export default function ProfilePage({
   };
 
   const stats = {
-    posts: isOwnProfile ? userPosts.length : viewedUserPosts.length,
+    posts: isOwnProfile 
+      ? userPosts.length 
+      : viewedUserPosts.filter(post => post.type !== "post").length, // Başqa user üçün normal postları sayma
     shelves: shelves?.length || 0,
   };
 
@@ -1098,6 +1101,26 @@ export default function ProfilePage({
 
   const getRating = (book) => {
     return book.rating || book.averageRating || book.avgRating || 0;
+  };
+
+  // Wrapper function to handle post deletion in profile
+  const handleDeletePost = async (postId, post) => {
+    if (!onDeletePost) return;
+    
+    try {
+      // Call the parent's delete function
+      await onDeletePost(postId, post);
+      
+      // Update local userPosts state (if it's own profile)
+      if (isOwnProfile) {
+        // The parent's handleDeletePost already updates userPosts in App.jsx
+        // But we can also update viewedUserPosts if needed
+        setViewedUserPosts((prev) => prev.filter((p) => p.id !== postId));
+      }
+    } catch (err) {
+      console.error("Error deleting post in profile:", err);
+      throw err;
+    }
   };
 
   const renderShelvesTab = () => {
@@ -1223,7 +1246,14 @@ export default function ProfilePage({
   };
 
   const renderPostsTab = () => {
-    const postsToShow = isOwnProfile ? userPosts : viewedUserPosts;
+    let postsToShow = isOwnProfile ? userPosts : viewedUserPosts;
+    
+    // Başqa istifadəçinin profili açılanda normal postları (type: "post") gizlə
+    // Yalnız review-lər görsənsin
+    if (!isOwnProfile) {
+      postsToShow = postsToShow.filter(post => post.type !== "post");
+    }
+    
     return (
       <div className="space-y-6">
         {postsToShow.length === 0 ? (
@@ -1241,7 +1271,14 @@ export default function ProfilePage({
             </p>
           </div>
         ) : (
-          postsToShow.map((post) => <SocialFeedPost key={post.id} post={post} />)
+          postsToShow.map((post) => (
+            <SocialFeedPost 
+              key={post.id} 
+              post={post} 
+              currentUsername={isOwnProfile ? (authUser?.name || authUser?.username) : (profile?.name || profile?.username)}
+              onDeletePost={isOwnProfile ? handleDeletePost : undefined}
+            />
+          ))
         )}
       </div>
     );

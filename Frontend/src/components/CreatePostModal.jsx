@@ -243,8 +243,10 @@ export default function CreatePostModal({ onClose, onCreate }) {
               }
             }
 
+            // Use quoteId as the post id so it matches backend and persists
             newPost = {
               ...newPost,
+              id: quoteIdValue || `local-${Date.now()}`, // Use backend quoteId as post id
               type: "quote",
               bookTitle: selectedBook.title || selectedBook.Title,
               bookCover: selectedBook.coverImageUrl || selectedBook.coverImage || selectedBook.cover,
@@ -289,16 +291,34 @@ export default function CreatePostModal({ onClose, onCreate }) {
             return;
           }
 
-          // Create blob URL for immediate display - it will be valid until page reload
-          // The File object will be passed to handleCreatePost to create a persistent blob URL
-          const postImageBlobUrl = postImage ? URL.createObjectURL(postImage) : null;
-          newPost = {
-            ...newPost,
-            type: "post",
-            review: postText.trim(),
-            postImage: postImageBlobUrl, // Blob URL for immediate display
-            postImageFile: postImage, // File object for potential future upload
-          };
+          // Upload image to backend if exists
+          let uploadedImageUrl = null;
+          if (postImage) {
+            try {
+              const { uploadPostImage } = await import("../api/feed");
+              uploadedImageUrl = await uploadPostImage(postImage);
+              // Create blob URL for immediate display while we have the file
+              const postImageBlobUrl = URL.createObjectURL(postImage);
+              newPost = {
+                ...newPost,
+                type: "post",
+                review: postText.trim(),
+                postImage: postImageBlobUrl, // Blob URL for immediate display
+                postImageUrl: uploadedImageUrl, // Backend URL for persistence
+              };
+            } catch (uploadError) {
+              console.error("Error uploading post image:", uploadError);
+              setError(uploadError.message || "Failed to upload image. Please try again.");
+              setSubmitting(false);
+              return;
+            }
+          } else {
+            newPost = {
+              ...newPost,
+              type: "post",
+              review: postText.trim(),
+            };
+          }
           break;
 
 

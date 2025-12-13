@@ -169,3 +169,29 @@ export async function getFeed({ page = 1, pageSize = 20 } = {}) {
   };
 }
 
+export async function uploadPostImage(file) {
+  if (USE_API_MOCKS) {
+    await delay(500);
+    // Return a mock URL
+    return "/images/posts/mock-post-image.jpg";
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await apiRequest("/api/Feed/upload-post-image", {
+      method: "POST",
+      body: formData,
+      // Don't set Content-Type header - browser will set it with boundary for FormData
+      headers: {},
+    });
+
+    // Backend returns ApiResponse<string> with data field
+    return response?.data || response || null;
+  } catch (error) {
+    console.error("Error uploading post image:", error);
+    throw error;
+  }
+}
+
