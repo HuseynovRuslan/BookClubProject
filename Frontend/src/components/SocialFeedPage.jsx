@@ -8,6 +8,32 @@ import { getFollowing } from "../api/userFollows";
 import { useTranslation } from "../hooks/useTranslation";
 
 const STORAGE_KEY = "bookverse_social_feed";
+const REPORTED_POSTS_KEY = "bookverse_reported_posts";
+
+// Helper function to get reported posts from localStorage
+const getReportedPosts = () => {
+  try {
+    const reported = localStorage.getItem(REPORTED_POSTS_KEY);
+    if (!reported) return [];
+    return JSON.parse(reported);
+  } catch (err) {
+    console.error("Error loading reported posts:", err);
+    return [];
+  }
+};
+
+// Helper function to save reported post
+const saveReportedPost = (postId) => {
+  try {
+    const reportedPosts = getReportedPosts();
+    if (!reportedPosts.includes(postId)) {
+      reportedPosts.push(postId);
+      localStorage.setItem(REPORTED_POSTS_KEY, JSON.stringify(reportedPosts));
+    }
+  } catch (err) {
+    console.error("Error saving reported post:", err);
+  }
+};
 
 // localStorage helper functions
 const saveToStorage = (posts) => {
@@ -100,6 +126,9 @@ export default function SocialFeedPage({
   onAddComment,
   onDeleteComment,
   onDeletePost,
+  onReportPost,
+  onPostUpdate,
+  onLikeChange,
   onShowLogin,
   onShowRegister,
 }) {
@@ -362,10 +391,33 @@ export default function SocialFeedPage({
         return updated;
       });
       
-      // Return success (no backend API for comments yet, so this is local-only)
+      // Also call parent's onAddComment if available (for App.jsx to sync with localPosts and userPosts)
+      if (onAddComment) {
+        try {
+          await onAddComment(postId, text);
+        } catch (err) {
+          console.error("Error adding comment via parent handler:", err);
+          // Revert optimistic update on error
+          setRemotePosts((prev) => {
+            const updated = prev.map((post) =>
+              post.id === postId
+                ? {
+                    ...post,
+                    comments: post.comments?.filter(c => c.id !== newComment.id) || [],
+                  }
+                : post
+            );
+            saveToStorage(updated);
+            return updated;
+          });
+          throw err;
+        }
+      }
+      
+      // Return success
       return Promise.resolve();
     },
-    [currentUsername, authUser]
+    [currentUsername, authUser, onAddComment]
   );
 
   const handleRemoteCommentDelete = useCallback((postId, commentId) => {
@@ -434,6 +486,32 @@ export default function SocialFeedPage({
       throw err; // Re-throw to let component handle error display
     }
   }, [onDeletePost]);
+
+  const handleReportPost = useCallback(async (postId, post) => {
+    try {
+      // Save reported post to localStorage (only hides from current user's feed)
+      saveReportedPost(postId);
+      
+      // Remove from remote posts state so it disappears immediately
+      setRemotePosts((prev) => prev.filter((p) => p.id !== postId));
+      
+      // Also remove from local posts if it exists there
+      // Note: We don't call onDeletePost because we don't want to delete from backend
+    } catch (err) {
+      console.error("Error reporting post:", err);
+      throw err;
+    }
+  }, []);
+
+  const handleLocalPostUpdate = useCallback(async (postId, updatedPost) => {
+    // This handles updates for local posts (passed from App.jsx via onPostUpdate prop)
+    // The actual update is handled in App.jsx, but we need to ensure remotePosts is also updated
+    // if the post exists there (for merged posts)
+    setRemotePosts((prev) => {
+      const updated = prev.map((p) => (p.id === postId ? { ...p, ...updatedPost } : p));
+      return updated;
+    });
+  }, []);
 
   const handleViewReview = useCallback(
     async (item) => {
@@ -537,26 +615,49 @@ export default function SocialFeedPage({
               post={post}
               currentUsername={currentUsername}
               enableInteractions
-              onAddComment={(postId, text) =>
-                post.isLocal
-                  ? onAddComment?.(postId, text)
-                  : handleRemoteCommentAdd(postId, text)
-              }
+              allowEditDelete={false}
+              onAddComment={(postId, text) => {
+                // Always allow comments in Social Feed
+                if (post.isLocal) {
+                  // For local posts, use parent's handler
+                  return onAddComment?.(postId, text);
+                } else {
+                  // For remote posts, use handleRemoteCommentAdd
+                  return handleRemoteCommentAdd(postId, text);
+                }
+              }}
               onDeleteComment={(commentId) =>
                 post.isLocal
                   ? onDeleteComment?.(post.id, commentId)
                   : handleRemoteCommentDelete(post.id, commentId)
               }
-              onDeletePost={handleRemotePostDelete}
+              // Social Feed: 3 dots menu should NOT appear at all
+              onDeletePost={undefined}
+              onReportPost={undefined}
               onViewReview={handleViewReview}
-              onPostUpdate={post.isLocal ? undefined : handleRemotePostUpdate}
+              onPostUpdate={post.isLocal ? (onPostUpdate ? async (postId, updatedPost) => {
+                // Call parent's onPostUpdate for local posts
+                await onPostUpdate(postId, updatedPost);
+                // Also update remotePosts if post exists there (for merged posts)
+                setRemotePosts((prev) => {
+                  return prev.map((p) => (p.id === postId ? { ...p, ...updatedPost } : p));
+                });
+              } : undefined) : handleRemotePostUpdate}
               onLikeChange={(postId, likes, isLiked) => {
                 // Update post likes in state
                 setRemotePosts((prev) => {
-                  return prev.map((p) =>
+                  const updated = prev.map((p) =>
                     p.id === postId ? { ...p, likes, isLiked } : p
                   );
+                  // Save to localStorage for sync
+                  saveToStorage(updated);
+                  return updated;
                 });
+                
+                // Also call parent's onLikeChange if available (for App.jsx to sync with localPosts and userPosts)
+                if (onLikeChange) {
+                  onLikeChange(postId, likes, isLiked);
+                }
               }}
               onShowLogin={onShowLogin}
               onShowRegister={onShowRegister}

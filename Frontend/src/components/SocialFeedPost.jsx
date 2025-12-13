@@ -12,9 +12,11 @@ export default function SocialFeedPost({
   post,
   currentUsername,
   enableInteractions = false,
+  allowEditDelete = false, // New prop: allow edit/delete (only in profile page)
   onAddComment,
   onDeleteComment,
   onDeletePost,
+  onReportPost,
   onViewReview,
   onLikeChange,
   onPostUpdate,
@@ -42,19 +44,45 @@ export default function SocialFeedPost({
                     post.avatarUrl ||
                     post.avatar;
 
+  // Sync likes from post prop (for external updates)
   const [likes, setLikes] = useState(post.likes || 0);
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [isLiking, setIsLiking] = useState(false);
+  
+  // Update likes when post prop changes (for synchronization)
+  useEffect(() => {
+    if (post.likes !== undefined) {
+      setLikes(post.likes);
+    }
+    if (post.isLiked !== undefined) {
+      setIsLiked(post.isLiked);
+    }
+  }, [post.likes, post.isLiked]);
+  
+  // Force re-render when post.comments changes (for comment synchronization)
+  useEffect(() => {
+    // This effect ensures component re-renders when comments are added
+  }, [post.comments]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(post.review || "");
+  const [editText, setEditText] = useState(post.review || post.text || "");
+  
+  // Update editText when post changes (for external updates)
+  useEffect(() => {
+    if (!isEditing) {
+      setEditText(post.review || post.text || "");
+    }
+  }, [post.review, post.text, isEditing]);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
   const [commentText, setCommentText] = useState("");
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentError, setCommentError] = useState("");
+  const [showAllComments, setShowAllComments] = useState(false);
   const comments = post.comments || [];
+  // Show only first comment initially, or all if showAllComments is true
+  const displayedComments = showAllComments ? comments : comments.slice(0, 1);
   const isReview = post.type === "review" || Boolean(post.reviewId);
   const isQuote = post.type === "quote" || Boolean(post.quoteId);
   
@@ -174,6 +202,14 @@ export default function SocialFeedPost({
     e.stopPropagation();
     setShowMenu(false);
     
+    // SECURITY: Only allow deletion if user is the owner
+    // Backend should also verify ownership before allowing delete
+    if (!isPostOwner) {
+      console.error("Attempted to delete post without ownership");
+      alert(t("post.noPermission") || "You don't have permission to delete this post.");
+      return;
+    }
+    
     if (!onDeletePost) return;
     
     // Confirm deletion
@@ -197,17 +233,25 @@ export default function SocialFeedPost({
     e.stopPropagation();
     setShowMenu(false);
     
-    if (!onDeletePost) return;
-    
     // Confirm report
-    if (!window.confirm(t("post.confirmReport") || "Are you sure you want to report this post? It will be removed from the feed.")) {
+    if (!window.confirm(t("post.confirmReport") || "Are you sure you want to report this post? It will be removed from your feed.")) {
       return;
     }
     
     setIsDeleting(true);
     try {
-      // Report = Delete the post
-      await onDeletePost(post.id, post);
+      // Report the post - this will hide it from current user's feed only
+      // Post is NOT deleted from backend, only hidden from this user's view
+      if (onReportPost) {
+        await onReportPost(post.id, post);
+      } else {
+        // Fallback: save to localStorage directly if callback not provided
+        const reportedPosts = JSON.parse(localStorage.getItem("bookverse_reported_posts") || "[]");
+        if (!reportedPosts.includes(post.id)) {
+          reportedPosts.push(post.id);
+          localStorage.setItem("bookverse_reported_posts", JSON.stringify(reportedPosts));
+        }
+      }
     } catch (err) {
       console.error("Error reporting post:", err);
       alert(t("post.reportError") || "Failed to report post. Please try again.");
@@ -219,58 +263,110 @@ export default function SocialFeedPost({
   const handleEditPost = () => {
     setShowMenu(false);
     setIsEditing(true);
-    setEditText(post.review || "");
+    setEditText(post.review || post.text || "");
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setEditText(post.review || "");
+    setEditText(post.review || post.text || "");
   };
 
   const handleSaveEdit = async () => {
-    if (!isQuote || !post.quoteId) return;
+    // SECURITY: Only allow editing if user is the owner
+    // Backend should also verify ownership before allowing edit/delete
+    if (!isPostOwner) {
+      console.error("Attempted to edit post without ownership");
+      alert(t("post.noPermission") || "You don't have permission to edit this post.");
+      return;
+    }
     
     const trimmedText = editText.trim();
     if (!trimmedText) {
-      alert(t("post.quoteRequired") || "Quote text is required");
+      alert(t("post.textRequired") || "Post text is required");
       return;
     }
 
     setIsDeleting(true); // Reuse loading state
     try {
-      // Extract quoteId properly
-      let quoteId = null;
-      if (typeof post.quoteId === 'string') {
-        quoteId = post.quoteId.trim();
-      } else if (post.quoteId?.id) {
-        quoteId = String(post.quoteId.id).trim();
-      } else if (post.quoteId?.Id) {
-        quoteId = String(post.quoteId.Id).trim();
+      // Handle quote editing
+      if (isQuote && post.quoteId) {
+        // Extract quoteId properly
+        let quoteId = null;
+        if (typeof post.quoteId === 'string') {
+          quoteId = post.quoteId.trim();
+        } else if (post.quoteId?.id) {
+          quoteId = String(post.quoteId.id).trim();
+        } else if (post.quoteId?.Id) {
+          quoteId = String(post.quoteId.Id).trim();
+        }
+
+        if (!quoteId || quoteId === 'null' || quoteId === 'undefined' || quoteId.includes('[object')) {
+          throw new Error("Invalid quoteId");
+        }
+
+        await updateQuote(quoteId, {
+          Text: trimmedText,
+          Tags: post.tags || null
+        });
+
+        // Update local state immediately for instant UI update
+        const updatedPost = { ...post, review: trimmedText, text: trimmedText };
+        setIsEditing(false);
+        
+        // Notify parent to update the post - this will trigger a re-render with new post data
+        if (onPostUpdate) {
+          await onPostUpdate(post.id, updatedPost);
+        } else if (onLikeChange) {
+          // Fallback to onLikeChange if onPostUpdate not available
+          onLikeChange(post.id, likes, isLiked);
+        }
+        
+        // Force component to re-render with updated post data
+        // The parent's onPostUpdate should update the post prop, which will trigger useEffect
       }
+      // Handle review editing
+      else if (isReview && post.reviewId) {
+        const { updateReview } = await import("../api/reviews");
+        const reviewId = String(post.reviewId || post.reviewId?.id || post.reviewId?.Id || post.reviewId);
+        
+        await updateReview(reviewId, {
+          text: trimmedText,
+          rating: post.rating || 0
+        });
 
-      if (!quoteId || quoteId === 'null' || quoteId === 'undefined' || quoteId.includes('[object')) {
-        throw new Error("Invalid quoteId");
+        // Update local state immediately for instant UI update
+        const updatedPost = { ...post, review: trimmedText, text: trimmedText };
+        setIsEditing(false);
+        
+        // Notify parent to update the post - this will trigger a re-render with new post data
+        if (onPostUpdate) {
+          await onPostUpdate(post.id, updatedPost);
+        } else if (onLikeChange) {
+          onLikeChange(post.id, likes, isLiked);
+        }
+        
+        // Force component to re-render with updated post data
+        // The parent's onPostUpdate should update the post prop, which will trigger useEffect
       }
-
-      await updateQuote(quoteId, {
-        Text: trimmedText,
-        Tags: post.tags || null
-      });
-
-      // Update local state
-      const updatedPost = { ...post, review: trimmedText };
-      setIsEditing(false);
-      
-      // Notify parent to update the post
-      if (onPostUpdate) {
-        onPostUpdate(post.id, updatedPost);
-      } else if (onLikeChange) {
-        // Fallback to onLikeChange if onPostUpdate not available
-        onLikeChange(post.id, likes, isLiked);
+      // Handle other post types (status, goal, normal post) - update in localStorage only
+      else {
+        // Update local state immediately for instant UI update
+        const updatedPost = { ...post, review: trimmedText, text: trimmedText };
+        setIsEditing(false);
+        
+        // Notify parent to update the post - this will trigger a re-render with new post data
+        if (onPostUpdate) {
+          await onPostUpdate(post.id, updatedPost);
+        } else if (onLikeChange) {
+          onLikeChange(post.id, likes, isLiked);
+        }
+        
+        // Force component to re-render with updated post data
+        // The parent's onPostUpdate should update the post prop, which will trigger useEffect
       }
     } catch (err) {
-      console.error("Error updating quote:", err);
-      alert(t("post.updateError") || "Failed to update quote. Please try again.");
+      console.error("Error updating post:", err);
+      alert(t("post.updateError") || "Failed to update post. Please try again.");
     } finally {
       setIsDeleting(false);
     }
@@ -322,8 +418,8 @@ export default function SocialFeedPost({
             {formatTimestamp(post.timestamp || post.createdAt || post.CreatedAt)}
           </div>
         </div>
-        {/* 3 dots menu - show for all users */}
-        {onDeletePost && (
+        {/* 3 dots menu - show if onDeletePost or onReportPost is available */}
+        {(onDeletePost || onReportPost) && (
           <div className="relative ml-auto" ref={menuRef}>
             <button
               onClick={(e) => {
@@ -338,18 +434,16 @@ export default function SocialFeedPost({
             {/* Dropdown menu */}
             {showMenu && (
               <div className="absolute right-0 top-full mt-1 bg-white dark:bg-white rounded-lg shadow-lg border border-gray-200 dark:border-gray-200 z-50 min-w-[120px]">
-                {isPostOwner ? (
+                {(allowEditDelete && isPostOwner) || (isPostOwner && onDeletePost) ? (
                   <>
-                    {/* Owner sees Edit and Delete */}
-                    {isQuote && (
-                      <button
-                        onClick={handleEditPost}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-100 flex items-center gap-2 transition-colors"
-                      >
-                        <Edit className="w-4 h-4" />
-                        {t("post.edit") || t("common.edit") || "Edit"}
-                      </button>
-                    )}
+                    {/* Profile Page or Social Feed: Owner sees Edit and Delete */}
+                    <button
+                      onClick={handleEditPost}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                      {t("post.edit") || t("common.edit") || "Edit"}
+                    </button>
                     <button
                       onClick={handleDeletePost}
                       disabled={isDeleting}
@@ -361,15 +455,17 @@ export default function SocialFeedPost({
                   </>
                 ) : (
                   <>
-                    {/* Others see Report */}
-                    <button
-                      onClick={handleReportPost}
-                      disabled={isDeleting}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-600 hover:bg-red-50 dark:hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Flag className="w-4 h-4" />
-                      {t("post.report") || "Report"}
-                    </button>
+                    {/* Social Feed: Non-owners see Report (post owner cannot report their own post) */}
+                    {onReportPost && !isPostOwner && (
+                      <button
+                        onClick={handleReportPost}
+                        disabled={isDeleting}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-600 hover:bg-red-50 dark:hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Flag className="w-4 h-4" />
+                        {t("post.report") || "Report"}
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -551,9 +647,76 @@ export default function SocialFeedPost({
         </h3>
       )}
 
-      {/* Review Text - For non-quote posts */}
-      {!isQuote && post.review && (
-        <p className="text-gray-700 dark:text-gray-700 mt-2 leading-relaxed text-sm">{post.review}</p>
+      {/* Review/Post Text - Editable for all post types */}
+      {!isQuote && (post.review || post.text) && (
+        <div className="mb-3">
+          {isEditing ? (
+            <div>
+              <textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                className="w-full p-3 border-2 border-gray-300 dark:border-gray-300 rounded-lg text-gray-900 dark:text-gray-900 bg-white dark:bg-white text-base font-medium resize-none focus:outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-200"
+                rows={4}
+                placeholder={isReview ? (t("post.reviewText") || "Review text...") : (t("post.postText") || "Post text...")}
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t("post.save") || "Save"}
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-700 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t("post.cancel") || "Cancel"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-900 dark:text-gray-900 leading-relaxed text-base font-medium">
+              {post.review || post.text}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Review/Post Text - Editable for all post types (non-quote) */}
+      {!isQuote && (post.review || post.text) && (
+        <div className="mb-3">
+          {isEditing ? (
+            <div>
+              <textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                className="w-full p-3 border-2 border-gray-300 dark:border-gray-300 rounded-lg text-gray-900 dark:text-gray-900 bg-white dark:bg-white text-base font-medium resize-none focus:outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-200"
+                rows={4}
+                placeholder={isReview ? (t("post.reviewText") || "Review text...") : (t("post.postText") || "Post text...")}
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t("post.save") || "Save"}
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-700 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t("post.cancel") || "Cancel"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-700 dark:text-gray-700 mt-2 leading-relaxed text-sm">{post.review || post.text}</p>
+          )}
+        </div>
       )}
 
       {/* Rating */}
@@ -588,15 +751,22 @@ export default function SocialFeedPost({
               setShowGuestModal(true);
               return;
             }
-            setShowCommentBox(true);
-            // Scroll to comment input after a short delay to ensure it's rendered
-            setTimeout(() => {
-              const commentInput = document.querySelector(`textarea[placeholder*="${t("post.writeComment")}"]`);
-              if (commentInput) {
-                commentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                commentInput.focus();
-              }
-            }, 100);
+            // Toggle showAllComments when clicking comment button
+            if (comments.length > 1) {
+              setShowAllComments(!showAllComments);
+            }
+            // If no comments or only 1 comment, open comment box
+            if (comments.length <= 1) {
+              setShowCommentBox(true);
+              // Scroll to comment input after a short delay to ensure it's rendered
+              setTimeout(() => {
+                const commentInput = document.querySelector(`textarea[placeholder*="${t("post.writeComment")}"]`);
+                if (commentInput) {
+                  commentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  commentInput.focus();
+                }
+              }, 100);
+            }
           }}
           className="flex items-center gap-1.5 text-gray-700 dark:text-gray-700 text-sm font-semibold hover:text-amber-600 dark:hover:text-amber-600 transition-colors cursor-pointer"
         >
@@ -621,7 +791,7 @@ export default function SocialFeedPost({
       {/* Comments Section */}
       {enableInteractions && (
         <div className="mt-3 space-y-2 pt-3 border-t border-gray-100 dark:border-gray-200">
-          {comments.map((comment) => {
+          {displayedComments.map((comment) => {
             const commentInitials = comment.username
               ? comment.username
                   .split(" ")
