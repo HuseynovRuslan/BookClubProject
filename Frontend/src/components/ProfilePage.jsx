@@ -200,8 +200,16 @@ export default function ProfilePage({
         // Load another user's profile
         try {
           // FIRST: Check if we have user data passed from navigation state
-          // This avoids API calls when coming from followers/following list
-          if (passedUserData && passedUserData.id === urlParam) {
+          // This avoids API calls when coming from followers/following list or search
+          // Check both id and username match (urlParam can be either)
+          const passedDataMatches = passedUserData && (
+            passedUserData.id === urlParam || 
+            passedUserData.id?.toString() === urlParam ||
+            passedUserData.username === urlParam ||
+            passedUserData.username?.toLowerCase() === urlParam?.toLowerCase()
+          );
+          
+          if (passedDataMatches) {
             freshProfile = {
               id: passedUserData.id,
               name: passedUserData.name || passedUserData.username || "User",
@@ -1252,12 +1260,28 @@ export default function ProfilePage({
       // Sync with localStorage
       try {
         const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
-        const updated = existing.map((post) =>
-          post.id === postId
-            ? { ...post, comments: [...(post.comments || []), newComment] }
-            : post
-        );
-        localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
+        const postIndex = existing.findIndex((post) => post.id === postId);
+        
+        if (postIndex !== -1) {
+          // Post exists, update it
+          const updated = existing.map((post) =>
+            post.id === postId
+              ? { ...post, comments: [...(post.comments || []), newComment] }
+              : post
+          );
+          localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
+        } else {
+          // Post doesn't exist in localStorage, add it with the comment
+          const postToAdd = viewedUserPosts.find((p) => p.id === postId);
+          if (postToAdd) {
+            const postWithComment = {
+              ...postToAdd,
+              comments: [...(postToAdd.comments || []), newComment],
+            };
+            existing.push(postWithComment);
+            localStorage.setItem("bookverse_social_feed", JSON.stringify(existing));
+          }
+        }
       } catch (err) {
         console.error("Error saving comment to localStorage:", err);
       }
@@ -1323,9 +1347,59 @@ export default function ProfilePage({
       });
     }
     
+    // Sync with localStorage (for both own profile and other users' profiles)
+    try {
+      const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+      const postIndex = existing.findIndex((post) => post.id === postId);
+      
+      if (postIndex !== -1) {
+        // Post exists, update it
+        const updated = existing.map((post) =>
+          post.id === postId ? { ...post, likes, isLiked } : post
+        );
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
+      } else {
+        // Post doesn't exist in localStorage, add it with the like status
+        const postToAdd = viewedUserPosts.find((p) => p.id === postId);
+        if (postToAdd) {
+          const postWithLike = {
+            ...postToAdd,
+            likes,
+            isLiked,
+          };
+          existing.push(postWithLike);
+          localStorage.setItem("bookverse_social_feed", JSON.stringify(existing));
+        }
+      }
+    } catch (err) {
+      console.error("Error saving like to localStorage:", err);
+    }
+    
     // Call parent's onLikeChange if available (for App.jsx to sync with localPosts and userPosts)
     if (onLikeChange) {
       onLikeChange(postId, likes, isLiked);
+    }
+  };
+
+  // Handle post report - hide post from current user's view
+  const handleReportPost = async (postId, post) => {
+    try {
+      // Save reported post to localStorage (only hides from current user's feed)
+      const REPORTED_POSTS_KEY = "bookverse_reported_posts";
+      const reportedPosts = JSON.parse(localStorage.getItem(REPORTED_POSTS_KEY) || "[]");
+      if (!reportedPosts.includes(postId)) {
+        reportedPosts.push(postId);
+        localStorage.setItem(REPORTED_POSTS_KEY, JSON.stringify(reportedPosts));
+      }
+      
+      // Remove from viewedUserPosts so it disappears immediately
+      setViewedUserPosts((prev) => prev.filter((p) => p.id !== postId));
+      
+      // Note: We don't call onDeletePost because we don't want to delete from backend
+      // Post is only hidden from current user's view
+    } catch (err) {
+      console.error("Error reporting post:", err);
+      throw err;
     }
   };
 
@@ -1453,6 +1527,42 @@ export default function ProfilePage({
 
   const renderPostsTab = () => {
     let postsToShow = isOwnProfile ? userPosts : viewedUserPosts;
+    
+    // Filter posts to only show posts from the profile owner
+    // Get the profile owner's ID
+    const profileOwnerId = isOwnProfile 
+      ? (authUser?.id || authUser?.Id) 
+      : (profile?.id || profile?.Id || profile?.userId || profile?.UserId);
+    
+    // Filter posts to only show posts from the profile owner
+    postsToShow = postsToShow.filter(post => {
+      // Get post author ID - try different possible field names
+      const postUserId = post.userId || post.UserId || 
+                        post.user?.id || post.User?.Id ||
+                        post.user?.userId || post.User?.UserId;
+      
+      // Get post author username/name for comparison
+      const postUsername = post.username || post.user?.name || post.user?.username;
+      const profileUsername = profile?.username || profile?.name;
+      
+      // Match by ID if both are available
+      if (profileOwnerId && postUserId) {
+        return String(postUserId) === String(profileOwnerId);
+      }
+      
+      // Match by username if IDs don't match or aren't available
+      if (profileUsername && postUsername) {
+        return String(postUsername).toLowerCase() === String(profileUsername).toLowerCase();
+      }
+      
+      // For local posts, check if they belong to the current user (own profile only)
+      if (post.isLocal && isOwnProfile) {
+        return true; // Local posts are always from current user
+      }
+      
+      // If we can't determine ownership, exclude the post to be safe
+      return false;
+    });
     
     // Başqa istifadəçinin profili açılanda normal postları (type: "post") gizlə
     // Yalnız review-lər görsənsin
