@@ -18,6 +18,8 @@ export default function SocialFeedPost({
   onViewReview,
   onLikeChange,
   onPostUpdate,
+  onShowLogin,
+  onShowRegister,
 }) {
   const t = useTranslation();
   const navigate = useNavigate();
@@ -50,6 +52,8 @@ export default function SocialFeedPost({
   const menuRef = useRef(null);
   const [commentText, setCommentText] = useState("");
   const [showCommentBox, setShowCommentBox] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState("");
   const comments = post.comments || [];
   const isReview = post.type === "review" || Boolean(post.reviewId);
   const isQuote = post.type === "quote" || Boolean(post.quoteId);
@@ -127,17 +131,37 @@ export default function SocialFeedPost({
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (isGuest) {
       setShowGuestModal(true);
       return;
     }
     if (!commentText.trim() || !onAddComment) return;
-    // onAddComment expects (postId, text) format
-    onAddComment(post.id, commentText.trim());
-    setCommentText("");
-    setShowCommentBox(false); // Close comment box after submitting
+    
+    const textToSubmit = commentText.trim();
+    setIsSubmittingComment(true);
+    setCommentError("");
+    
+    try {
+      // onAddComment expects (postId, text) format
+      // Make it async-safe - if it returns a promise, await it
+      const result = onAddComment(post.id, textToSubmit);
+      if (result && typeof result.then === 'function') {
+        await result;
+      }
+      
+      // Only clear comment text after successful submission
+      setCommentText("");
+      setCommentError("");
+      // Keep comment box open after submitting so user can add more comments
+    } catch (err) {
+      // Preserve comment text on error
+      console.error("Error submitting comment:", err);
+      setCommentError(err.message || t("post.commentError") || "Failed to submit comment. Please try again.");
+    } finally {
+      setIsSubmittingComment(false);
+    }
   };
 
   const handleCancelComment = () => {
@@ -519,12 +543,29 @@ export default function SocialFeedPost({
           <span className="text-base">{isLiked ? "❤️" : "🤍"}</span>
           <span>{likes}</span>
         </button>
-        <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-700 text-sm font-semibold">
+        <button
+          onClick={() => {
+            if (isGuest) {
+              setShowGuestModal(true);
+              return;
+            }
+            setShowCommentBox(true);
+            // Scroll to comment input after a short delay to ensure it's rendered
+            setTimeout(() => {
+              const commentInput = document.querySelector(`textarea[placeholder*="${t("post.writeComment")}"]`);
+              if (commentInput) {
+                commentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                commentInput.focus();
+              }
+            }, 100);
+          }}
+          className="flex items-center gap-1.5 text-gray-700 dark:text-gray-700 text-sm font-semibold hover:text-amber-600 dark:hover:text-amber-600 transition-colors cursor-pointer"
+        >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
           <span>{comments.length}</span>
-        </div>
+        </button>
         {isReview && onViewReview && (
           <button
             onClick={(e) => {
@@ -618,25 +659,44 @@ export default function SocialFeedPost({
                     className="w-full p-2 rounded-lg bg-white dark:bg-white text-gray-900 dark:text-gray-900 text-sm border border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all resize-none"
                     placeholder={t("post.writeComment")}
                     value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
+                    onChange={(e) => {
+                      setCommentText(e.target.value);
+                      setCommentError(""); // Clear error when user types
+                    }}
                     rows={3}
                     autoFocus
+                    disabled={isSubmittingComment}
                   />
+                  {commentError && (
+                    <div className="p-2 bg-red-50 dark:bg-red-50 border border-red-200 dark:border-red-200 rounded-lg">
+                      <p className="text-xs text-red-600 dark:text-red-600 font-semibold">{commentError}</p>
+                    </div>
+                  )}
                   <div className="flex gap-2 justify-end">
                     <button
                       type="button"
                       onClick={handleCancelComment}
-                      className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-all"
+                      disabled={isSubmittingComment}
+                      className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {t("post.cancel") || t("common.cancel") || "Cancel"}
                     </button>
                     <button
                       type="submit"
-                      disabled={!commentText.trim()}
+                      disabled={!commentText.trim() || isSubmittingComment}
                       className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2"
                     >
-                      <Send className="w-4 h-4" />
-                      {t("post.send") || "Send"}
+                      {isSubmittingComment ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          {t("common.loading") || "Sending..."}
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          {t("post.send") || "Send"}
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>
@@ -650,6 +710,8 @@ export default function SocialFeedPost({
       <GuestRestrictionModal
         isOpen={showGuestModal}
         onClose={() => setShowGuestModal(false)}
+        onLogin={onShowLogin}
+        onRegister={onShowRegister}
       />
     </div>
   );

@@ -225,3 +225,49 @@ export async function confirmEmail(token) {
   });
 }
 
+async function mockForgotPassword(email) {
+  await delay(500);
+  return { 
+    message: "Password reset email sent (mock mode). Check your inbox at " + email 
+  };
+}
+
+export async function forgotPassword(email) {
+  if (USE_API_MOCKS) {
+    return mockForgotPassword(email);
+  }
+
+  try {
+    // Try common endpoint patterns
+    const endpoints = [
+      "/api/Auth/forgot-password",
+      "/api/Auth/forgotpassword",
+      "/api/Users/forgot-password",
+      "/api/Users/forgotpassword",
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const response = await apiRequest(endpoint, {
+          method: "POST",
+          body: { email: email.trim() },
+        });
+        return response;
+      } catch (err) {
+        // If 404, try next endpoint
+        if (err.status === 404) {
+          continue;
+        }
+        // For other errors, throw immediately
+        throw err;
+      }
+    }
+
+    // If all endpoints failed with 404, throw a helpful error
+    throw new Error("Forgot password endpoint not found. Please contact support.");
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    throw error;
+  }
+}
+

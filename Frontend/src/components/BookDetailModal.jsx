@@ -9,7 +9,7 @@ import ShelfSelectionModal from "./ShelfSelectionModal";
 import GuestRestrictionModal from "./GuestRestrictionModal";
 import { useTranslation } from "../hooks/useTranslation";
 
-function BookDetailModal({ book, onClose, isDarkMode = false }) {
+function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
   const t = useTranslation();
   const { shelves, addBookToShelf, refreshShelves } = useShelves();
   const { user, isGuest } = useAuth();
@@ -311,10 +311,10 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
 
   if (loading) {
     return (
-      <div className={`fixed inset-0 z-50 overflow-y-auto ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
         <div className="max-w-7xl xl:max-w-[1600px] mx-auto px-6 xl:px-8 py-8">
           <div className="flex items-center justify-center min-h-screen">
-            <p className={isDarkMode ? "text-gray-300" : "text-gray-600"}>{t("bookDetail.loading")}</p>
+            <p className="text-gray-600">{t("bookDetail.loading")}</p>
           </div>
         </div>
       </div>
@@ -322,19 +322,19 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
   }
 
   return (
-    <div className={`fixed inset-0 z-50 overflow-y-auto animate-fadeIn ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+    <div className="fixed inset-0 z-50 overflow-y-auto animate-fadeIn bg-white">
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="mb-6">
           <button
             onClick={onClose}
-            className={`flex items-center gap-2 transition-colors group ${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+            className="flex items-center gap-2 transition-colors group text-gray-600 hover:text-gray-900"
           >
             <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
             <span className="font-medium">{t("bookDetail.backToHome")}</span>
           </button>
         </div>
 
-        <div className={!isDarkMode ? 'bg-white rounded-xl p-8 shadow-lg' : ''}>
+        <div className="bg-white rounded-xl p-8 shadow-lg">
           <div className="flex flex-col lg:flex-row gap-8 mb-12">
             <div className="flex-shrink-0">
               <div className="w-full lg:w-64 h-96 lg:h-[28rem] bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden shadow-lg">
@@ -353,10 +353,10 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
             </div>
 
             <div className="flex-1">
-              <h1 className={`text-4xl lg:text-5xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <h1 className="text-4xl lg:text-5xl font-bold mb-3 text-gray-900">
                 {bookDetails?.title}
               </h1>
-              <p className={`text-xl mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{t("bookDetail.by")} {authorName}</p>
+              <p className="text-xl mb-6 text-gray-600">{t("bookDetail.by")} {authorName}</p>
 
               <div className="flex flex-wrap items-center gap-4 mb-6">
                 {genre && (
@@ -367,21 +367,21 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
                 {rating && (
                   <div className="flex items-center gap-2">
                     {renderStars(rating)}
-                    <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{rating.toFixed(1)} / 5.0</span>
+                    <span className="font-medium text-gray-700">{rating.toFixed(1)} / 5.0</span>
                   </div>
                 )}
               </div>
 
               {description && (
                 <div className="mb-8">
-                  <h3 className={`text-xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t("bookDetail.about")}</h3>
-                  <p className={`leading-7 text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{description}</p>
+                  <h3 className="text-xl font-bold mb-3 text-gray-900">{t("bookDetail.about")}</h3>
+                  <p className="leading-7 text-lg text-gray-700">{description}</p>
                 </div>
               )}
 
               <button
                 onClick={handleAddToReadingList}
-                className={`flex items-center gap-2 px-6 py-3 text-white rounded-lg transition-all shadow-md hover:shadow-lg font-medium ${isDarkMode ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-900 hover:bg-gray-800'}`}
+                className="flex items-center gap-2 px-6 py-3 text-white rounded-lg transition-all shadow-md hover:shadow-lg font-medium bg-gray-900 hover:bg-gray-800"
               >
                 <span className="text-xl">+</span>
                 <span>{t("bookDetail.addToReadingList")}</span>
@@ -401,8 +401,8 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
             </div>
           </div>
 
-          <div className={`border-t pt-8 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <h2 className={`text-3xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t("bookDetail.reviews")}</h2>
+          <div className="border-t pt-8 border-gray-200">
+            <h2 className="text-3xl font-bold mb-6 text-gray-900">{t("bookDetail.reviews")}</h2>
             
             <div className="mb-8">
               {!isGuest && bookDetails && (bookDetails.id || bookDetails._id) && (
@@ -438,17 +438,17 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
               )}
             </div>
 
-            <h3 className={`text-2xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t("bookDetail.userReviews")}</h3>
+            <h3 className="text-2xl font-semibold mb-4 text-gray-900">{t("bookDetail.userReviews")}</h3>
             {reviews.length === 0 ? (
-              <div className={`text-center py-12 rounded-xl ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <p className={`text-lg ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t("bookDetail.noReviews")}</p>
+              <div className="text-center py-12 rounded-xl bg-gray-50">
+                <p className="text-lg text-gray-500">{t("bookDetail.noReviews")}</p>
               </div>
             ) : (
               <div className="space-y-5">
                 {reviews.map((review) => (
                   <div
                     key={review.id}
-                    className={`rounded-xl p-5 border hover:shadow-md transition-shadow ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
+                    className="rounded-xl p-5 border hover:shadow-md transition-shadow bg-gray-50 border-gray-200"
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
@@ -457,22 +457,22 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
 
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-3 mb-2">
-                          <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{review.username}</span>
+                          <span className="font-semibold text-gray-900">{review.username}</span>
                           {review.rating !== undefined && (
                             <div className="flex items-center">
                               {renderStars(review.rating)}
                             </div>
                           )}
                         </div>
-                        <p className={`mb-3 leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{review.text || review.comment}</p>
+                        <p className="mb-3 leading-relaxed text-gray-700">{review.text || review.comment}</p>
                         <div className="flex items-center justify-between">
-                          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <p className="text-sm text-gray-500">
                             {formatDate(review.createdAt || review.date)}
                           </p>
                           {user && review.userId && String(review.userId) === String(user.id || user._id) && (
                             <button
                               onClick={() => setEditingReview(review)}
-                              className={`px-3 py-1 rounded text-sm ${isDarkMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
+                              className="px-3 py-1 rounded text-sm bg-gray-900 hover:bg-gray-800 text-white"
                             >
                               {t("bookDetail.edit")}
                             </button>
@@ -501,6 +501,8 @@ function BookDetailModal({ book, onClose, isDarkMode = false }) {
       <GuestRestrictionModal
         isOpen={showGuestModal}
         onClose={() => setShowGuestModal(false)}
+        onLogin={onShowLogin}
+        onRegister={onShowRegister}
       />
     </div>
   );

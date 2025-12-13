@@ -38,6 +38,8 @@ export default function ProfilePage({
   userPosts = [],
   userBooks = [],
   onDeletePost,
+  onShowLogin,
+  onShowRegister,
 }) {
   const { userId: urlParam } = useParams(); // Can be userId (UUID) or username
   const navigate = useNavigate();
@@ -1883,6 +1885,8 @@ export default function ProfilePage({
       <GuestRestrictionModal
         isOpen={showGuestModal}
         onClose={() => setShowGuestModal(false)}
+        onLogin={onShowLogin || onSwitchAccount}
+        onRegister={onShowRegister || onSwitchAccount}
       />
     </div>
   );

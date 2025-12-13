@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import ForgotPasswordModal from "./ForgotPasswordModal";
 
 export default function LoginPage({ onSwitchToSignUp }) {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function LoginPage({ onSwitchToSignUp }) {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login, loginAsGuest } = useAuth();
 
   const handleGuestLogin = () => {
@@ -26,6 +28,8 @@ export default function LoginPage({ onSwitchToSignUp }) {
     setIsSubmitting(true);
     try {
       await login({ email, password, rememberMe });
+      // Redirect to Social Feed after successful login
+      navigate("/social");
     } catch (err) {
       setError(err.message || "Failed to sign in. Please try again.");
     } finally {
@@ -117,6 +121,13 @@ export default function LoginPage({ onSwitchToSignUp }) {
                   Remember me
                 </label>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm font-bold text-amber-600 dark:text-amber-600 hover:text-amber-700 dark:hover:text-amber-700 transition-colors"
+              >
+                Şifrəni unutmusan?
+              </button>
             </div>
 
             {error && (
@@ -157,6 +168,12 @@ export default function LoginPage({ onSwitchToSignUp }) {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
   );
 }

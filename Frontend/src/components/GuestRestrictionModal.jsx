@@ -1,21 +1,23 @@
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../hooks/useTranslation";
 import { X } from "lucide-react";
 
-export default function GuestRestrictionModal({ isOpen, onClose }) {
-  const navigate = useNavigate();
+export default function GuestRestrictionModal({ isOpen, onClose, onLogin, onRegister }) {
   const t = useTranslation();
 
   if (!isOpen) return null;
 
   const handleLogin = () => {
     onClose();
-    navigate("/login");
+    if (onLogin) {
+      onLogin();
+    }
   };
 
   const handleRegister = () => {
     onClose();
-    navigate("/signup");
+    if (onRegister) {
+      onRegister();
+    }
   };
 
   return (
@@ -55,4 +57,5 @@ export default function GuestRestrictionModal({ isOpen, onClose }) {
     </div>
   );
 }
+
 

@@ -16,7 +16,6 @@ export default function CreatePostModal({ onClose, onCreate }) {
     { id: "review", label: t("post.writeReview"), icon: BookOpen, color: "purple" },
     { id: "quote", label: t("post.shareQuote"), icon: Quote, color: "blue" },
     { id: "status", label: t("post.readingStatus"), icon: BookCheck, color: "green" },
-    { id: "post", label: t("post.normalPost"), icon: FileText, color: "gray" },
     { id: "goal", label: t("post.readingGoal"), icon: Target, color: "orange" },
   ];
 
@@ -282,43 +281,6 @@ export default function CreatePostModal({ onClose, onCreate }) {
             bookCover: selectedBook?.coverImageUrl || selectedBook?.coverImage || selectedBook?.cover || "",
             readingStatus: readingStatus,
           };
-          break;
-
-        case "post":
-          if (!postText.trim() && !postImage) {
-            setError("Please add text or an image");
-            setSubmitting(false);
-            return;
-          }
-
-          // Upload image to backend if exists
-          let uploadedImageUrl = null;
-          if (postImage) {
-            try {
-              const { uploadPostImage } = await import("../api/feed");
-              uploadedImageUrl = await uploadPostImage(postImage);
-              // Create blob URL for immediate display while we have the file
-              const postImageBlobUrl = URL.createObjectURL(postImage);
-              newPost = {
-                ...newPost,
-                type: "post",
-                review: postText.trim(),
-                postImage: postImageBlobUrl, // Blob URL for immediate display
-                postImageUrl: uploadedImageUrl, // Backend URL for persistence
-              };
-            } catch (uploadError) {
-              console.error("Error uploading post image:", uploadError);
-              setError(uploadError.message || "Failed to upload image. Please try again.");
-              setSubmitting(false);
-              return;
-            }
-          } else {
-            newPost = {
-              ...newPost,
-              type: "post",
-              review: postText.trim(),
-            };
-          }
           break;
 
 
@@ -780,45 +742,6 @@ export default function CreatePostModal({ onClose, onCreate }) {
                       );
                     })}
                   </select>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Normal Post */}
-          {selectedType === "post" && (
-            <>
-              <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  {t("post.postText")}
-                </label>
-                <textarea
-                  value={postText}
-                  onChange={(e) => setPostText(e.target.value)}
-                  rows={5}
-                  className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 resize-none focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
-                  placeholder="What's on your mind?"
-            />
-          </div>
-
-          <div>
-                <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  {t("post.postImage")}
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setPostImage(e.target.files?.[0] || null)}
-                  className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
-                />
-                {postImage && (
-                  <div className="mt-2 flex justify-center">
-                    <img
-                      src={URL.createObjectURL(postImage)}
-                      alt="Preview"
-                      className="max-w-full h-auto object-contain rounded-lg"
-                    />
-                  </div>
                 )}
               </div>
             </>

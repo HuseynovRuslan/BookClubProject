@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getImageUrl } from "../api/config";
 
-export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp, isDarkMode = false, onToggleSidebar }) {
+export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp, onToggleSidebar }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,30 +25,28 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
   };
 
   return (
-    <nav className={`fixed top-0 left-0 w-full h-16 z-50 border-b-2 ${isDarkMode ? 'bg-white border-gray-200 text-gray-900' : 'bg-white border-gray-200 text-gray-900'}`}>
+    <nav className="fixed top-0 left-0 w-full h-16 z-50 border-b-2 bg-white border-gray-200 text-gray-900">
       <div className="max-w-[1920px] mx-auto px-6 xl:px-8 h-full flex items-center justify-between gap-4">
         {/* Left side - Hamburger menu + Logo */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Hamburger menu for mobile */}
-          {!isGuest && (
-              <button
-                onClick={onToggleSidebar}
-                className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-100 transition-all"
-                aria-label="Toggle sidebar"
-              >
-                <svg
-                  className="w-6 h-6 text-gray-900 dark:text-gray-900"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-              </button>
-          )}
+          {/* Hamburger menu for mobile and tablet - show for all users including guests */}
+          <button
+            onClick={onToggleSidebar}
+            className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-100 transition-all"
+            aria-label="Toggle sidebar"
+          >
+            <svg
+              className="w-6 h-6 text-gray-900 dark:text-gray-900"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </button>
           <Link to="/" className="flex items-center gap-2">
             <span className="text-xl font-extralight" style={{ fontFamily: "'Poppins', sans-serif", letterSpacing: '0.5px' }}>
               📚{" "}
@@ -60,18 +58,18 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
         
 
         {/* Right side */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {isGuest ? (
             <>
               <button
                 onClick={onShowLogin}
-                className="px-4 py-2 rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md"
+                className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 text-xs sm:text-sm font-semibold transition-all shadow-sm hover:shadow-md whitespace-nowrap"
               >
                 Login
               </button>
               <button
                 onClick={onShowSignUp}
-                className="px-4 py-2 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white text-xs sm:text-sm font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 whitespace-nowrap"
               >
                 Register
               </button>

@@ -100,6 +100,8 @@ export default function SocialFeedPage({
   onAddComment,
   onDeleteComment,
   onDeletePost,
+  onShowLogin,
+  onShowRegister,
 }) {
   const { user: authUser } = useAuth();
   const t = useTranslation();
@@ -322,7 +324,7 @@ export default function SocialFeedPage({
   }, [localPosts]);
 
   const handleRemoteCommentAdd = useCallback(
-    (postId, text) => {
+    async (postId, text) => {
       const newComment = {
         id: Date.now().toString(),
         username: currentUsername || authUser?.name || "You",
@@ -330,6 +332,8 @@ export default function SocialFeedPage({
         text,
         timestamp: new Date().toISOString(),
       };
+      
+      // Update state optimistically
       setRemotePosts((prev) => {
         const updated = prev.map((post) =>
           post.id === postId
@@ -343,6 +347,9 @@ export default function SocialFeedPage({
         saveToStorage(updated);
         return updated;
       });
+      
+      // Return success (no backend API for comments yet, so this is local-only)
+      return Promise.resolve();
     },
     [currentUsername, authUser]
   );
@@ -537,6 +544,8 @@ export default function SocialFeedPage({
                   );
                 });
               }}
+              onShowLogin={onShowLogin}
+              onShowRegister={onShowRegister}
             />
           ))}
         </div>

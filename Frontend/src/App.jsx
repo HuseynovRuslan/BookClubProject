@@ -35,14 +35,15 @@ function App() {
   } = useAuth();
 
   const [currentUser, setCurrentUser] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const storedTheme = localStorage.getItem("bookverse_theme");
-    if (storedTheme === "dark") return true;
-    if (storedTheme === "light") return false;
-    return false;
-  });
   const [authMode, setAuthMode] = useState("login");
+  const [showAuthFromGuest, setShowAuthFromGuest] = useState(false);
+
+  // Ensure HTML element doesn't have dark class (force white mode)
+  useEffect(() => {
+    const htmlElement = document.documentElement;
+    htmlElement.classList.remove('dark');
+    localStorage.setItem("bookverse_theme", "light");
+  }, []);
 
   const [localPosts, setLocalPosts] = useState([]);
   const [userPosts, setUserPosts] = useState([]);
@@ -55,7 +56,11 @@ function App() {
 
   useEffect(() => {
     setCurrentUser(user);
-  }, [user]);
+    // When user successfully authenticates, clear the showAuthFromGuest flag
+    if (user && showAuthFromGuest) {
+      setShowAuthFromGuest(false);
+    }
+  }, [user, showAuthFromGuest]);
 
   // Load userPosts from localStorage on mount and when user changes
   useEffect(() => {
@@ -107,19 +112,6 @@ function App() {
         //   }
         // }, []); // Run once on mount
 
-  // Dark mode-u HTML elementinə əlavə et ki, Tailwind dark: prefix işləsin və yadda saxla
-  useEffect(() => {
-    const htmlElement = document.documentElement;
-    if (isDarkMode) {
-      htmlElement.classList.add('dark');
-      localStorage.setItem("bookverse_theme", "dark");
-    } else {
-      htmlElement.classList.remove('dark');
-      localStorage.setItem("bookverse_theme", "light");
-    }
-  }, [isDarkMode]);
-
-  const handleDarkModeToggle = () => setIsDarkMode((prev) => !prev);
 
   const handleCreatePost = (newPost) => {
     // For new posts, keep blob URLs for immediate display (they're valid until page reload)
@@ -202,7 +194,7 @@ function App() {
     }
   };
 
-  const handleAddComment = (postId, commentText) => {
+  const handleAddComment = async (postId, commentText) => {
     const newComment = {
       id: Date.now().toString(),
       username: currentUser?.name || currentUser?.firstName || "You",
@@ -210,6 +202,8 @@ function App() {
       text: commentText,
       timestamp: new Date().toISOString(),
     };
+    
+    // Update state optimistically
     setLocalPosts((prev) => {
       const updated = prev.map((post) =>
         post.id === postId
@@ -243,9 +237,13 @@ function App() {
         localStorage.setItem("bookverse_social_feed", JSON.stringify(cleanedMerged));
       } catch (err) {
         console.error("Error saving comment to localStorage:", err);
+        throw err; // Re-throw to let component handle error
       }
       return updated;
     });
+    
+    // Return success
+    return Promise.resolve();
   };
 
   const handleDeleteComment = (postId, commentId) => {
@@ -374,14 +372,8 @@ function App() {
         <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
           <p>Preparing your library...</p>
         </div>
-      ) : !isAuthenticated && !isGuest ? (
-        <div
-          className={
-            isDarkMode
-              ? "bg-gray-900 text-white min-h-screen"
-              : "min-h-screen"
-          }
-        >
+      ) : (!isAuthenticated && !isGuest) || showAuthFromGuest ? (
+        <div className="min-h-screen">
           {authMode === "signup" ? (
             <SignUpPage onSwitchToSignIn={() => setAuthMode("login")} />
           ) : (
@@ -389,31 +381,32 @@ function App() {
           )}
         </div>
       ) : (
-      <div
-        className={
-          isDarkMode ? "bg-gray-900 text-white" : "bg-white text-black min-h-screen"
-        }
-      >
+      <div className="bg-white text-black min-h-screen">
         <Navigation
           isGuest={isGuest}
           onShowLogin={() => {
-            logout();
+            setShowAuthFromGuest(true);
             setAuthMode("login");
           }}
           onShowSignUp={() => {
-            logout();
+            setShowAuthFromGuest(true);
             setAuthMode("signup");
           }}
-          isDarkMode={isDarkMode}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
         <Sidebar
-          onDarkModeToggle={handleDarkModeToggle}
-          isDarkMode={isDarkMode}
           onCreatePost={() => setShowCreatePost(true)}
           onCreateBook={() => setShowCreateBook(true)}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
+          onShowLogin={() => {
+            setShowAuthFromGuest(true);
+            setAuthMode("login");
+          }}
+          onShowRegister={() => {
+            setShowAuthFromGuest(true);
+            setAuthMode("signup");
+          }}
         />
 
         {/* Overlay for mobile sidebar */}
@@ -435,6 +428,14 @@ function App() {
                   onAddComment={handleAddComment}
                   onDeleteComment={handleDeleteComment}
                   onDeletePost={handleDeletePost}
+                  onShowLogin={() => {
+                    setShowAuthFromGuest(true);
+                    setAuthMode("login");
+                  }}
+                  onShowRegister={() => {
+                    setShowAuthFromGuest(true);
+                    setAuthMode("signup");
+                  }}
                 />
               }
             />
@@ -451,6 +452,14 @@ function App() {
                   onAddComment={handleAddComment}
                   onDeleteComment={handleDeleteComment}
                   onDeletePost={handleDeletePost}
+                  onShowLogin={() => {
+                    setShowAuthFromGuest(true);
+                    setAuthMode("login");
+                  }}
+                  onShowRegister={() => {
+                    setShowAuthFromGuest(true);
+                    setAuthMode("signup");
+                  }}
                 />
               }
             />
@@ -489,6 +498,14 @@ function App() {
                   userPosts={userPosts}
                   userBooks={userBooks}
                   onDeletePost={handleDeletePost}
+                  onShowLogin={() => {
+                    setShowAuthFromGuest(true);
+                    setAuthMode("login");
+                  }}
+                  onShowRegister={() => {
+                    setShowAuthFromGuest(true);
+                    setAuthMode("signup");
+                  }}
                 />
               }
             />
@@ -505,6 +522,14 @@ function App() {
                   }}
                   userPosts={[]}
                   userBooks={[]}
+                  onShowLogin={() => {
+                    setShowAuthFromGuest(true);
+                    setAuthMode("login");
+                  }}
+                  onShowRegister={() => {
+                    setShowAuthFromGuest(true);
+                    setAuthMode("signup");
+                  }}
                 />
               }
             />
@@ -528,7 +553,14 @@ function App() {
           <BookDetailModal
             book={selectedBook}
             onClose={() => setSelectedBook(null)}
-            isDarkMode={isDarkMode}
+            onShowLogin={() => {
+              setShowAuthFromGuest(true);
+              setAuthMode("login");
+            }}
+            onShowRegister={() => {
+              setShowAuthFromGuest(true);
+              setAuthMode("signup");
+            }}
           />
         )}
       </div>
