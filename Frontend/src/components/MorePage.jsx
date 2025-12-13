@@ -13,8 +13,10 @@ import {
   BookOpen,
   Heart,
   X,
-  Check
+  Check,
+  Lock
 } from "lucide-react";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 export default function MorePage() {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ export default function MorePage() {
   const [reviews, setReviews] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [booksReadCount, setBooksReadCount] = useState(0);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const menuSections = [
     {
@@ -369,6 +372,32 @@ export default function MorePage() {
               </div>
             </div>
 
+            {/* Change Password Section */}
+            <div className="mt-6 pt-6 border-t-2 border-gray-200 dark:border-gray-200">
+              <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border-2 border-amber-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-amber-600 to-orange-600">
+                      <Lock className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-gray-900 mb-1">Şifrəni Dəyiş</div>
+                      <div className="text-sm text-gray-600">Hesab təhlükəsizliyini artır</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setOpenModal(null);
+                      setShowChangePassword(true);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold text-sm transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    Dəyişdir
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Notifications Section */}
             <div className="mt-6 pt-6 border-t-2 border-gray-200 dark:border-gray-200">
               <div className="p-4 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border-2 border-gray-200">
@@ -520,6 +549,12 @@ export default function MorePage() {
           Version 1.0.0 • Made with <Heart className="inline w-4 h-4 text-red-500" /> for readers
         </p>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </div>
   );
 }

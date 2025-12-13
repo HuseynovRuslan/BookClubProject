@@ -322,6 +322,7 @@ export async function searchUsers(query) {
       const fullName = `${firstName}${lastName ? ` ${lastName}` : ""}`.trim();
       const username = user.username || user.Username || user.userName || user.UserName || user.email?.split("@")[0] || "";
       const name = fullName || user.name || user.Name || "";
+      const role = user.role || user.Role || "reader";
       
       return {
         id: user.id || user.Id || user.userId || user.UserId,
@@ -333,10 +334,14 @@ export async function searchUsers(query) {
         email: user.email || user.Email || "",
         bio: user.bio || user.Bio || "",
         avatarUrl: user.avatarUrl || user.AvatarUrl || user.profilePictureUrl || user.ProfilePictureUrl || null,
-        role: user.role || user.Role || "reader",
+        role: role,
       };
     })
     .filter(user => {
+      // Filter out admin users
+      const isAdmin = user.role === "Admin" || user.role === "admin";
+      if (isAdmin) return false;
+      
       // Filter: yalnız username və ya name-ə görə match edən userləri göstər
       const usernameMatch = user.username.toLowerCase().includes(searchLower);
       const nameMatch = user.name.toLowerCase().includes(searchLower);
@@ -432,5 +437,64 @@ export async function getMySocials() {
     return { facebook: "", twitter: "", instagram: "", website: "" };
   }
   return apiRequest("/api/Users/get-user-social-links", { method: "GET" });
+}
+
+async function mockChangePassword(payload) {
+  await delay(500);
+  // Simulate validation
+  if (!payload.currentPassword || !payload.newPassword || !payload.confirmPassword) {
+    throw new Error("Bütün sahələr doldurulmalıdır");
+  }
+  if (payload.newPassword.length < 6) {
+    throw new Error("Yeni şifrə ən azı 6 simvol olmalıdır");
+  }
+  if (payload.newPassword !== payload.confirmPassword) {
+    throw new Error("Yeni şifrə və təsdiq şifrəsi uyğun gəlmir");
+  }
+  return { message: "Şifrə uğurla dəyişdirildi (mock mode)" };
+}
+
+export async function changePassword(payload) {
+  if (USE_API_MOCKS) {
+    return mockChangePassword(payload);
+  }
+
+  try {
+    // Backend expects: { currentPassword, newPassword, confirmPassword }
+    // Try PascalCase first (common in .NET backends)
+    const backendPayload = {
+      CurrentPassword: payload.currentPassword || payload.CurrentPassword || "",
+      NewPassword: payload.newPassword || payload.NewPassword || "",
+      ConfirmPassword: payload.confirmPassword || payload.ConfirmPassword || "",
+    };
+
+    console.log("Change password payload to backend:", backendPayload);
+
+    try {
+      return await apiRequest("/api/Users/change-password", {
+        method: "POST",
+        body: backendPayload,
+      });
+    } catch (err) {
+      // If PascalCase fails with 400, try camelCase
+      if (err.status === 400) {
+        console.log("PascalCase failed, trying camelCase:", err);
+        const camelCasePayload = {
+          currentPassword: payload.currentPassword || "",
+          newPassword: payload.newPassword || "",
+          confirmPassword: payload.confirmPassword || "",
+        };
+        console.log("Change password payload (camelCase) to backend:", camelCasePayload);
+        return await apiRequest("/api/Users/change-password", {
+          method: "POST",
+          body: camelCasePayload,
+        });
+      }
+      throw err;
+    }
+  } catch (error) {
+    console.error("Change password error:", error);
+    throw error;
+  }
 }
 

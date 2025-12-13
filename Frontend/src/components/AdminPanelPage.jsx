@@ -350,7 +350,7 @@ function BooksManagement() {
       await fetchBooks();
     } catch (error) {
       console.error("Failed to save book:", error);
-      alert(t("admin.saveBookError") || "Failed to save book. Please try again.");
+      alert(t("admin.saveBookError"));
       throw error;
     }
   };
@@ -409,7 +409,7 @@ function BooksManagement() {
         <div className="text-center py-12">
           <div className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-700">
             <div className="w-5 h-5 border-3 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-semibold">{t("common.loading") || "Loading..."}</p>
+            <p className="font-semibold">{t("common.loading")}</p>
           </div>
         </div>
       ) : filteredBooks.length === 0 ? (
@@ -447,7 +447,7 @@ function BooksManagement() {
                         {book.title || book.Title}
                       </h3>
                       <p className="text-xs text-gray-600 dark:text-gray-600 mb-2">
-                        {book.authorName || book.author?.name || book.AuthorName || "Unknown Author"}
+                        {book.authorName || book.author?.name || book.AuthorName || t("admin.unknownAuthor")}
                       </p>
                     </div>
                   </div>
@@ -512,17 +512,17 @@ function BooksManagement() {
                 disabled={pageNumber === 1}
                 className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
               >
-                Previous
+                {t("admin.previous")}
               </button>
               <span className="px-5 py-2.5 text-gray-700 dark:text-gray-700 font-bold bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 rounded-xl border-2 border-amber-200 dark:border-amber-200">
-                {t("admin.page") || "Page"} {pageNumber} / {Math.ceil(totalCount / pageSize)}
+                {t("admin.page")} {pageNumber} / {Math.ceil(totalCount / pageSize)}
               </span>
               <button
                 onClick={() => setPageNumber((p) => p + 1)}
                 disabled={pageNumber >= Math.ceil(totalCount / pageSize)}
                 className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
               >
-                Next
+                {t("admin.next")}
               </button>
             </div>
           )}
@@ -625,7 +625,7 @@ function UsersManagement() {
         <div className="text-center py-12">
           <div className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-700">
             <div className="w-5 h-5 border-3 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-semibold">{t("common.loading") || "Loading..."}</p>
+            <p className="font-semibold">{t("common.loading")}</p>
           </div>
         </div>
       ) : filteredUsers.length === 0 ? (
@@ -642,9 +642,9 @@ function UsersManagement() {
               const isMenuOpen = openMenuId === user.id;
               const avatarUrl = user.profilePictureUrl || user.ProfilePictureUrl || user.avatarUrl || user.AvatarUrl;
               const imageUrl = avatarUrl ? getImageUrl(avatarUrl) : null;
-              const userName = user.username || user.userName || user.Username || user.name || user.Name || "Unknown";
+              const userName = user.username || user.userName || user.Username || user.name || user.Name || t("admin.unknownUser");
               const userEmail = user.email || user.Email || "";
-              const userRole = user.role || user.Role || "User";
+              const userRole = user.role || user.Role || t("admin.roleUser");
               
               return (
                 <div
@@ -659,14 +659,20 @@ function UsersManagement() {
                         alt={userName}
                         className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-200 shrink-0"
                         onError={(e) => {
-                          e.target.src = "/images/default-profile.png";
+                          // Hide the image and show placeholder instead
+                          e.target.style.display = 'none';
+                          const placeholder = e.target.nextElementSibling;
+                          if (placeholder) {
+                            placeholder.style.display = 'flex';
+                          }
                         }}
                       />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 flex items-center justify-center border-2 border-gray-200 dark:border-gray-200 shrink-0">
-                        <Users className="w-6 h-6 text-amber-600 dark:text-amber-600" />
-                      </div>
-                    )}
+                    ) : null}
+                    <div 
+                      className={`w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 flex items-center justify-center border-2 border-gray-200 dark:border-gray-200 shrink-0 ${imageUrl ? 'hidden' : ''}`}
+                    >
+                      <Users className="w-6 h-6 text-amber-600 dark:text-amber-600" />
+                    </div>
                     
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
@@ -676,12 +682,12 @@ function UsersManagement() {
                         </h3>
                         {userRole === "Admin" && (
                           <span className="px-2 py-0.5 bg-gradient-to-br from-amber-500 to-orange-600 text-white text-xs font-bold rounded-lg">
-                            Admin
+                            {t("admin.roleAdmin")}
                           </span>
                         )}
                         {userRole === "writer" && (
                           <span className="px-2 py-0.5 bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-xs font-bold rounded-lg">
-                            Writer
+                            {t("admin.roleWriter")}
                           </span>
                         )}
                       </div>
@@ -742,17 +748,17 @@ function UsersManagement() {
                 disabled={pageNumber === 1}
                 className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
               >
-                Previous
+                {t("admin.previous")}
               </button>
               <span className="px-5 py-2.5 text-gray-700 dark:text-gray-700 font-bold bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 rounded-xl border-2 border-amber-200 dark:border-amber-200">
-                {t("admin.page") || "Page"} {pageNumber} / {Math.ceil(totalCount / pageSize)}
+                {t("admin.page")} {pageNumber} / {Math.ceil(totalCount / pageSize)}
               </span>
               <button
                 onClick={() => setPageNumber((p) => p + 1)}
                 disabled={pageNumber >= Math.ceil(totalCount / pageSize)}
                 className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
               >
-                Next
+                {t("admin.next")}
               </button>
             </div>
           )}
@@ -911,7 +917,7 @@ function ContentModeration() {
         <div className="text-center py-12">
           <div className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-700">
             <div className="w-5 h-5 border-3 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-semibold">{t("common.loading") || "Loading..."}</p>
+            <p className="font-semibold">{t("common.loading")}</p>
           </div>
         </div>
       ) : currentItems.length === 0 ? (
@@ -932,14 +938,14 @@ function ContentModeration() {
                 const imageUrl = coverUrl ? getImageUrl(coverUrl) : null;
                 
                 // Extract book info
-                const bookTitle = book?.title || book?.Title || "Unknown Book";
-                const authorName = book?.authorName || book?.AuthorName || book?.author?.name || book?.author?.Name || "Unknown Author";
+                const bookTitle = book?.title || book?.Title || t("admin.unknownBook");
+                const authorName = book?.authorName || book?.AuthorName || book?.author?.name || book?.author?.Name || t("admin.unknownAuthor");
                 
                 // Extract user info
                 const userName = user?.username || user?.userName || user?.Username || user?.name || user?.Name || 
                                  (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : null) ||
                                  (user?.FirstName && user?.LastName ? `${user.FirstName} ${user.LastName}` : null) ||
-                                 "Unknown User";
+                                 t("admin.unknownUser");
                 
                 const quoteId = quote.id || quote.Id;
                 const isMenuOpen = openMenuId === quoteId;
@@ -1021,7 +1027,7 @@ function ContentModeration() {
             ) : (
               reviews.map((review) => {
                 // BookReviewDto has BookTitle and BookCoverImageUrl directly
-                const bookTitle = review.bookTitle || review.BookTitle || review.book?.title || review.Book?.Title || "Unknown Book";
+                const bookTitle = review.bookTitle || review.BookTitle || review.book?.title || review.Book?.Title || t("admin.unknownBook");
                 const coverUrl = review.bookCoverImageUrl || review.BookCoverImageUrl || review.book?.coverImageUrl || review.Book?.CoverImageUrl || review.book?.cover;
                 const imageUrl = coverUrl ? getImageUrl(coverUrl) : null;
                 
@@ -1030,7 +1036,7 @@ function ContentModeration() {
                                  review.user?.name || review.User?.Name || 
                                  (review.user?.firstName && review.user?.lastName ? `${review.user.firstName} ${review.user.lastName}` : null) ||
                                  (review.User?.FirstName && review.User?.LastName ? `${review.User.FirstName} ${review.User.LastName}` : null) ||
-                                 "Unknown User";
+                                 t("admin.unknownUser");
                 
                 const reviewId = review.id || review.Id;
                 const isMenuOpen = openMenuId === reviewId;
@@ -1232,7 +1238,7 @@ function AuthorsManagement() {
   };
 
   const handleDeleteAuthor = async (authorId) => {
-    if (!confirm(t("admin.confirmDeleteAuthor") || "Are you sure you want to delete this author?")) {
+    if (!confirm(t("admin.confirmDeleteAuthor"))) {
       return;
     }
 
@@ -1242,7 +1248,7 @@ function AuthorsManagement() {
       await fetchAuthors();
     } catch (error) {
       console.error("Failed to delete author:", error);
-      alert(t("admin.deleteAuthorError") || "Failed to delete author. Please try again.");
+      alert(t("admin.deleteAuthorError"));
     } finally {
       setDeletingId(null);
     }
@@ -1250,7 +1256,7 @@ function AuthorsManagement() {
 
   const handleSaveAuthor = async () => {
     if (!formData.name.trim()) {
-      alert(t("admin.authorNameRequired") || "Author name is required");
+      alert(t("admin.authorNameRequired"));
       return;
     }
 
@@ -1276,7 +1282,7 @@ function AuthorsManagement() {
       await fetchAuthors();
     } catch (error) {
       console.error("Failed to save author:", error);
-      alert(t("admin.saveAuthorError") || "Failed to save author. Please try again.");
+      alert(t("admin.saveAuthorError"));
     }
   };
 
@@ -1284,14 +1290,14 @@ function AuthorsManagement() {
     <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <h2 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
-          {t("admin.authorsManagement") || "Authors Management"}
+          {t("admin.authorsManagement")}
         </h2>
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-600 dark:text-amber-600" />
             <input
               type="text"
-              placeholder={t("admin.searchAuthors") || "Search authors..."}
+              placeholder={t("admin.searchAuthors")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold shadow-md hover:shadow-lg transition-all duration-300"
@@ -1300,10 +1306,10 @@ function AuthorsManagement() {
           <button
             onClick={handleCreateAuthor}
             className="relative w-10 h-10 flex items-center justify-center bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 hover:from-amber-600 hover:via-orange-600 hover:to-red-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group"
-            title={t("admin.addAuthor") || "Add Author"}
+            title={t("admin.addAuthor")}
           >
             <Plus className="w-5 h-5" />
-            <span className="sr-only">{t("admin.addAuthor") || "Add Author"}</span>
+            <span className="sr-only">{t("admin.addAuthor")}</span>
           </button>
         </div>
       </div>
@@ -1314,7 +1320,7 @@ function AuthorsManagement() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
-                  {editingAuthor ? (t("admin.editAuthor") || "Edit Author") : (t("admin.addAuthor") || "Add Author")}
+                  {editingAuthor ? t("admin.editAuthor") : t("admin.addAuthor")}
                 </h3>
                 <button
                   onClick={() => {
@@ -1335,7 +1341,7 @@ function AuthorsManagement() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
-                    {t("admin.authorName") || "Author Name"} <span className="text-red-500">*</span>
+                    {t("admin.authorName")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1348,7 +1354,7 @@ function AuthorsManagement() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
-                    {t("admin.bio") || "Biography"}
+                    {t("admin.bio")}
                   </label>
                   <textarea
                     value={formData.bio}
@@ -1360,7 +1366,7 @@ function AuthorsManagement() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
-                    {t("admin.profileImage") || "Profile Image"}
+                    {t("admin.profileImage")}
                   </label>
                   <input
                     type="file"
@@ -1376,7 +1382,7 @@ function AuthorsManagement() {
                   onClick={handleSaveAuthor}
                   className="flex-1 px-6 py-3 bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 hover:from-amber-600 hover:via-orange-600 hover:to-red-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
-                  {t("common.save") || "Save"}
+                  {t("common.save")}
                 </button>
                 <button
                   onClick={() => {
@@ -1390,7 +1396,7 @@ function AuthorsManagement() {
                   }}
                   className="flex-1 px-6 py-3 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
-                  {t("common.cancel") || "Cancel"}
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -1402,7 +1408,7 @@ function AuthorsManagement() {
         <div className="text-center py-12">
           <div className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-700">
             <div className="w-5 h-5 border-3 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-semibold">{t("common.loading") || "Loading..."}</p>
+            <p className="font-semibold">{t("common.loading")}</p>
           </div>
         </div>
       ) : authors.length === 0 ? (
@@ -1410,7 +1416,7 @@ function AuthorsManagement() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 rounded-2xl shadow-lg mb-4">
             <UserPen className="w-10 h-10 text-amber-600 dark:text-amber-600 opacity-70" />
           </div>
-          <p className="text-gray-700 dark:text-gray-700 font-semibold">{t("admin.noAuthors") || "No authors found"}</p>
+          <p className="text-gray-700 dark:text-gray-700 font-semibold">{t("admin.noAuthors")}</p>
         </div>
       ) : (
         <>
@@ -1432,17 +1438,23 @@ function AuthorsManagement() {
                         alt={author.name || author.Name}
                         className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-200 shrink-0"
                         onError={(e) => {
-                          e.target.src = "/images/default-profile.png";
+                          // Hide the image and show placeholder instead
+                          e.target.style.display = 'none';
+                          const placeholder = e.target.nextElementSibling;
+                          if (placeholder) {
+                            placeholder.style.display = 'flex';
+                          }
                         }}
                       />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 flex items-center justify-center border-2 border-gray-200 dark:border-gray-200 shrink-0">
-                        <UserPen className="w-8 h-8 text-amber-600 dark:text-amber-600" />
-                      </div>
-                    )}
+                    ) : null}
+                    <div 
+                      className={`w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 flex items-center justify-center border-2 border-gray-200 dark:border-gray-200 shrink-0 ${imageUrl ? 'hidden' : ''}`}
+                    >
+                      <UserPen className="w-8 h-8 text-amber-600 dark:text-amber-600" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-black dark:text-black text-sm mb-1 line-clamp-2">
-                        {author.name || author.Name || "Unknown Author"}
+                        {author.name || author.Name || t("admin.unknownAuthor")}
                       </h3>
                       {author.bio && (
                         <p className="text-xs text-gray-500 dark:text-gray-500 line-clamp-2">
@@ -1479,7 +1491,7 @@ function AuthorsManagement() {
                             className="w-full flex items-center gap-1.5 px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-700 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-50 dark:hover:to-orange-50 transition-all font-semibold"
                           >
                             <Edit className="w-3.5 h-3.5 text-amber-600 dark:text-amber-600" />
-                            {t("common.edit") || "Edit"}
+                            {t("common.edit")}
                           </button>
                           <button
                             onClick={(e) => {
@@ -1491,7 +1503,7 @@ function AuthorsManagement() {
                             className="w-full flex items-center gap-1.5 px-3 py-2 text-left text-xs text-red-600 dark:text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-50 dark:hover:from-red-50 dark:hover:to-red-50 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-600" />
-                            {t("common.delete") || "Delete"}
+                            {t("common.delete")}
                           </button>
                         </div>
                       </>
@@ -1509,17 +1521,17 @@ function AuthorsManagement() {
                 disabled={pageNumber === 1}
                 className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
               >
-                Previous
+                {t("admin.previous")}
               </button>
               <span className="px-5 py-2.5 text-gray-700 dark:text-gray-700 font-bold bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 rounded-xl border-2 border-amber-200 dark:border-amber-200">
-                {t("admin.page") || "Page"} {pageNumber} / {Math.ceil(totalCount / pageSize)}
+                {t("admin.page")} {pageNumber} / {Math.ceil(totalCount / pageSize)}
               </span>
               <button
                 onClick={() => setPageNumber((p) => p + 1)}
                 disabled={pageNumber >= Math.ceil(totalCount / pageSize)}
                 className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
               >
-                Next
+                {t("admin.next")}
               </button>
             </div>
           )}
@@ -1603,7 +1615,7 @@ function GenresManagement() {
   };
 
   const handleDeleteGenre = async (genreId) => {
-    if (!confirm(t("admin.confirmDeleteGenre") || "Are you sure you want to delete this genre?")) {
+    if (!confirm(t("admin.confirmDeleteGenre"))) {
       return;
     }
 
@@ -1613,7 +1625,7 @@ function GenresManagement() {
       await fetchGenres();
     } catch (error) {
       console.error("Failed to delete genre:", error);
-      alert(t("admin.deleteGenreError") || "Failed to delete genre. Please try again.");
+      alert(t("admin.deleteGenreError"));
     } finally {
       setDeletingId(null);
     }
@@ -1621,7 +1633,7 @@ function GenresManagement() {
 
   const handleSaveGenre = async () => {
     if (!formData.name.trim()) {
-      alert(t("admin.genreNameRequired") || "Genre name is required");
+      alert(t("admin.genreNameRequired"));
       return;
     }
 
@@ -1644,7 +1656,7 @@ function GenresManagement() {
       await fetchGenres();
     } catch (error) {
       console.error("Failed to save genre:", error);
-      alert(t("admin.saveGenreError") || "Failed to save genre. Please try again.");
+      alert(t("admin.saveGenreError"));
     }
   };
 
@@ -1652,14 +1664,14 @@ function GenresManagement() {
     <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <h2 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
-          {t("admin.genresManagement") || "Genres Management"}
+          {t("admin.genresManagement")}
         </h2>
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-600 dark:text-amber-600" />
             <input
               type="text"
-              placeholder={t("admin.searchGenres") || "Search genres..."}
+              placeholder={t("admin.searchGenres")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold shadow-md hover:shadow-lg transition-all duration-300"
@@ -1668,10 +1680,10 @@ function GenresManagement() {
           <button
             onClick={handleCreateGenre}
             className="relative w-10 h-10 flex items-center justify-center bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 hover:from-amber-600 hover:via-orange-600 hover:to-red-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group"
-            title={t("admin.addGenre") || "Add Genre"}
+            title={t("admin.addGenre")}
           >
             <Plus className="w-5 h-5" />
-            <span className="sr-only">{t("admin.addGenre") || "Add Genre"}</span>
+            <span className="sr-only">{t("admin.addGenre")}</span>
           </button>
         </div>
       </div>
@@ -1682,7 +1694,7 @@ function GenresManagement() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
-                  {editingGenre ? (t("admin.editGenre") || "Edit Genre") : (t("admin.addGenre") || "Add Genre")}
+                  {editingGenre ? t("admin.editGenre") : t("admin.addGenre")}
                 </h3>
                 <button
                   onClick={() => {
@@ -1701,7 +1713,7 @@ function GenresManagement() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
-                    {t("admin.name") || "Name"} <span className="text-red-500">*</span>
+                    {t("admin.name")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1718,7 +1730,7 @@ function GenresManagement() {
                   onClick={handleSaveGenre}
                   className="flex-1 px-6 py-3 bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 hover:from-amber-600 hover:via-orange-600 hover:to-red-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
-                  {t("common.save") || "Save"}
+                  {t("common.save")}
                 </button>
                 <button
                   onClick={() => {
@@ -1730,7 +1742,7 @@ function GenresManagement() {
                   }}
                   className="flex-1 px-6 py-3 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                 >
-                  {t("common.cancel") || "Cancel"}
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -1742,7 +1754,7 @@ function GenresManagement() {
         <div className="text-center py-12">
           <div className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-700">
             <div className="w-5 h-5 border-3 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-semibold">{t("common.loading") || "Loading..."}</p>
+            <p className="font-semibold">{t("common.loading")}</p>
           </div>
         </div>
       ) : genres.length === 0 ? (
@@ -1750,7 +1762,7 @@ function GenresManagement() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 rounded-2xl shadow-lg mb-4">
             <Tag className="w-10 h-10 text-amber-600 dark:text-amber-600 opacity-70" />
           </div>
-          <p className="text-gray-700 dark:text-gray-700 font-semibold">{t("admin.noGenres") || "No genres found"}</p>
+          <p className="text-gray-700 dark:text-gray-700 font-semibold">{t("admin.noGenres")}</p>
         </div>
       ) : (
         <>
@@ -1766,7 +1778,7 @@ function GenresManagement() {
                 >
                   <div className="pr-8">
                     <h3 className="font-bold text-black dark:text-black text-base mb-2">
-                      {genre.name || genre.Name || "Unknown Genre"}
+                      {genre.name || genre.Name || t("admin.unknownGenre")}
                     </h3>
                   </div>
 
@@ -1797,7 +1809,7 @@ function GenresManagement() {
                             className="w-full flex items-center gap-1.5 px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-700 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-50 dark:hover:to-orange-50 transition-all font-semibold"
                           >
                             <Edit className="w-3.5 h-3.5 text-amber-600 dark:text-amber-600" />
-                            {t("common.edit") || "Edit"}
+                            {t("common.edit")}
                           </button>
                           <button
                             onClick={(e) => {
@@ -1809,7 +1821,7 @@ function GenresManagement() {
                             className="w-full flex items-center gap-1.5 px-3 py-2 text-left text-xs text-red-600 dark:text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-50 dark:hover:from-red-50 dark:hover:to-red-50 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-600" />
-                            {t("common.delete") || "Delete"}
+                            {t("common.delete")}
                           </button>
                         </div>
                       </>
@@ -1827,17 +1839,17 @@ function GenresManagement() {
                 disabled={pageNumber === 1}
                 className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
               >
-                Previous
+                {t("admin.previous")}
               </button>
               <span className="px-5 py-2.5 text-gray-700 dark:text-gray-700 font-bold bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 rounded-xl border-2 border-amber-200 dark:border-amber-200">
-                {t("admin.page") || "Page"} {pageNumber} / {Math.ceil(totalCount / pageSize)}
+                {t("admin.page")} {pageNumber} / {Math.ceil(totalCount / pageSize)}
               </span>
               <button
                 onClick={() => setPageNumber((p) => p + 1)}
                 disabled={pageNumber >= Math.ceil(totalCount / pageSize)}
                 className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
               >
-                Next
+                {t("admin.next")}
               </button>
             </div>
           )}
@@ -1902,18 +1914,18 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
 
     // Validation
     const newErrors = {};
-    if (!formData.title?.trim()) newErrors.title = t("admin.titleRequired") || "Title is required";
-    if (!formData.description?.trim()) newErrors.description = t("admin.descriptionRequired") || "Description is required";
-    if (!formData.authorId) newErrors.authorId = t("admin.authorRequired") || "Author is required";
+    if (!formData.title?.trim()) newErrors.title = t("admin.titleRequired");
+    if (!formData.description?.trim()) newErrors.description = t("admin.descriptionRequired");
+    if (!formData.authorId) newErrors.authorId = t("admin.authorRequired");
     if (!formData.publicationDate?.trim()) {
-      newErrors.publicationDate = t("admin.publicationDateRequired") || "Publication date is required";
+      newErrors.publicationDate = t("admin.publicationDateRequired");
     }
     // ISBN validation: max 17 characters (backend requirement)
     if (formData.isbn && formData.isbn.trim().length > 17) {
-      newErrors.isbn = t("admin.isbnMaxLength") || "ISBN must be 17 characters or fewer";
+      newErrors.isbn = t("admin.isbnMaxLength");
     }
     if (!isEdit && !formData.coverImage && !previewImage) {
-      newErrors.coverImage = t("admin.coverImageRequired") || "Cover image is required";
+      newErrors.coverImage = t("admin.coverImageRequired");
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -1963,7 +1975,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
               <BookOpen className="w-6 h-6 text-amber-600 dark:text-amber-600" />
             </div>
             <h2 className="text-2xl font-black text-gray-900 dark:text-gray-900">
-              {isEdit ? (t("admin.editBook") || "Edit Book") : (t("admin.addBook") || "Add Book")}
+              {isEdit ? t("admin.editBook") : t("admin.addBook")}
             </h2>
           </div>
           <button
@@ -1980,7 +1992,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
             {/* Title */}
             <div className="md:col-span-2">
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.bookTitle") || "Title"} <span className="text-red-500">*</span>
+                {t("admin.bookTitle")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -1990,7 +2002,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
                 className={`w-full px-4 py-3 border-2 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all ${
                   errors.title ? "border-red-500" : "border-gray-200 dark:border-gray-200"
                 }`}
-                placeholder={t("admin.bookTitlePlaceholder") || "Enter book title"}
+                placeholder={t("admin.bookTitlePlaceholder")}
               />
               {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
             </div>
@@ -1998,7 +2010,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
             {/* Author */}
             <div>
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.author") || "Author"} <span className="text-red-500">*</span>
+                {t("admin.author")} <span className="text-red-500">*</span>
               </label>
               <select
                 name="authorId"
@@ -2008,15 +2020,15 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
                   errors.authorId ? "border-red-500" : "border-gray-200 dark:border-gray-200"
                 }`}
               >
-                <option value="">{t("admin.selectAuthor") || "Select Author"}</option>
+                <option value="">{t("admin.selectAuthor")}</option>
                 {authors && authors.length > 0 ? (
                   authors.map((author) => (
                     <option key={author.id || author.Id} value={author.id || author.Id}>
-                      {author.name || author.Name || "Unknown Author"}
+                      {author.name || author.Name || t("admin.unknownAuthor")}
                     </option>
                   ))
                 ) : (
-                  <option value="" disabled>{t("admin.noAuthors") || "No authors available"}</option>
+                  <option value="" disabled>{t("admin.noAuthors")}</option>
                 )}
               </select>
               {errors.authorId && <p className="text-red-500 text-xs mt-1">{errors.authorId}</p>}
@@ -2025,7 +2037,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
             {/* ISBN */}
             <div>
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.isbn") || "ISBN"}
+                {t("admin.isbn")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -2036,12 +2048,12 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
                 className={`w-full px-4 py-3 border-2 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all ${
                   errors.isbn ? "border-red-500" : "border-gray-200 dark:border-gray-200"
                 }`}
-                placeholder={t("admin.isbnPlaceholder") || "Enter ISBN (max 17 characters)"}
+                placeholder={t("admin.isbnPlaceholder")}
               />
               {errors.isbn && <p className="text-red-500 text-xs mt-1">{errors.isbn}</p>}
               {formData.isbn && (
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  {formData.isbn.length}/17 characters
+                  {formData.isbn.length}/17 {t("admin.characters") || "characters"}
                 </p>
               )}
             </div>
@@ -2049,7 +2061,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
             {/* Publication Date */}
             <div>
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.publicationDate") || "Publication Date"} <span className="text-red-500">*</span>
+                {t("admin.publicationDate")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -2067,7 +2079,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
             {/* Language */}
             <div>
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.language") || "Language"}
+                {t("admin.language")}
               </label>
               <input
                 type="text"
@@ -2075,14 +2087,14 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
                 value={formData.language}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                placeholder={t("admin.languagePlaceholder") || "e.g., English"}
+                placeholder={t("admin.languagePlaceholder")}
               />
             </div>
 
             {/* Page Count */}
             <div>
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.pageCount") || "Page Count"}
+                {t("admin.pageCount")}
               </label>
               <input
                 type="number"
@@ -2090,7 +2102,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
                 value={formData.pageCount}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                placeholder={t("admin.pageCountPlaceholder") || "Enter page count"}
+                placeholder={t("admin.pageCountPlaceholder")}
                 min="0"
               />
             </div>
@@ -2098,7 +2110,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
             {/* Publisher */}
             <div>
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.publisher") || "Publisher"}
+                {t("admin.publisher")}
               </label>
               <input
                 type="text"
@@ -2106,14 +2118,14 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
                 value={formData.publisher}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                placeholder={t("admin.publisherPlaceholder") || "Enter publisher name"}
+                placeholder={t("admin.publisherPlaceholder")}
               />
             </div>
 
             {/* Genres/Categories */}
             <div className="md:col-span-2">
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.genres") || "Genres/Categories"}
+                {t("admin.genres")}
               </label>
               <select
                 name="genreIds"
@@ -2127,15 +2139,15 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
                 {genres && genres.length > 0 ? (
                   genres.map((genre) => (
                     <option key={genre.id || genre.Id} value={genre.id || genre.Id}>
-                      {genre.name || genre.Name || "Unknown Genre"}
+                      {genre.name || genre.Name || t("admin.unknownGenre")}
                     </option>
                   ))
                 ) : (
-                  <option value="" disabled>{t("admin.noGenres") || "No genres available"}</option>
+                  <option value="" disabled>{t("admin.noGenres")}</option>
                 )}
               </select>
               <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                {t("admin.selectMultipleGenres") || "Hold Ctrl (Cmd on Mac) to select multiple genres"}
+                {t("admin.selectMultipleGenres")}
               </p>
               {errors.genreIds && <p className="text-red-500 text-xs mt-1">{errors.genreIds}</p>}
             </div>
@@ -2143,7 +2155,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
             {/* Description */}
             <div className="md:col-span-2">
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.description") || "Description"} <span className="text-red-500">*</span>
+                {t("admin.description")} <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="description"
@@ -2153,7 +2165,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
                 className={`w-full px-4 py-3 border-2 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all resize-none ${
                   errors.description ? "border-red-500" : "border-gray-200 dark:border-gray-200"
                 }`}
-                placeholder={t("admin.descriptionPlaceholder") || "Enter book description"}
+                placeholder={t("admin.descriptionPlaceholder")}
               />
               {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
             </div>
@@ -2161,7 +2173,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
             {/* Cover Image */}
             <div className="md:col-span-2">
               <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                {t("admin.coverImage") || "Cover Image"} {!isEdit && <span className="text-red-500">*</span>}
+                {t("admin.coverImage")} {!isEdit && <span className="text-red-500">*</span>}
               </label>
               <div className="flex gap-4">
                 {previewImage && (

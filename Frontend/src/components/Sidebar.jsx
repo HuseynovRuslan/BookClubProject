@@ -5,7 +5,7 @@ import { useTranslation } from "../hooks/useTranslation";
 import GuestRestrictionModal from "./GuestRestrictionModal";
 import { useState } from "react";
 
-export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreatePost, onCreateBook, isOpen = false, onClose }) {
+export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, onClose, onShowLogin, onShowRegister }) {
   const { user, isGuest } = useAuth();
   const t = useTranslation();
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -36,9 +36,9 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
     <>
       {/* Mobile sidebar overlay */}
       <div
-        className={`fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] z-40 flex flex-col border-r transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] z-40 flex flex-col border-r transform transition-transform duration-300 ease-in-out md:hidden bg-white border-gray-200 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+        }`}
       >
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-4 overflow-y-auto">
@@ -52,9 +52,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                       setShowGuestModal(true);
                       onClose();
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                      isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                    }`}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                   >
                     {Icon && <Icon className="w-5 h-5" />}
                     {label}
@@ -63,9 +61,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                   <Link
                     to={to}
                     onClick={onClose}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                      isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                    }`}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                   >
                     {Icon && <Icon className="w-5 h-5" />}
                     {label}
@@ -86,9 +82,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                   onCreatePost();
                   onClose();
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                  isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                }`}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
               >
                 <Plus className="w-5 h-5" />
                 {t("nav.createPost")}
@@ -97,7 +91,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
 
             {/* Xətt (divider) */}
             <li>
-              <hr className={`my-4 border-t ${isDarkMode ? "border-gray-700" : "border-gray-300"}`} />
+              <hr className="my-4 border-t border-gray-300" />
             </li>
 
             {/* Əlavə linklər */}
@@ -113,9 +107,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                         setShowGuestModal(true);
                         onClose();
                       }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                        isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                      }`}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                     >
                       {Icon && <Icon className="w-5 h-5" />}
                       {label}
@@ -124,9 +116,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                     <Link
                       to={to}
                       onClick={onClose}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                        isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                      }`}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                     >
                       {Icon && <Icon className="w-5 h-5" />}
                       {label}
@@ -142,9 +132,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                 <Link
                   to="/admin"
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                  }`}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                 >
                   <Shield className="w-5 h-5" />
                   {t("nav.admin") || "Admin Panel"}
@@ -160,9 +148,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                     onCreateBook();
                     onClose();
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                  }`}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                 >
                   <BookPlus className="w-5 h-5" />
                   {t("nav.newBook")}
@@ -172,20 +158,10 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
           </ul>
         </nav>
 
-        {/* Dark Mode Toggle */}
-        <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <button
-            onClick={onDarkModeToggle}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
-            aria-label="Toggle dark mode"
-          >
-            {isDarkMode ? "🌙" : "☀️"}
-          </button>
-        </div>
       </div>
 
       {/* Desktop sidebar - always visible */}
-      <div className={`hidden md:flex fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] z-40 flex-col border-r ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+      <div className="hidden md:flex fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] z-40 flex-col border-r bg-white border-gray-200">
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-4 overflow-y-auto">
           <ul className="space-y-2">
@@ -197,9 +173,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                       e.preventDefault();
                       setShowGuestModal(true);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                      isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                    }`}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                   >
                     {Icon && <Icon className="w-5 h-5" />}
                     {label}
@@ -207,9 +181,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                 ) : (
                   <Link
                     to={to}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                      isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                    }`}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                   >
                     {Icon && <Icon className="w-5 h-5" />}
                     {label}
@@ -228,9 +200,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                   }
                   onCreatePost();
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                  isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                }`}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
               >
                 <Plus className="w-5 h-5" />
                 {t("nav.createPost")}
@@ -239,7 +209,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
 
             {/* Xətt (divider) */}
             <li>
-              <hr className={`my-4 border-t ${isDarkMode ? "border-gray-700" : "border-gray-300"}`} />
+              <hr className="my-4 border-t border-gray-300" />
             </li>
 
             {/* Əlavə linklər */}
@@ -254,9 +224,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                         e.preventDefault();
                         setShowGuestModal(true);
                       }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                        isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                      }`}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                     >
                       {Icon && <Icon className="w-5 h-5" />}
                       {label}
@@ -264,9 +232,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
                   ) : (
                     <Link
                       to={to}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                        isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                      }`}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                     >
                       {Icon && <Icon className="w-5 h-5" />}
                       {label}
@@ -281,9 +247,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
               <li>
                 <Link
                   to="/admin"
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                  }`}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                 >
                   <Shield className="w-5 h-5" />
                   {t("nav.admin") || "Admin Panel"}
@@ -296,9 +260,7 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
               <li>
                 <button
                   onClick={onCreateBook}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm ${
-                    isDarkMode ? "text-white hover:bg-gray-700" : "text-gray-900 hover:bg-gray-100"
-                  }`}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
                 >
                   <BookPlus className="w-5 h-5" />
                   {t("nav.newBook")}
@@ -308,22 +270,14 @@ export default function Sidebar({ onDarkModeToggle, isDarkMode = false, onCreate
           </ul>
         </nav>
 
-        {/* Dark Mode Toggle */}
-        <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <button
-            onClick={onDarkModeToggle}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
-            aria-label="Toggle dark mode"
-          >
-            {isDarkMode ? "🌙" : "☀️"}
-          </button>
-        </div>
       </div>
 
       {/* Guest Restriction Modal */}
       <GuestRestrictionModal
         isOpen={showGuestModal}
         onClose={() => setShowGuestModal(false)}
+        onLogin={onShowLogin}
+        onRegister={onShowRegister}
       />
     </>
   );

@@ -138,8 +138,9 @@ export default function ReviewForm({
           rows={4}
           value={formValues.text}
           onChange={(e) => handleChange("text", e.target.value)}
-          className="w-full bg-gray-50 dark:bg-gray-50 text-gray-900 dark:text-gray-900 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all resize-none"
+          className="w-full bg-white text-gray-900 p-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-200 focus:border-amber-400 transition-all resize-none"
           placeholder="Fikir və təəssüratlarını paylaş..."
+          style={{ backgroundColor: 'white', color: '#111827' }}
         />
       </div>
 

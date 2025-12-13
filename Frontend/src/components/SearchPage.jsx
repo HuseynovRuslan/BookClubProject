@@ -251,7 +251,11 @@ export default function SearchPage({ onBookClick }) {
                 {searchMode === "users" ? (
                   /* User Results */
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                    {results.map((user, index) => {
+                    {results.filter(user => {
+                      // Filter out admin users on frontend as well
+                      const role = user.role || user.Role || "reader";
+                      return role !== "Admin" && role !== "admin";
+                    }).map((user, index) => {
                       const avatarUrl = getImageUrl(user.avatarUrl);
                       const displayName = user.name || user.username || "User";
                       const username = user.username || user.email?.split("@")[0] || user.id;
