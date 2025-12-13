@@ -13,7 +13,6 @@ public class Book
     public string Publisher { get; set; }
     public double AverageRating { get; set; }
     public int RatingCount { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public string AuthorId { get; set; }
     public Author Author { get; set; }

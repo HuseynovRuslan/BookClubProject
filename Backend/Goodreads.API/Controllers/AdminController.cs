@@ -19,7 +19,7 @@ namespace Goodreads.API.Controllers;
 [Authorize(Roles = Roles.Admin)]
 public class AdminController : BaseController
 {
-    // Books Management
+   
     [HttpGet("books")]
     public async Task<IActionResult> GetAllBooks([FromQuery] QueryParameters parameters)
     {
@@ -36,7 +36,7 @@ public class AdminController : BaseController
             failure => CustomResults.Problem(failure));
     }
 
-    // Content Moderation - Delete Quote
+   
     [HttpDelete("quotes/{id}")]
     public async Task<IActionResult> DeleteQuote(string id)
     {
@@ -46,7 +46,7 @@ public class AdminController : BaseController
             failure => CustomResults.Problem(failure));
     }
 
-    // Content Moderation - Delete Review
+    
     [HttpDelete("reviews/{id}")]
     public async Task<IActionResult> DeleteReview(string id)
     {

@@ -4,22 +4,12 @@ using Goodreads.Application.Books.Commands.CreateBook;
 using Goodreads.Application.Books.Commands.DeleteBook.DeleteBookCommand;
 using Goodreads.Application.Books.Commands.RemoveGenrerFromBook;
 using Goodreads.Application.Books.Commands.UpdateBook;
-
-
-
-//using Goodreads.Application.Books.Commands.AddGenresToBook;
-//using Goodreads.Application.Books.Commands.CreateBook;
-//using Goodreads.Application.Books.Commands.DeleteBook.DeleteBookCommand;
-//using Goodreads.Application.Books.Commands.RemoveGenreFromBook;
-//using Goodreads.Application.Books.Commands.UpdateBook;
 using Goodreads.Application.Books.Commands.UpdateBookStatus;
 using Goodreads.Application.Books.Queries.GetAllBooks;
 using Goodreads.Application.Books.Queries.GetBookById;
 using Goodreads.Application.Books.Queries.GetBooksByGener;
 
 
-//using Goodreads.Application.Books.Queries.GetBookById;
-//using Goodreads.Application.Books.Queries.GetBooksByGenre;
 using Goodreads.Application.Common;
 using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
