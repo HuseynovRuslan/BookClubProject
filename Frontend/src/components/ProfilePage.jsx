@@ -1317,19 +1317,45 @@ export default function ProfilePage({
 
   // Wrapper function to handle post deletion in profile
   const handleDeletePost = async (postId, post) => {
-    if (!onDeletePost) return;
+    if (!onDeletePost) {
+      console.error("onDeletePost is not available");
+      return;
+    }
+    
+    // Validate inputs
+    if (!postId || !post) {
+      console.error("Invalid postId or post:", { postId, post });
+      throw new Error("Post ID or post object is missing");
+    }
     
     try {
-      // Call the parent's delete function
-      await onDeletePost(postId, post);
-      
-      // Update local userPosts state (if it's own profile)
+      // Optimistic update: Remove post from UI immediately for better UX
       if (isOwnProfile) {
-        // The parent's handleDeletePost already updates userPosts in App.jsx
-        // But we can also update viewedUserPosts if needed
         setViewedUserPosts((prev) => prev.filter((p) => p.id !== postId));
       }
+      
+      // Call the parent's delete function (this will update userPosts prop, localStorage, etc.)
+      await onDeletePost(postId, post);
+      
+      // Note: userPosts prop will be updated by App.jsx, and useEffect will sync viewedUserPosts
+      // The optimistic update above provides instant feedback
     } catch (err) {
+      console.error("Error deleting post in profile:", err);
+      
+      // Revert optimistic update on error
+      if (isOwnProfile && userPosts) {
+        const deletedPost = userPosts.find(p => p.id === postId);
+        if (deletedPost) {
+          setViewedUserPosts((prev) => {
+            // Check if post is already in the list
+            if (!prev.find(p => p.id === postId)) {
+              return [...prev, deletedPost];
+            }
+            return prev;
+          });
+        }
+      }
+      
       throw err;
     }
   };

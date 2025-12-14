@@ -435,72 +435,84 @@ function App() {
 
   const handleDeletePost = async (postId, post) => {
     try {
+      // Validate post and postId
+      if (!post || !postId) {
+        console.error("Invalid post or postId:", { post, postId });
+        throw new Error("Post or post ID is missing");
+      }
+
       // Delete from backend if it's a review or quote
       if (post.type === "review" && post.reviewId) {
-        const { deleteReview } = await import("./api/reviews");
-        const reviewId = String(post.reviewId || post.reviewId?.id || post.reviewId?.Id || post.reviewId);
-        await deleteReview(reviewId);
-      } else if (post.type === "quote" && post.quoteId) {
-        const { deleteQuote } = await import("./api/quotes");
-        // Ensure quoteId is a string, not an object
-        let quoteId = null;
-        
-        // Log the structure for debugging
-        console.log("post.quoteId structure:", post.quoteId, "Type:", typeof post.quoteId);
-        
-        if (typeof post.quoteId === 'string') {
-          quoteId = post.quoteId.trim();
-        } else if (typeof post.quoteId === 'object' && post.quoteId !== null) {
-          // Try all possible ways to extract the ID from the object
-          quoteId = post.quoteId.id || 
-                   post.quoteId.Id || 
-                   post.quoteId.quoteId ||
-                   post.quoteId.QuoteId ||
-                   post.quoteId.data?.id ||
-                   post.quoteId.data?.Id ||
-                   post.quoteId.Data?.id ||
-                   post.quoteId.Data?.Id ||
-                   (post.quoteId.toString && post.quoteId.toString() !== '[object Object]' ? post.quoteId.toString() : null);
-          
-          if (quoteId) {
-            quoteId = String(quoteId).trim();
-          } else {
-            // If we can't extract, try JSON.stringify to see the structure
-            console.error("Cannot extract quoteId from object:", JSON.stringify(post.quoteId, null, 2));
-            console.error("Full post object:", JSON.stringify(post, null, 2));
-            throw new Error("quoteId is an object but cannot extract ID. Object keys: " + Object.keys(post.quoteId).join(', '));
-          }
-        } else {
-          throw new Error("quoteId is not a string or object: " + typeof post.quoteId);
-        }
-        
-        if (!quoteId || quoteId === 'null' || quoteId === 'undefined' || quoteId.includes('[object')) {
-          console.error("Invalid quoteId detected:", { quoteId, postQuoteId: post.quoteId, postType: typeof post.quoteId, post });
-          throw new Error("Invalid quoteId: " + quoteId);
-        }
-        
-        console.log("Deleting quote with ID:", quoteId);
-        await deleteQuote(quoteId);
-      }
-      // For normal posts (type: "post"), status updates, and other local posts, just remove from localStorage
-      // No backend deletion needed as they're stored locally
-      
-      // Remove from local state
-      setLocalPosts((prev) => {
-        const updated = prev.filter((p) => p.id !== postId);
-        // Save to localStorage
         try {
-          const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
-          const filtered = existing.filter((p) => p.id !== postId);
-          localStorage.setItem("bookverse_social_feed", JSON.stringify(filtered));
-        } catch (err) {
-          console.error("Error saving post deletion to localStorage:", err);
+          const { deleteReview } = await import("./api/reviews");
+          const reviewId = String(post.reviewId || post.reviewId?.id || post.reviewId?.Id || post.reviewId);
+          if (reviewId && reviewId !== 'undefined' && reviewId !== 'null') {
+            await deleteReview(reviewId);
+          } else {
+            console.warn("Invalid reviewId, deleting from localStorage only:", reviewId);
+          }
+        } catch (reviewErr) {
+          console.error("Error deleting review from backend:", reviewErr);
+          // Continue with localStorage deletion even if backend deletion fails
+          // This allows deletion of posts that might not exist in backend
         }
-        return updated;
+      } else if (post.type === "quote" && post.quoteId) {
+        try {
+          const { deleteQuote } = await import("./api/quotes");
+          // Ensure quoteId is a string, not an object
+          let quoteId = null;
+          
+          if (typeof post.quoteId === 'string') {
+            quoteId = post.quoteId.trim();
+          } else if (typeof post.quoteId === 'object' && post.quoteId !== null) {
+            // Try all possible ways to extract the ID from the object
+            quoteId = post.quoteId.id || 
+                     post.quoteId.Id || 
+                     post.quoteId.quoteId ||
+                     post.quoteId.QuoteId ||
+                     post.quoteId.data?.id ||
+                     post.quoteId.data?.Id ||
+                     post.quoteId.Data?.id ||
+                     post.quoteId.Data?.Id ||
+                     (post.quoteId.toString && post.quoteId.toString() !== '[object Object]' ? post.quoteId.toString() : null);
+            
+            if (quoteId) {
+              quoteId = String(quoteId).trim();
+            }
+          }
+          
+          if (quoteId && quoteId !== 'null' && quoteId !== 'undefined' && !quoteId.includes('[object')) {
+            await deleteQuote(quoteId);
+          } else {
+            console.warn("Invalid quoteId, deleting from localStorage only:", quoteId);
+          }
+        } catch (quoteErr) {
+          console.error("Error deleting quote from backend:", quoteErr);
+          // Continue with localStorage deletion even if backend deletion fails
+        }
+      }
+      // For normal posts (type: "post", "status", "goal"), undefined type, or other local posts, 
+      // just remove from localStorage (no backend deletion needed)
+      
+      // Remove from local state first (optimistic update)
+      setLocalPosts((prev) => {
+        return prev.filter((p) => p.id !== postId);
       });
       
       // Remove from userPosts
-      setUserPosts((prev) => prev.filter((p) => p.id !== postId));
+      setUserPosts((prev) => {
+        return prev.filter((p) => p.id !== postId);
+      });
+      
+      // Save to localStorage after state updates
+      try {
+        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+        const filtered = existing.filter((p) => p.id !== postId);
+        localStorage.setItem("bookverse_social_feed", JSON.stringify(filtered));
+      } catch (err) {
+        console.error("Error saving post deletion to localStorage:", err);
+        // Don't throw - we've already updated state, so deletion is successful
+      }
     } catch (err) {
       console.error("Error deleting post:", err);
       throw err; // Re-throw to let component handle error display
