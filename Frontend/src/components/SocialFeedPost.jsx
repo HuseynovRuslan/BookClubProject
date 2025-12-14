@@ -891,7 +891,7 @@ export default function SocialFeedPost({
 
       {/* Comments Section */}
       {enableInteractions && (
-        <div className="mt-3 space-y-2 pt-3 border-t border-gray-100 dark:border-gray-200">
+        <div className="mt-4 space-y-3 pt-4 border-t-2 border-gray-200 dark:border-gray-200">
           {displayedComments.map((comment) => {
             const commentInitials = comment.username
               ? comment.username
@@ -905,7 +905,7 @@ export default function SocialFeedPost({
             return (
               <div
                 key={comment.id}
-                className="flex items-start gap-2 bg-gradient-to-br from-gray-50 to-amber-50 dark:from-gray-50 dark:to-amber-50 rounded-lg p-2.5 border border-gray-200 dark:border-gray-200"
+                className="flex items-start gap-3 bg-gradient-to-br from-white via-amber-50/30 to-orange-50/20 dark:from-white dark:via-amber-50/30 dark:to-orange-50/20 rounded-xl p-3 border-2 border-gray-200 dark:border-gray-200 shadow-md hover:shadow-lg transition-all duration-200 group"
               >
                 {commentAvatar ? (() => {
                   // Filter out blob URLs - they're invalid after page reload
@@ -920,7 +920,7 @@ export default function SocialFeedPost({
                     <img
                       src={commentImageUrl}
                       alt={comment.username || "User"}
-                      className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-200 flex-shrink-0"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-amber-200 dark:border-amber-200 shadow-md flex-shrink-0 group-hover:border-amber-300 dark:group-hover:border-amber-300 transition-all"
                       onError={(e) => {
                         e.target.style.display = 'none';
                         e.target.nextElementSibling.style.display = 'flex';
@@ -929,23 +929,27 @@ export default function SocialFeedPost({
                   );
                 })() : null}
                 <div
-                  className={`w-8 h-8 rounded-full bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 flex items-center justify-center text-xs font-black text-white border border-gray-200 dark:border-gray-200 flex-shrink-0 ${commentAvatar ? 'hidden' : 'flex'}`}
+                  className={`w-10 h-10 rounded-full bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 flex items-center justify-center text-xs font-black text-white border-2 border-amber-200 dark:border-amber-200 shadow-md flex-shrink-0 group-hover:border-amber-300 dark:group-hover:border-amber-300 transition-all ${commentAvatar ? 'hidden' : 'flex'}`}
                 >
                   {commentInitials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-gray-900 dark:text-gray-900 mb-0.5">
-                    {comment.username}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-bold text-gray-900 dark:text-gray-900">
+                      {comment.username}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-500">
+                      {formatTimestamp(comment.timestamp || comment.createdAt || comment.CreatedAt, t)}
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-700 dark:text-gray-700 mb-0.5 break-words">
+                  <p className="text-sm text-gray-700 dark:text-gray-700 mb-2 break-words leading-relaxed">
                     {comment.text}
                   </p>
-                  <span className="text-xs text-gray-600 dark:text-gray-600">{formatTimestamp(comment.timestamp || comment.createdAt || comment.CreatedAt, t)}</span>
                 </div>
                 {/* Show delete button if comment belongs to current user OR post owner is current user */}
                 {((comment.username === currentUsername) || isPostOwner) && onDeleteComment && (
                   <button
-                    className="text-xs font-semibold text-red-600 dark:text-red-600 hover:text-red-700 dark:hover:text-red-700 px-1.5 py-0.5 rounded hover:bg-red-50 dark:hover:bg-red-50 transition-all flex-shrink-0"
+                    className="text-xs font-bold text-red-600 dark:text-red-600 hover:text-red-700 dark:hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-50 transition-all flex-shrink-0 opacity-0 group-hover:opacity-100"
                     onClick={async () => {
                       try {
                         const result = onDeleteComment(post.id, comment.id);
@@ -957,8 +961,9 @@ export default function SocialFeedPost({
                         // Error is already handled in the handler
                       }
                     }}
+                    title={t("post.delete") || "Delete comment"}
                   >
-                    {t("post.delete")}
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -966,19 +971,22 @@ export default function SocialFeedPost({
           })}
 
           {onAddComment && (
-            <div className="mt-3">
+            <div className="mt-4">
               {!showCommentBox ? (
                 <button
                   onClick={() => setShowCommentBox(true)}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-600 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-all border border-gray-200 dark:border-gray-200"
+                  className="w-full px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-600 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-50 dark:hover:to-orange-50 rounded-xl transition-all border-2 border-gray-200 dark:border-gray-200 hover:border-amber-300 dark:hover:border-amber-300 shadow-sm hover:shadow-md flex items-center gap-2"
                 >
+                  <svg className="w-5 h-5 text-amber-600 dark:text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
                   {t("post.writeComment") || "Write a comment..."}
                 </button>
               ) : (
-                <form className="flex flex-col gap-2 animate-slideDown" onSubmit={handleSubmit}>
+                <form className="flex flex-col gap-3 animate-slideDown bg-gradient-to-br from-white via-amber-50/30 to-orange-50/20 dark:from-white dark:via-amber-50/30 dark:to-orange-50/20 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-200 shadow-lg" onSubmit={handleSubmit}>
                   <textarea
-                    className="w-full p-2 rounded-lg bg-white dark:bg-white text-gray-900 dark:text-gray-900 text-sm border border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all resize-none"
-                    placeholder={t("post.writeComment")}
+                    className="w-full p-3 rounded-xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 text-sm border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all resize-none shadow-sm"
+                    placeholder={t("post.writeComment") || "Write your comment..."}
                     value={commentText}
                     onChange={(e) => {
                       setCommentText(e.target.value);
@@ -989,23 +997,23 @@ export default function SocialFeedPost({
                     disabled={isSubmittingComment}
                   />
                   {commentError && (
-                    <div className="p-2 bg-red-50 dark:bg-red-50 border border-red-200 dark:border-red-200 rounded-lg">
-                      <p className="text-xs text-red-600 dark:text-red-600 font-semibold">{commentError}</p>
+                    <div className="p-3 bg-gradient-to-r from-red-50 via-orange-50 to-red-50 dark:from-red-50 dark:via-orange-50 dark:to-red-50 border-2 border-red-300 dark:border-red-300 rounded-xl shadow-md">
+                      <p className="text-xs text-red-600 dark:text-red-600 font-bold">{commentError}</p>
                     </div>
                   )}
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex gap-3 justify-end">
                     <button
                       type="button"
                       onClick={handleCancelComment}
                       disabled={isSubmittingComment}
-                      className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-white dark:bg-white border-2 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 text-gray-700 dark:text-gray-700 text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
                     >
                       {t("post.cancel") || t("common.cancel") || "Cancel"}
                     </button>
                     <button
                       type="submit"
                       disabled={!commentText.trim() || isSubmittingComment}
-                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2"
+                      className="px-5 py-2 bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:hover:scale-100 disabled:hover:shadow-lg flex items-center gap-2"
                     >
                       {isSubmittingComment ? (
                         <>
