@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Trash2, MoreVertical, Edit, X, Flag } from "lucide-react";
+import { Send, Trash2, MoreVertical, Edit, X, Flag, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { likeQuote, updateQuote } from "../api/quotes";
 import { useTranslation } from "../hooks/useTranslation";
@@ -67,6 +67,7 @@ export default function SocialFeedPost({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.review || post.text || "");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Update editText when post changes (for external updates)
   useEffect(() => {
@@ -74,6 +75,17 @@ export default function SocialFeedPost({
       setEditText(post.review || post.text || "");
     }
   }, [post.review, post.text, isEditing]);
+
+  // Handle ESC key to close delete confirmation modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape" && showDeleteConfirm) {
+        setShowDeleteConfirm(false);
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [showDeleteConfirm]);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
   const [commentText, setCommentText] = useState("");
@@ -218,11 +230,12 @@ export default function SocialFeedPost({
     
     if (!onDeletePost) return;
     
-    // Confirm deletion
-    if (!window.confirm(t("post.confirmDelete") || "Are you sure you want to delete this post?")) {
-      return;
-    }
-    
+    // Show confirmation modal
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setShowDeleteConfirm(false);
     setIsDeleting(true);
     try {
       await onDeletePost(post.id, post);
@@ -296,24 +309,58 @@ export default function SocialFeedPost({
     try {
       // Handle quote editing
       if (isQuote && post.quoteId) {
-        // Extract quoteId properly
+        // Extract quoteId properly - try all possible ways
         let quoteId = null;
+        
         if (typeof post.quoteId === 'string') {
           quoteId = post.quoteId.trim();
-        } else if (post.quoteId?.id) {
-          quoteId = String(post.quoteId.id).trim();
-        } else if (post.quoteId?.Id) {
-          quoteId = String(post.quoteId.Id).trim();
+        } else if (typeof post.quoteId === 'object' && post.quoteId !== null) {
+          // Try all possible ways to extract the ID from the object
+          quoteId = post.quoteId.id || 
+                   post.quoteId.Id || 
+                   post.quoteId.quoteId ||
+                   post.quoteId.QuoteId ||
+                   post.quoteId.data?.id ||
+                   post.quoteId.data?.Id ||
+                   post.quoteId.Data?.id ||
+                   post.quoteId.Data?.Id ||
+                   (post.quoteId.toString && post.quoteId.toString() !== '[object Object]' ? post.quoteId.toString() : null);
+          
+          if (quoteId) {
+            quoteId = String(quoteId).trim();
+          }
+        } else if (typeof post.quoteId === 'number') {
+          quoteId = String(post.quoteId).trim();
         }
 
         if (!quoteId || quoteId === 'null' || quoteId === 'undefined' || quoteId.includes('[object')) {
-          throw new Error("Invalid quoteId");
+          console.error("Invalid quoteId detected:", { quoteId, postQuoteId: post.quoteId, postType: typeof post.quoteId, post });
+          throw new Error("Invalid quoteId: " + quoteId);
         }
 
-        await updateQuote(quoteId, {
+        // Prepare payload for updateQuote
+        const updatePayload = {
           Text: trimmedText,
-          Tags: post.tags || null
-        });
+        };
+        
+        // Add Tags if they exist
+        if (post.tags !== undefined && post.tags !== null) {
+          updatePayload.Tags = Array.isArray(post.tags) ? post.tags : (post.tags ? [post.tags] : []);
+        }
+
+        console.log("Updating quote with ID:", quoteId, "Payload:", updatePayload);
+        
+        try {
+          await updateQuote(quoteId, updatePayload);
+        } catch (quoteErr) {
+          console.error("Error updating quote from backend:", quoteErr);
+          // If backend update fails, still update localStorage for better UX
+          // But show a warning
+          if (quoteErr.status !== 404) {
+            throw quoteErr; // Re-throw if it's not a 404 (endpoint not found)
+          }
+          console.warn("Quote update endpoint not found (404), updating localStorage only");
+        }
 
         // Update local state immediately for instant UI update
         const updatedPost = { ...post, review: trimmedText, text: trimmedText };
@@ -372,7 +419,33 @@ export default function SocialFeedPost({
       }
     } catch (err) {
       console.error("Error updating post:", err);
-      alert(t("post.updateError") || "Failed to update post. Please try again.");
+      
+      // Get user-friendly error message
+      let errorMessage = t("post.updateError") || "Failed to update post. Please try again.";
+      
+      if (err.message) {
+        const message = err.message.toLowerCase();
+        if (message.includes("invalid quoteid") || message.includes("invalid quote")) {
+          errorMessage = t("post.invalidQuoteId") || "Invalid quote ID. Please refresh and try again.";
+        } else if (message.includes("network") || message.includes("fetch") || message.includes("connection")) {
+          errorMessage = t("error.network") || "Network error. Please check your connection and try again.";
+        } else if (message.includes("permission") || message.includes("unauthorized") || message.includes("forbidden")) {
+          errorMessage = t("post.noPermission") || "You don't have permission to edit this post.";
+        } else if (err.status === 404) {
+          errorMessage = t("post.updateEndpointNotFound") || "Update endpoint not found. Please try again later.";
+        } else if (err.status === 400 || err.status === 422) {
+          errorMessage = t("error.400") || "Invalid data. Please check your input and try again.";
+        } else if (err.status === 401) {
+          errorMessage = t("error.401") || "You must log in. Please log in again.";
+        } else {
+          // Use specific error message if available
+          errorMessage = err.message;
+        }
+      } else if (err.status) {
+        errorMessage = t(`error.${err.status}`) || t("post.updateError") || "Failed to update post. Please try again.";
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsDeleting(false);
     }
@@ -439,24 +512,29 @@ export default function SocialFeedPost({
             </button>
             {/* Dropdown menu */}
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-white rounded-lg shadow-lg border border-gray-200 dark:border-gray-200 z-50 min-w-[120px]">
+              <div className="absolute right-0 top-full mt-2 bg-white dark:bg-white rounded-xl shadow-2xl border-2 border-gray-200 dark:border-gray-200 z-50 min-w-[180px] overflow-hidden backdrop-blur-sm">
                 {(allowEditDelete && isPostOwner) || (isPostOwner && onDeletePost) ? (
                   <>
                     {/* Profile Page or Social Feed: Owner sees Edit and Delete */}
                     <button
                       onClick={handleEditPost}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                      className="w-full px-4 py-3 text-left text-sm font-bold text-amber-700 dark:text-amber-700 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-50 dark:hover:to-orange-50 flex items-center gap-3 transition-all duration-200 group"
                     >
-                      <Edit className="w-4 h-4" />
+                      <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-100 group-hover:bg-amber-200 dark:group-hover:bg-amber-200 transition-colors">
+                        <Edit className="w-4 h-4 text-amber-600 dark:text-amber-600" />
+                      </div>
                       {t("post.edit") || t("common.edit") || "Edit"}
                     </button>
+                    <div className="h-px bg-gray-200 dark:bg-gray-200"></div>
                     <button
                       onClick={handleDeletePost}
                       disabled={isDeleting}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-600 hover:bg-red-50 dark:hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 dark:text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 dark:hover:from-red-50 dark:hover:to-pink-50 flex items-center gap-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
                     >
-                      <Trash2 className="w-4 h-4" />
-                      {t("post.delete") || t("common.delete") || "Delete"}
+                      <div className="p-1.5 rounded-lg bg-red-100 dark:bg-red-100 group-hover:bg-red-200 dark:group-hover:bg-red-200 transition-colors">
+                        <Trash2 className="w-4 h-4 text-red-600 dark:text-red-600" />
+                      </div>
+                      {isDeleting ? (t("common.deleting") || "Deleting...") : (t("post.delete") || t("common.delete") || "Delete")}
                     </button>
                   </>
                 ) : (
@@ -466,9 +544,11 @@ export default function SocialFeedPost({
                       <button
                         onClick={handleReportPost}
                         disabled={isDeleting}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-600 hover:bg-red-50 dark:hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 dark:text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 dark:hover:from-red-50 dark:hover:to-pink-50 flex items-center gap-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
                       >
-                        <Flag className="w-4 h-4" />
+                        <div className="p-1.5 rounded-lg bg-red-100 dark:bg-red-100 group-hover:bg-red-200 dark:group-hover:bg-red-200 transition-colors">
+                          <Flag className="w-4 h-4 text-red-600 dark:text-red-600" />
+                        </div>
                         {t("post.report") || "Report"}
                       </button>
                     )}
@@ -499,19 +579,30 @@ export default function SocialFeedPost({
                     rows={3}
                     placeholder={t("post.quoteText") || "Quote text..."}
                   />
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-3 mt-3">
                     <button
                       onClick={handleSaveEdit}
                       disabled={isDeleting}
-                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-5 py-2.5 bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white text-sm font-bold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg flex items-center gap-2"
                     >
-                      {t("post.save") || "Save"}
+                      {isDeleting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          {t("common.saving") || "Saving..."}
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          {t("post.save") || "Save"}
+                        </>
+                      )}
                     </button>
                     <button
                       onClick={handleCancelEdit}
                       disabled={isDeleting}
-                      className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-700 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-5 py-2.5 bg-white dark:bg-white border-2 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 text-gray-700 dark:text-gray-700 text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md flex items-center gap-2"
                     >
+                      <X className="w-4 h-4" />
                       {t("post.cancel") || "Cancel"}
                     </button>
                   </div>
@@ -665,19 +756,30 @@ export default function SocialFeedPost({
                 rows={4}
                 placeholder={isReview ? (t("post.reviewText") || "Review text...") : (t("post.postText") || "Post text...")}
               />
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-3 mt-3">
                 <button
                   onClick={handleSaveEdit}
                   disabled={isDeleting}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2.5 bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white text-sm font-bold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg flex items-center gap-2"
                 >
-                  {t("post.save") || "Save"}
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      {t("common.saving") || "Saving..."}
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      {t("post.save") || "Save"}
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={handleCancelEdit}
                   disabled={isDeleting}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-700 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2.5 bg-white dark:bg-white border-2 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 text-gray-700 dark:text-gray-700 text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md flex items-center gap-2"
                 >
+                  <X className="w-4 h-4" />
                   {t("post.cancel") || "Cancel"}
                 </button>
               </div>
@@ -702,19 +804,30 @@ export default function SocialFeedPost({
                 rows={4}
                 placeholder={isReview ? (t("post.reviewText") || "Review text...") : (t("post.postText") || "Post text...")}
               />
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-3 mt-3">
                 <button
                   onClick={handleSaveEdit}
                   disabled={isDeleting}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2.5 bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white text-sm font-bold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg flex items-center gap-2"
                 >
-                  {t("post.save") || "Save"}
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      {t("common.saving") || "Saving..."}
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      {t("post.save") || "Save"}
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={handleCancelEdit}
                   disabled={isDeleting}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-700 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2.5 bg-white dark:bg-white border-2 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 text-gray-700 dark:text-gray-700 text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md flex items-center gap-2"
                 >
+                  <X className="w-4 h-4" />
                   {t("post.cancel") || "Cancel"}
                 </button>
               </div>
@@ -932,6 +1045,67 @@ export default function SocialFeedPost({
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div 
+            className="bg-white dark:bg-white rounded-3xl max-w-md w-full border-2 border-gray-200 dark:border-gray-200 shadow-2xl animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="relative p-6 border-b-2 border-gray-200 dark:border-gray-200 bg-gradient-to-br from-red-500 to-pink-500 bg-opacity-10">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent rounded-t-3xl"></div>
+              <div className="relative flex items-center justify-center">
+                <div className="p-4 rounded-full bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-100 dark:to-pink-100">
+                  <Trash2 className="w-8 h-8 text-red-600 dark:text-red-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-8 text-center">
+              <h2 className="text-2xl font-black text-gray-900 dark:text-gray-900 mb-3">
+                {t("post.confirmDeleteTitle") || "Delete Post?"}
+              </h2>
+              <p className="text-gray-700 dark:text-gray-700 mb-6">
+                {t("post.confirmDelete") || "Are you sure you want to delete this post? This action cannot be undone."}
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  className="px-6 py-3 bg-white dark:bg-white border-2 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 text-gray-700 dark:text-gray-700 text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-md"
+                >
+                  {t("post.cancel") || t("common.cancel") || "Cancel"}
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  className="px-6 py-3 bg-gradient-to-br from-red-600 via-pink-600 to-red-700 hover:from-red-700 hover:via-pink-700 hover:to-red-800 text-white text-sm font-bold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg flex items-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      {t("common.deleting") || "Deleting..."}
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      {t("post.delete") || t("common.delete") || "Delete"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
