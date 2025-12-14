@@ -421,7 +421,7 @@ export default function SocialFeedPost({
             {post.username || t("post.user")}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-600 mt-0.5">
-            {formatTimestamp(post.timestamp || post.createdAt || post.CreatedAt)}
+            {formatTimestamp(post.timestamp || post.createdAt || post.CreatedAt, t)}
           </div>
         </div>
         {/* 3 dots menu - show if onDeletePost or onReportPost is available */}
@@ -847,7 +847,7 @@ export default function SocialFeedPost({
                   <p className="text-xs text-gray-700 dark:text-gray-700 mb-0.5 break-words">
                     {comment.text}
                   </p>
-                  <span className="text-xs text-gray-600 dark:text-gray-600">{formatTimestamp(comment.timestamp || comment.createdAt || comment.CreatedAt)}</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-600">{formatTimestamp(comment.timestamp || comment.createdAt || comment.CreatedAt, t)}</span>
                 </div>
                 {/* Show delete button if comment belongs to current user OR post owner is current user */}
                 {((comment.username === currentUsername) || isPostOwner) && onDeleteComment && (

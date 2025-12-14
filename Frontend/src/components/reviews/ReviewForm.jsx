@@ -68,15 +68,15 @@ export default function ReviewForm({
       return;
     }
     if (!formValues.text.trim()) {
-      setError("Review mətni boş ola bilməz");
+      setError(t("post.reviewText") + " " + (t("error.default") || "cannot be empty"));
       return;
     }
     try {
       await onSubmit(formValues);
-      setSuccess("Review qeyd olundu!");
+      setSuccess(t("common.success") || "Success!");
       setFormValues(DEFAULT_FORM);
     } catch (err) {
-      setError(err.message || "Review göndərmək alınmadı");
+      setError(err.message || t("error.reviewCreate") || "Failed to create review");
     }
   };
 
@@ -96,13 +96,13 @@ export default function ReviewForm({
     <form onSubmit={handleSubmit} className="bg-white dark:bg-white rounded-xl p-6 space-y-4 border-2 border-gray-200 dark:border-gray-200 shadow-lg">
       {showBookSelect && (
         <div>
-          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-900 mb-2">Kitab</label>
+          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-900 mb-2">{t("post.selectBook")?.replace(" *", "") || "Book"}</label>
           <select
             value={formValues.bookId}
             onChange={(e) => handleChange("bookId", e.target.value)}
             className="w-full bg-gray-50 dark:bg-gray-50 text-gray-900 dark:text-gray-900 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all"
           >
-            <option value="">Kitab seç</option>
+            <option value="">{t("post.chooseBook") || "Choose a book..."}</option>
             {bookSelectOptions.map((book) => (
               <option key={book.id} value={book.id}>
                 {book.title}
@@ -113,7 +113,7 @@ export default function ReviewForm({
       )}
 
       <div>
-        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-900 mb-2">Reytinq</label>
+        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-900 mb-2">{t("post.rating")?.replace(" *", "") || "Rating"}</label>
         <div className="flex gap-2">
           {RATING_OPTIONS.map((rating) => (
             <button
@@ -133,13 +133,13 @@ export default function ReviewForm({
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-900 mb-2">Review mətni</label>
+        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-900 mb-2">{t("post.reviewText")?.replace(" *", "") || "Review Text"}</label>
         <textarea
           rows={4}
           value={formValues.text}
           onChange={(e) => handleChange("text", e.target.value)}
           className="w-full bg-white text-gray-900 p-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:ring-4 focus:ring-amber-200 focus:border-amber-400 transition-all resize-none"
-          placeholder="Fikir və təəssüratlarını paylaş..."
+          placeholder={t("post.shareThoughts") || "Share thoughts and impressions..."}
           style={{ backgroundColor: 'white', color: '#111827' }}
         />
       </div>
@@ -160,7 +160,7 @@ export default function ReviewForm({
             onClick={onCancel}
             className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-100 hover:bg-gray-200 dark:hover:bg-gray-200 text-gray-900 dark:text-gray-900 font-semibold transition-all"
           >
-            Ləğv et
+            {t("common.cancel") || "Cancel"}
           </button>
         )}
         <button
@@ -168,7 +168,7 @@ export default function ReviewForm({
           disabled={submitting}
           className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? "Göndərilir..." : "Review yaz"}
+          {submitting ? (t("common.saving") || "Saving...") : (t("post.writeReview") || "Write Review")}
         </button>
       </div>
     </form>

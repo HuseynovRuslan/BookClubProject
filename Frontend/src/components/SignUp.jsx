@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Globe } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
+import { useLanguage } from "../context/LanguageContext.jsx";
 import { login as loginAPI } from "../api/auth";
 
 export default function SignUpPage({ onSwitchToSignIn }) {
   const navigate = useNavigate();
   const t = useTranslation();
+  const { language, changeLanguage, languages } = useLanguage();
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
@@ -18,6 +20,7 @@ export default function SignUpPage({ onSwitchToSignIn }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const { register } = useAuth();
 
   const handleSubmit = async (e) => {
@@ -28,37 +31,37 @@ export default function SignUpPage({ onSwitchToSignIn }) {
     const nameRegex = /^[A-Za-zƏəÖöÜüĞğÇçİı\s]+$/;
 
     if (!username.trim()) {
-      setError("Username is required");
+      setError(t("auth.usernameRequired"));
       return;
     }
 
     if (!name || !name.trim()) {
-      setError("Name is required");
+      setError(t("auth.nameRequired"));
       return;
     }
 
     if (!nameRegex.test(name.trim())) {
-      setError("Name can only contain letters");
+      setError(t("auth.nameLettersOnly"));
       return;
     }
 
     if (!surname || !surname.trim()) {
-      setError("Surname is required");
+      setError(t("auth.surnameRequired"));
       return;
     }
 
     if (!nameRegex.test(surname.trim())) {
-      setError("Surname can only contain letters");
+      setError(t("auth.surnameLettersOnly"));
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      setError(t("auth.passwordMinLength"));
       return;
     }
 
     if (!birthDate) {
-      setError("Birth date is required");
+      setError(t("auth.birthDateRequired"));
       return;
     }
 
@@ -75,7 +78,7 @@ export default function SignUpPage({ onSwitchToSignIn }) {
       });
 
       // Show success message
-      setSuccess("Qeydiyyatdan uğurla keçdiniz! Giriş edirsiniz...");
+      setSuccess(t("auth.registrationSuccess"));
       setIsSubmitting(false);
       
       // Store email and password for auto-login
@@ -152,7 +155,52 @@ export default function SignUpPage({ onSwitchToSignIn }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-50 dark:via-orange-50 dark:to-red-50 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-50 dark:via-orange-50 dark:to-red-50 flex items-center justify-center px-4 py-8 relative">
+      {/* Language Selector - Top Right */}
+      <div className="absolute top-4 right-4 z-50">
+        <div className="relative">
+          <button
+            onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 hover:border-amber-400 dark:hover:border-amber-400 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+          >
+            <Globe className="w-5 h-5 text-amber-600 dark:text-amber-600" />
+            <span className="font-bold text-gray-900 dark:text-gray-900 text-sm">
+              {languages[language]?.nativeName || "English"}
+            </span>
+          </button>
+          
+          {showLanguageMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowLanguageMenu(false)}
+              ></div>
+              <div className="absolute top-full right-0 mt-2 bg-white dark:bg-white rounded-xl border-2 border-gray-200 dark:border-gray-200 shadow-2xl z-50 min-w-[180px] overflow-hidden">
+                {Object.values(languages).map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      changeLanguage(lang.code);
+                      setShowLanguageMenu(false);
+                    }}
+                    className={`w-full px-4 py-3 text-left hover:bg-amber-50 dark:hover:bg-amber-50 transition-colors flex items-center justify-between ${
+                      language === lang.code
+                        ? "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 font-bold text-amber-700 dark:text-amber-700"
+                        : "text-gray-700 dark:text-gray-700"
+                    }`}
+                  >
+                    <span>{lang.nativeName}</span>
+                    {language === lang.code && (
+                      <span className="text-amber-600 dark:text-amber-600">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       <div className="w-full max-w-lg">
         {/* Header Section - Ultra Modern Design */}
         <div className="mb-6 text-center">
@@ -163,10 +211,10 @@ export default function SignUpPage({ onSwitchToSignIn }) {
             <span className="text-amber-600 text-2xl font-bold">BookVerse</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-tight mb-2 drop-shadow-lg">
-            Create Account
+            {t("auth.createAccount")}
           </h1>
           <p className="text-lg text-gray-700 dark:text-gray-700 font-semibold">
-            Join the BookVerse community today
+            {t("auth.joinCommunity")}
           </p>
         </div>
 
@@ -175,11 +223,11 @@ export default function SignUpPage({ onSwitchToSignIn }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username */}
             <div className="space-y-2">
-              <label htmlFor="username" className="block text-sm font-black text-gray-900 dark:text-gray-900">Username</label>
+              <label htmlFor="username" className="block text-sm font-black text-gray-900 dark:text-gray-900">{t("auth.username")}</label>
               <input
                 id="username"
                 type="text"
-                placeholder="Choose a username"
+                placeholder={t("auth.usernamePlaceholder")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -189,11 +237,11 @@ export default function SignUpPage({ onSwitchToSignIn }) {
 
             {/* Name */}
             <div className="space-y-2">
-              <label htmlFor="name" className="block text-sm font-black text-gray-900 dark:text-gray-900">Name</label>
+              <label htmlFor="name" className="block text-sm font-black text-gray-900 dark:text-gray-900">{t("auth.name")}</label>
               <input
                 id="name"
                 type="text"
-                placeholder="Enter your name"
+                placeholder={t("auth.namePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -203,11 +251,11 @@ export default function SignUpPage({ onSwitchToSignIn }) {
 
             {/* Surname */}
             <div className="space-y-2">
-              <label htmlFor="surname" className="block text-sm font-black text-gray-900 dark:text-gray-900">Surname</label>
+              <label htmlFor="surname" className="block text-sm font-black text-gray-900 dark:text-gray-900">{t("auth.surname")}</label>
               <input
                 id="surname"
                 type="text"
-                placeholder="Enter your surname"
+                placeholder={t("auth.surnamePlaceholder")}
                 value={surname}
                 onChange={(e) => setSurname(e.target.value)}
                 required
@@ -217,11 +265,11 @@ export default function SignUpPage({ onSwitchToSignIn }) {
 
             {/* Email */}
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-black text-gray-900 dark:text-gray-900">Email Address</label>
+              <label htmlFor="email" className="block text-sm font-black text-gray-900 dark:text-gray-900">{t("auth.emailAddress")}</label>
               <input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t("auth.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -231,12 +279,12 @@ export default function SignUpPage({ onSwitchToSignIn }) {
 
             {/* Password */}
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-black text-gray-900 dark:text-gray-900">Password</label>
+              <label htmlFor="password" className="block text-sm font-black text-gray-900 dark:text-gray-900">{t("auth.password")}</label>
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Create a password (min. 6 characters)"
+                  placeholder={t("auth.passwordPlaceholderRegister")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -246,7 +294,7 @@ export default function SignUpPage({ onSwitchToSignIn }) {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-700 transition-colors focus:outline-none"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -259,7 +307,7 @@ export default function SignUpPage({ onSwitchToSignIn }) {
 
             {/* Birth Date */}
             <div className="space-y-2">
-              <label htmlFor="birthDate" className="block text-sm font-black text-gray-900 dark:text-gray-900">Doğum Günü (Birth Date)</label>
+              <label htmlFor="birthDate" className="block text-sm font-black text-gray-900 dark:text-gray-900">{t("auth.birthDate")}</label>
               <input
                 id="birthDate"
                 type="date"
@@ -294,16 +342,16 @@ export default function SignUpPage({ onSwitchToSignIn }) {
               disabled={isSubmitting}
               className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-black text-base transition-all shadow-2xl hover:shadow-amber-500/50 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group"
             >
-              <span className="relative z-10">{isSubmitting ? "Creating account..." : "Create Account"}</span>
+              <span className="relative z-10">{isSubmitting ? t("auth.creatingAccount") : t("auth.createAccount")}</span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
             </button>
           </form>
 
           <div className="mt-6 text-center pt-5 border-t-2 border-gray-100 dark:border-gray-100">
             <p className="text-sm font-bold text-gray-700 dark:text-gray-700">
-              Already have an account?{" "}
+              {t("auth.alreadyHaveAccount")}{" "}
               <button onClick={onSwitchToSignIn} className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 font-black transition-all">
-                Sign in here
+                {t("auth.signInHere")}
               </button>
             </p>
           </div>

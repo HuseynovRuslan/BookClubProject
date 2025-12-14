@@ -15,7 +15,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !email.trim()) {
-      setError("Email ünvanı daxil edin");
+      setError(t("auth.emailRequired"));
       return;
     }
 
@@ -85,7 +85,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b-2 border-gray-200 dark:border-gray-200">
           <h2 className="text-2xl font-black text-gray-900 dark:text-gray-900">
-            Şifrəni Unutmusan?
+            {t("auth.forgotPasswordTitle")}
           </h2>
           <button
             onClick={handleClose}
@@ -103,17 +103,16 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                 <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-gray-900">
-                Email Göndərildi
+                {t("auth.emailSent")}
               </h3>
               <p className="text-gray-700 dark:text-gray-700">
-                Şifrə bərpa linki <strong>{email}</strong> ünvanına göndərildi. 
-                Zəhmət olmasa email qutunuzu yoxlayın.
+                {t("auth.emailSentDescription")} <strong>{email}</strong>. {t("auth.checkEmail")}
               </p>
               <button
                 onClick={handleClose}
                 className="w-full px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                Bağla
+                {t("common.close")}
               </button>
             </div>
           ) : (
@@ -123,19 +122,19 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                   <Mail className="w-8 h-8 text-amber-600 dark:text-amber-600" />
                 </div>
                 <p className="text-gray-700 dark:text-gray-700 text-lg">
-                  Şifrəni unutmusan? Email ünvanını daxil et və biz sənə şifrə bərpa linki göndərəcəyik.
+                  {t("auth.forgotPasswordDescription")}
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <label htmlFor="forgot-email" className="block text-sm font-black text-gray-900 dark:text-gray-900">
-                    Email Ünvanı
+                    {t("auth.emailAddress")}
                   </label>
                   <input
                     id="forgot-email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder={t("auth.emailPlaceholder")}
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -160,14 +159,14 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
                     onClick={handleClose}
                     className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md"
                   >
-                    Ləğv et
+                    {t("common.cancel") || "Cancel"}
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting || !email.trim()}
                     className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
-                    {isSubmitting ? "Göndərilir..." : "Göndər"}
+                    {isSubmitting ? t("auth.sending") : t("auth.send")}
                   </button>
                 </div>
               </form>
@@ -178,5 +177,6 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
     </div>
   );
 }
+
 
 

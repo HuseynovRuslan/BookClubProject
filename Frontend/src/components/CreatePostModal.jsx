@@ -585,7 +585,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Rating *
+                  {t("post.rating")}
                 </label>
                 <div className="flex gap-1.5">
                   {[1, 2, 3, 4, 5].map((value) => (
@@ -666,7 +666,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   onChange={(e) => setQuoteText(e.target.value)}
                   rows={4}
                   className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 resize-none focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
-                  placeholder="Enter the quote..."
+                  placeholder={t("post.enterQuote") || "Enter the quote..."}
                   required
             />
           </div>
@@ -680,9 +680,9 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   value={quoteTag}
                   onChange={(e) => setQuoteTag(e.target.value)}
                   className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
-                  placeholder="e.g., inspiration, motivation"
+                  placeholder={t("post.quoteTagPlaceholder") || "e.g., inspiration, motivation"}
                 />
-                <p className="text-xs text-gray-500 mt-1">Add a tag to categorize this quote</p>
+                <p className="text-xs text-gray-500 mt-1">{t("post.quoteTagHelp") || "Add a tag to categorize this quote"}</p>
               </div>
             </>
           )}
@@ -714,10 +714,10 @@ export default function CreatePostModal({ onClose, onCreate }) {
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-gray-900 mb-2">
-                  Book (Optional)
+                  {t("post.bookOptional") || "Book (Optional)"}
                 </label>
                 {loadingBooks ? (
-                  <div className="p-4 text-center text-gray-500">Loading books...</div>
+                  <div className="p-4 text-center text-gray-500">{t("post.loadingBooks") || "Loading books..."}</div>
                 ) : (
                   <select
                     value={selectedBook ? String(selectedBook.id || selectedBook.Id || "") : ""}
@@ -732,7 +732,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                     }}
                     className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
                   >
-                    <option value="">No book selected</option>
+                    <option value="">{t("post.noBookSelected") || "No book selected"}</option>
                     {books.map((book) => {
                       const bookId = String(book.id || book.Id || "");
                       return (
@@ -910,7 +910,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                   value={goalTarget}
                   onChange={(e) => setGoalTarget(e.target.value)}
                   className="w-full p-4 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-200 dark:focus:ring-amber-200 focus:border-amber-400 dark:focus:border-amber-400 transition-all shadow-sm"
-                  placeholder="e.g., Read 10 books this month"
+                  placeholder={t("post.goalPlaceholder") || "e.g., Read 10 books this month"}
                   required
             />
           </div>

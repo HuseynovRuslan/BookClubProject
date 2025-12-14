@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Globe } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
+import { useLanguage } from "../context/LanguageContext.jsx";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 
 export default function LoginPage({ onSwitchToSignUp }) {
   const navigate = useNavigate();
   const t = useTranslation();
+  const { language, changeLanguage, languages } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +17,7 @@ export default function LoginPage({ onSwitchToSignUp }) {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const { login, loginAsGuest } = useAuth();
 
   const handleGuestLogin = () => {
@@ -86,7 +89,52 @@ export default function LoginPage({ onSwitchToSignUp }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-50 dark:via-orange-50 dark:to-red-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-50 dark:via-orange-50 dark:to-red-50 flex items-center justify-center p-4 relative">
+      {/* Language Selector - Top Right */}
+      <div className="absolute top-4 right-4 z-50">
+        <div className="relative">
+          <button
+            onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-white border-2 border-gray-200 dark:border-gray-200 hover:border-amber-400 dark:hover:border-amber-400 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+          >
+            <Globe className="w-5 h-5 text-amber-600 dark:text-amber-600" />
+            <span className="font-bold text-gray-900 dark:text-gray-900 text-sm">
+              {languages[language]?.nativeName || "English"}
+            </span>
+          </button>
+          
+          {showLanguageMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowLanguageMenu(false)}
+              ></div>
+              <div className="absolute top-full right-0 mt-2 bg-white dark:bg-white rounded-xl border-2 border-gray-200 dark:border-gray-200 shadow-2xl z-50 min-w-[180px] overflow-hidden">
+                {Object.values(languages).map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      changeLanguage(lang.code);
+                      setShowLanguageMenu(false);
+                    }}
+                    className={`w-full px-4 py-3 text-left hover:bg-amber-50 dark:hover:bg-amber-50 transition-colors flex items-center justify-between ${
+                      language === lang.code
+                        ? "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 font-bold text-amber-700 dark:text-amber-700"
+                        : "text-gray-700 dark:text-gray-700"
+                    }`}
+                  >
+                    <span>{lang.nativeName}</span>
+                    {language === lang.code && (
+                      <span className="text-amber-600 dark:text-amber-600">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       <div className="w-full max-w-lg">
         {/* Header Section - Ultra Modern Design */}
         <div className="mb-6 text-center">
@@ -97,10 +145,10 @@ export default function LoginPage({ onSwitchToSignUp }) {
             <span className="text-amber-600 text-2xl font-bold">BookVerse</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-tight mb-2 drop-shadow-lg">
-            Welcome Back
+            {t("auth.welcomeBack")}
           </h1>
           <p className="text-lg text-gray-700 dark:text-gray-700 font-semibold">
-            Sign in to continue your reading journey
+            {t("auth.signInContinue")}
           </p>
         </div>
 
@@ -109,13 +157,13 @@ export default function LoginPage({ onSwitchToSignUp }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-black text-gray-900 dark:text-gray-900">
-                Email Address
+                {t("auth.emailAddress")}
               </label>
               <div className="relative">
                 <input
                   id="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -126,13 +174,13 @@ export default function LoginPage({ onSwitchToSignUp }) {
 
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-black text-gray-900 dark:text-gray-900">
-                Password
+                {t("auth.password")}
               </label>
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t("auth.passwordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -142,7 +190,7 @@ export default function LoginPage({ onSwitchToSignUp }) {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-700 transition-colors focus:outline-none"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -166,7 +214,7 @@ export default function LoginPage({ onSwitchToSignUp }) {
                   htmlFor="remember"
                   className="text-sm font-bold text-gray-700 dark:text-gray-700 cursor-pointer"
                 >
-                  Remember me
+                  {t("auth.rememberMe")}
                 </label>
               </div>
               <button
@@ -174,7 +222,7 @@ export default function LoginPage({ onSwitchToSignUp }) {
                 onClick={() => setShowForgotPassword(true)}
                 className="text-sm font-bold text-amber-600 dark:text-amber-600 hover:text-amber-700 dark:hover:text-amber-700 transition-colors"
               >
-                Şifrəni unutmusan?
+                {t("auth.forgotPassword")}
               </button>
             </div>
 
@@ -191,19 +239,19 @@ export default function LoginPage({ onSwitchToSignUp }) {
               disabled={isSubmitting}
               className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-black text-base transition-all shadow-2xl hover:shadow-amber-500/50 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden group"
             >
-              <span className="relative z-10">{isSubmitting ? "Signing in..." : "Sign In"}</span>
+              <span className="relative z-10">{isSubmitting ? t("auth.signingIn") : t("auth.signIn")}</span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
             </button>
           </form>
 
           <div className="mt-6 text-center pt-5 border-t-2 border-gray-100 dark:border-gray-100">
             <p className="text-sm font-bold text-gray-700 dark:text-gray-700 mb-4">
-              Don't have an account?{" "}
+              {t("auth.dontHaveAccount")}{" "}
               <button
                 onClick={onSwitchToSignUp}
                 className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 font-black transition-all"
               >
-                Sign Up
+                {t("auth.signUp")}
               </button>
             </p>
             <button
@@ -211,7 +259,7 @@ export default function LoginPage({ onSwitchToSignUp }) {
               onClick={handleGuestLogin}
               className="w-full px-6 py-3 rounded-2xl border-2 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 text-gray-700 dark:text-gray-700 font-bold text-base transition-all shadow-md hover:shadow-lg transform hover:scale-[1.02]"
             >
-              Continue as Guest
+              {t("auth.continueAsGuest")}
             </button>
           </div>
         </div>

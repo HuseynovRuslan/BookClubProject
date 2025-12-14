@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { X, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { useTranslation } from "../hooks/useTranslation";
 import { changePassword } from "../api/users";
 
 export default function ChangePasswordModal({ isOpen, onClose }) {
+  const t = useTranslation();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -238,7 +240,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                   disabled={isSubmitting}
                   className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-200 text-gray-700 dark:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-50 font-semibold transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Ləğv et
+                  {t("common.cancel") || "Cancel"}
                 </button>
                 <button
                   type="submit"
@@ -262,5 +264,6 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
     </div>
   );
 }
+
 
 
