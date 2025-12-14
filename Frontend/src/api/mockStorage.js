@@ -24,7 +24,6 @@ export function saveMockAccount(account) {
   try {
     localStorage.setItem(MOCK_USER_KEY, JSON.stringify(account));
   } catch {
-    // ignore
   }
 }
 
@@ -32,7 +31,6 @@ export function clearMockAccount() {
   try {
     localStorage.removeItem(MOCK_USER_KEY);
   } catch {
-    // ignore
   }
 }
 

@@ -14,7 +14,7 @@ export default function NotificationDropdown({ isOpen, onClose, onNotificationCh
   const [processing, setProcessing] = useState(new Set());
   const dropdownRef = useRef(null);
 
-  // Get dismissed notifications from localStorage
+
   const getDismissedNotifications = () => {
     if (!user?.id) return [];
     try {
@@ -26,7 +26,7 @@ export default function NotificationDropdown({ isOpen, onClose, onNotificationCh
     }
   };
 
-  // Save dismissed notification to localStorage
+
   const saveDismissedNotification = (followerId) => {
     if (!user?.id) return;
     try {
@@ -40,12 +40,12 @@ export default function NotificationDropdown({ isOpen, onClose, onNotificationCh
     }
   };
 
-  // Helper function to get follower ID
+
   const getFollowerId = (follower) => {
     return follower.id || follower.Id || follower.followerId || follower.FollowerId || follower.userId || follower.UserId;
   };
 
-  // Close dropdown when clicking outside
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -68,24 +68,24 @@ export default function NotificationDropdown({ isOpen, onClose, onNotificationCh
     
     setLoading(true);
     try {
-      // Load followers (people who followed you)
+
       const followersList = await getFollowers();
-      // Load following list to check if we already follow them back
+
       const following = await getFollowing();
       
-      // Get dismissed notifications
+
       const dismissed = getDismissedNotifications();
       
-      // Filter out dismissed followers and those we already follow back
+
       const followersArray = (followersList || []).filter((follower) => {
         const followerId = getFollowerId(follower);
         const followerIdStr = followerId?.toString();
         
-        // Don't show if dismissed
+
         if (dismissed.includes(followerIdStr)) {
           return false;
         }
-        // Don't show if we already follow them back
+
         const alreadyFollowing = (following || []).some((f) => {
           const id = f.id || f.Id || f.followingId || f.FollowingId || f.userId || f.UserId;
           return id?.toString() === followerIdStr;
@@ -96,7 +96,7 @@ export default function NotificationDropdown({ isOpen, onClose, onNotificationCh
       setFollowers(followersArray);
       setFollowingList(following || []);
       
-      // Notify parent about count change
+
       if (onNotificationChange) {
         onNotificationChange(followersArray.length);
       }
@@ -118,7 +118,7 @@ export default function NotificationDropdown({ isOpen, onClose, onNotificationCh
     setProcessing((prev) => new Set(prev).add(followerId));
     try {
       await followUser(followerId);
-      // Add to following list
+
       const follower = followers.find((f) => {
         const id = f.id || f.Id || f.followerId || f.FollowerId || f.userId || f.UserId;
         return id?.toString() === followerId?.toString();
@@ -126,13 +126,13 @@ export default function NotificationDropdown({ isOpen, onClose, onNotificationCh
       if (follower) {
         setFollowingList((prev) => [...prev, follower]);
       }
-      // Remove from notifications after following back (they're still your follower, just hide the notification)
+
       setFollowers((prev) => {
         const updated = prev.filter((f) => {
           const id = f.id || f.Id || f.followerId || f.FollowerId || f.userId || f.UserId;
           return id?.toString() !== followerId?.toString();
         });
-        // Notify parent about count change
+
         if (onNotificationChange) {
           onNotificationChange(updated.length);
         }
@@ -150,16 +150,16 @@ export default function NotificationDropdown({ isOpen, onClose, onNotificationCh
   };
 
   const handleDismiss = (followerId) => {
-    // Save to dismissed list in localStorage
+
     saveDismissedNotification(followerId?.toString());
     
-    // Remove from notifications (they're still your follower, we just hide the notification)
+
     setFollowers((prev) => {
       const updated = prev.filter((f) => {
         const id = f.id || f.Id || f.followerId || f.FollowerId || f.userId || f.UserId;
         return id?.toString() !== followerId?.toString();
       });
-      // Notify parent about count change
+
       if (onNotificationChange) {
         onNotificationChange(updated.length);
       }
@@ -225,7 +225,7 @@ export default function NotificationDropdown({ isOpen, onClose, onNotificationCh
               const followerAvatar = getFollowerAvatar(follower);
               const isProcessing = processing.has(followerId);
               
-              // Check if we already follow them back
+
               const alreadyFollowing = followingList.some((f) => {
                 const id = f.id || f.Id || f.followingId || f.FollowingId || f.userId || f.UserId;
                 return id?.toString() === followerId?.toString();

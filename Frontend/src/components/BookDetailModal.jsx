@@ -35,23 +35,23 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
       const [bookData, reviewsData] = await Promise.all([
         getBookById(bookId),
         getReviews({ page: 1, pageSize: 50, bookId: bookId }).catch(() => {
-          return null; // Return null on error
+          return null;
         })
       ]);
       
-      // Backend-dən gələn bookData ApiResponse formatında ola bilər
+
       const finalBookData = bookData?.data || bookData || book;
       setBookDetails(finalBookData);
       
-      // Filter reviews for this book (reviewsData is already filtered by bookId from API)
+
       let filteredReviews = [];
       if (reviewsData) {
         const reviewsResponse = reviewsData?.items || reviewsData?.Items || reviewsData || [];
         filteredReviews = Array.isArray(reviewsResponse) ? reviewsResponse : [];
         console.log("Filtered reviews before normalize:", filteredReviews);
         
-        // Normalize review fields from backend format (BookReviewDto)
-        // Backend returns: { id, bookId, bookTitle, userId, username, rating, reviewText, createdAt }
+
+
         filteredReviews = filteredReviews.map(review => {
           const normalized = {
             id: review.id || review.Id,
@@ -67,7 +67,7 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
         console.log("Final filtered reviews:", filteredReviews);
       }
       
-      // If no reviews found in API, use reviews from book object
+
       if (filteredReviews.length === 0 && finalBookData.reviews) {
         setReviews(finalBookData.reviews.map((r, idx) => ({
           id: r.id || idx,
@@ -87,7 +87,7 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
         status: err.status,
         data: err.data
       });
-      // Fallback to book prop if API fails
+
       setBookDetails(book);
       if (book.reviews) {
         setReviews(book.reviews.map((r, idx) => ({
@@ -107,13 +107,13 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
     loadBookDetails();
   }, [loadBookDetails]);
   
-  // Expose refresh function for parent components
+
   useEffect(() => {
-    // Listen for review creation events (if needed)
+
     const handleReviewCreated = () => {
       loadBookDetails();
     };
-    // You can use a custom event or context to trigger this
+
     window.addEventListener('reviewCreated', handleReviewCreated);
     return () => {
       window.removeEventListener('reviewCreated', handleReviewCreated);
@@ -125,7 +125,7 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
       setShowGuestModal(true);
       return;
     }
-    // Ensure we have bookDetails with an ID
+
     if (!bookDetails || (!bookDetails.id && !bookDetails._id)) {
       setStatus({
         type: "error",
@@ -135,7 +135,7 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
       return;
     }
     
-    // Open shelf selection modal
+
     setShowShelfModal(true);
   };
 
@@ -163,16 +163,16 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
       return;
     }
     
-    // Check if shelf is a default shelf
+
     const isDefaultShelf = targetShelf.isDefault === true || targetShelf.IsDefault === true || targetShelf.type === 'default';
     
     try {
       if (isDefaultShelf) {
-        // For default shelves, use updateBookStatus API
+
         const shelfName = targetShelf.name;
         await updateBookStatus(bookId, shelfName);
       } else {
-        // For custom shelves, use addBookToShelf API
+
         await addBookToShelf(shelfId, bookDetails);
       }
       
@@ -185,17 +185,17 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
         message: `"${bookDetails.title || 'Kitab'}" ${targetShelf.name} siyahısına əlavə olundu`,
       });
       
-      // Refresh shelves to update Reading List page
+
       if (window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('shelfUpdated'));
       }
     } catch (err) {
       console.error("Error adding book to shelf:", err);
       
-      // Handle specific error messages
+
       let errorMessage = "Shelf-ə əlavə etmək alınmadı";
       if (err.status === 409) {
-        // Check if it's the default shelf error
+
         if (err.detail && err.detail.includes("default shelf")) {
           errorMessage = "Default shelf-lərə kitab əlavə etmək mümkün deyil. Xahiş edirik öz shelf-inizi yaradın.";
         } else {
@@ -226,7 +226,7 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
           bookId: bookDetails.id || bookDetails._id,
         });
       }
-      // Reload reviews after submission
+
       await loadBookDetails();
       setStatus({
         type: "success",
@@ -270,7 +270,7 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
     bookDetails?.image
   );
   
-  // Handle Author object from backend (BookDetailDto has Author as AuthorDto object)
+
   let authorName = t("bookDetail.unknownAuthor");
   if (bookDetails?.author) {
     if (typeof bookDetails.author === 'string') {

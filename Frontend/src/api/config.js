@@ -29,34 +29,23 @@ export function clearTokens() {
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-/**
- * Decodes JWT token and extracts email claim
- * JWT format: header.payload.signature
- * We decode the payload (base64url) to get the claims
- */
 export function getEmailFromToken() {
   try {
     const token = getAccessToken();
     if (!token) return null;
     
-    // JWT has 3 parts separated by dots
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     
-    // Decode the payload (second part)
-    // Base64URL decoding (replace - with +, _ with /, add padding if needed)
-    let payload = parts[1];
+     let payload = parts[1];
     payload = payload.replace(/-/g, '+').replace(/_/g, '/');
     
-    // Add padding if needed
     while (payload.length % 4) {
       payload += '=';
     }
     
-    // Decode base64
     const decodedPayload = JSON.parse(atob(payload));
     
-    // Extract email from claims (JWT standard uses 'email' claim)
     return decodedPayload.email || decodedPayload.Email || null;
   } catch (error) {
     return null;
@@ -82,7 +71,6 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
   if (token) {
     finalHeaders.Authorization = `Bearer ${token}`;
   } else {
-    // Check if endpoint requires authentication
     const authRequiredPaths = [
       "/get-current-user-profile",
       "/create-book-review",
@@ -102,7 +90,6 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
     ? JSON.stringify(body)
     : undefined;
 
-  // Check if this is a user profile endpoint that might return 404
   const isUserProfileEndpoint = path.includes('/get-user-profile-by-id/') || path.includes('/get-user-profile-by-username/');
   
   let res;
@@ -113,8 +100,6 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
       body: requestBody,
     });
   } catch (networkError) {
-    // Network errors (connection refused, failed to fetch, etc.)
-    // Create a more user-friendly error message
     const isConnectionError = 
       networkError.message?.includes("Failed to fetch") ||
       networkError.message?.includes("ERR_CONNECTION_REFUSED") ||
@@ -129,13 +114,11 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
       throw friendlyError;
     }
     
-    // For other network errors, throw as is
     throw networkError;
   }
 
-  // Handle 204 No Content response
   if (res.status === 204) {
-    return null; // or return {} for consistency
+    return null; 
   }
 
   let data;
@@ -146,54 +129,37 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
     try {
       data = await res.json();
     } catch (e) {
-      // If JSON parsing fails, try text
       data = await res.text();
     }
   } else {
     const textData = await res.text();
-    // If empty response, return null
     data = textData || null;
   }
 
   if (!res.ok) {
-    // For 404 errors on user profile endpoints, return null silently instead of throwing
-    // This prevents console errors for expected "user not found" cases
     if (res.status === 404 && isUserProfileEndpoint) {
-      // Return null instead of throwing - this will be handled by getUserById/getUserByUsername
       return null;
     }
     
-    // Backend ApiResponse formatında error-lar: { isSuccess: false, message, errorMessages: [] }
-    // RFC 7807 Problem Details formatı: { type, title, status, detail }
     let errorMessage = "error.default";
     let translationKey = null;
     
-    // Önce backend-dən gələn mesajı yoxla
     if (data) {
-      // RFC 7807 Problem Details formatını yoxla (title, detail, status)
       if (typeof data === 'object' && data.title && data.detail) {
-        // Problem Details formatında - detail'i kullan (backend'den gelen mesaj, translation yok)
         errorMessage = data.detail;
       } else if (typeof data === 'object' && data.title && !data.detail) {
-        // Sadece title varsa, onu kullan
         errorMessage = data.title;
       } else if (typeof data === 'object' && data.errorMessages && Array.isArray(data.errorMessages) && data.errorMessages.length > 0) {
-        // ApiResponse formatında errorMessages array
         errorMessage = data.errorMessages[0];
       } else if (typeof data === 'object' && data.message) {
-        // Standart message field
         errorMessage = data.message;
       } else if (typeof data === 'string' && data.trim()) {
-        // String formatında error
         errorMessage = data;
       } else if (typeof data === 'object') {
-        // JSON formatında error object - stringify edip gösterme, bunun yerine status code'a göre mesaj göster
-        errorMessage = null; // Status code'a göre mesaj gösterilecek
+        errorMessage = null; 
       }
     }
     
-    // HTTP status kodlarına görə kullanıcı dostu mesajlar
-    // Eğer errorMessage hala default değerse veya null ise, status code'a göre mesaj göster
     if (!errorMessage || errorMessage === "error.default" || errorMessage === "Xəta baş verdi" || errorMessage === "Request failed with error" || 
         errorMessage === "Internal Server Error" || errorMessage === "An error occurred while processing your request.") {
       switch (res.status) {
@@ -242,18 +208,16 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
     const error = new Error(errorMessage);
     if (translationKey) {
       error.translationKey = translationKey;
-      error.status = res.status; // For generic error message
+      error.status = res.status; 
     }
     error.status = res.status;
     error.data = data;
     throw error;
   }
 
-  // For 201 Created responses, try to extract ID from Location header
   if (res.status === 201 && res.headers) {
     const location = res.headers.get("Location");
     if (location) {
-      // Extract ID from location header: /api/Books/get-book-by-id/{id}
       const match = location.match(/\/get-book-by-id\/([^\/\?]+)/);
       if (match && match[1]) {
         return { ...data, id: match[1], location: location };
@@ -264,10 +228,6 @@ async function rawRequest(path, { method = "GET", body, headers = {} } = {}) {
   return data;
 }
 
-/**
- * High-level request helper with basic 401 handling hook.
- * `onUnauthorized` can trigger token refresh or logout from outside.
- */
 export async function apiRequest(
   path,
   options = {},
@@ -287,56 +247,41 @@ export function delay(ms = 500) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Şəkil URL-ini formatlaşdırır
- * Əgər relative path-dirsə, backend URL-i əlavə edir
- * UUID-lər üçün Files API endpoint istifadə edir
- */
+
 export function getImageUrl(url) {
   if (!url || url.trim() === "" || url === "null" || url === "undefined") {
     return null; // Return null to trigger placeholder
   }
+    const urlStr = String(url).trim();
   
-  // Convert to string and trim
-  const urlStr = String(url).trim();
-  
-  // Əgər blob URL-dirsə, olduğu kimi qaytar (URL.createObjectURL() ilə yaradılmış)
   if (urlStr.startsWith("blob:")) {
     return urlStr;
   }
   
-  // Əgər tam URL-dirsə (http/https), olduğu kimi qaytar
   if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
     return urlStr;
   }
   
-  // Əgər relative path-dirsə (/images/...), backend URL-i əlavə et
   if (urlStr.startsWith("/")) {
     return `${API_BASE_URL}${urlStr}`;
   }
   
-  // UUID formatını yoxla (8-4-4-4-12 formatında) - təmiz UUID
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const isUuid = uuidRegex.test(urlStr);
   if (isUuid) {
-    // UUID-dirsə, profil şəkilləri üçün /images/profiles/ endpoint istifadə et
-    // Backend-də profil şəkilləri /images/profiles/ qovluğunda saxlanılır və UseStaticFiles ilə serve edilir
     return `${API_BASE_URL}/images/profiles/${urlStr}`;
   }
   
-  // UUID + extension formatını yoxla (məsələn: uuid.jpg, uuid.png)
   const uuidWithExtRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z]{3,4}$/i;
   if (uuidWithExtRegex.test(urlStr)) {
     return `${API_BASE_URL}/images/profiles/${urlStr}`;
   }
   
-  // userId_uuid.extension formatını yoxla (backend-də istifadə olunan format)
   const userIdUuidExtRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z]{3,4}$/i;
   if (userIdUuidExtRegex.test(urlStr)) {
     return `${API_BASE_URL}/images/profiles/${urlStr}`;
   }
   
-  // Əgər sadə path-dirsə (images/...), backend URL-i əlavə et
   return `${API_BASE_URL}/${urlStr}`;
 }
 

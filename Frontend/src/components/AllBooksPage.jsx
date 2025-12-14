@@ -43,7 +43,7 @@ export function AllBooksPage({ onBookClick }) {
         const currentPageEnd = pageToLoad * pageSize;
         setHasMore(totalCount > currentPageEnd);
       } catch (err) {
-        // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+
         const errorMsg = err.translationKey 
           ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
           : (err.message || t("error.booksLoad"));

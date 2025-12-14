@@ -15,13 +15,13 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const notificationRef = useRef(null);
-  const [avatarKey, setAvatarKey] = useState(0); // Force image reload when avatar changes
+  const [avatarKey, setAvatarKey] = useState(0);
   
-  // Update avatar key when user avatar changes to force image reload
+
   useEffect(() => {
     if (user?.avatarUrl) {
       setAvatarKey(prev => prev + 1);
-      setImageError(false); // Reset error state when avatar changes
+      setImageError(false);
     }
   }, [user?.avatarUrl]);
 
@@ -39,7 +39,7 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
     }
   };
 
-  // Handle scroll behavior - hide/show navigation on scroll
+
   useEffect(() => {
     let lastScrollY = window.scrollY;
     let ticking = false;
@@ -71,7 +71,7 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Load notification count (excluding dismissed and already followed back)
+
   useEffect(() => {
     if (!isGuest && user?.id) {
       const loadNotificationCount = async () => {
@@ -79,7 +79,7 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
           const followers = await getFollowers();
           const following = await getFollowing();
           
-          // Get dismissed notifications
+
           let dismissed = [];
           try {
             const dismissedStr = localStorage.getItem(`dismissed_notifications_${user.id}`);
@@ -88,14 +88,14 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
             dismissed = [];
           }
           
-          // Filter out dismissed and already followed back
+
           const activeNotifications = (followers || []).filter((follower) => {
             const followerId = follower.id || follower.Id || follower.followerId || follower.FollowerId || follower.userId || follower.UserId;
-            // Don't count if dismissed
+
             if (dismissed.includes(followerId?.toString())) {
               return false;
             }
-            // Don't count if we already follow them back
+
             const alreadyFollowing = (following || []).some((f) => {
               const id = f.id || f.Id || f.followingId || f.FollowingId || f.userId || f.UserId;
               return id?.toString() === followerId?.toString();
@@ -112,7 +112,7 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
       };
       
       loadNotificationCount();
-      // Refresh every 30 seconds
+
       const interval = setInterval(loadNotificationCount, 30000);
       return () => clearInterval(interval);
     } else {
@@ -192,12 +192,12 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
                   isOpen={showNotifications}
                   onClose={() => {
                     setShowNotifications(false);
-                    // Refresh count after closing (will use the same logic as useEffect)
+
                     if (user?.id) {
                       getFollowers()
                         .then(async (followers) => {
                           const following = await getFollowing();
-                          // Get dismissed notifications
+
                           let dismissed = [];
                           try {
                             const dismissedStr = localStorage.getItem(`dismissed_notifications_${user.id}`);
@@ -206,7 +206,7 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
                             dismissed = [];
                           }
                           
-                          // Filter out dismissed and already followed back
+
                           const activeNotifications = (followers || []).filter((follower) => {
                             const followerId = follower.id || follower.Id || follower.followerId || follower.FollowerId || follower.userId || follower.UserId;
                             if (dismissed.includes(followerId?.toString())) {
@@ -243,7 +243,7 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
                     src={(() => {
                       const imageUrl = getImageUrl(user.avatarUrl);
                       if (!imageUrl) return '';
-                      // Add cache-busting parameter to force refresh when avatar changes
+
                       const separator = imageUrl.includes('?') ? '&' : '?';
                       return `${imageUrl}${separator}v=${avatarKey}`;
                     })()}
@@ -252,7 +252,7 @@ export default function Navigation({ isGuest = false, onShowLogin, onShowSignUp,
                     onError={() => {
                       setImageError(true);
                     }}
-                    key={`avatar-${user.avatarUrl}-${avatarKey}`} // Force re-render when avatarUrl or key changes
+                    key={`avatar-${user.avatarUrl}-${avatarKey}`}
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 flex items-center justify-center text-sm font-black text-white border-2 border-gray-200 dark:border-gray-200 group-hover:border-amber-400 dark:group-hover:border-amber-400 transition-all duration-300 shadow-lg group-hover:shadow-xl group-hover:scale-110">

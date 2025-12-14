@@ -13,7 +13,7 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
   const isWriter = user?.role === "writer";
   const isAdmin = user?.role === "Admin" || user?.role === "admin";
   
-  // Check if a path is active
+
   const isActive = (path) => {
     if (path === "/") {
       return location.pathname === "/" || location.pathname === "/social";
@@ -21,12 +21,12 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
-  // Əsas menyu
+
   const mainMenuItems = [
     { label: t("nav.readingList"), to: "/reading-list", icon: BookOpen },
   ];
 
-  // Əlavə linklər (Create Post-dan sonra gələcək)
+
   const extraMenuItems = [
     { label: t("nav.search"), to: "/search", icon: Search },
     { label: t("nav.categories"), to: "/categories", icon: FolderOpen },
@@ -102,7 +102,7 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
 
             {/* Əlavə linklər */}
             {extraMenuItems.map(({ label, to, icon: Icon }) => {
-              // More sayfası guest mode'da kısıtlı
+
               const isRestricted = isGuest && to === "/more";
               return (
                 <li key={label}>
@@ -232,7 +232,7 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
 
             {/* Əlavə linklər */}
             {extraMenuItems.map(({ label, to, icon: Icon }) => {
-              // More sayfası guest mode'da kısıtlı
+
               const isRestricted = isGuest && to === "/more";
               return (
                 <li key={label}>

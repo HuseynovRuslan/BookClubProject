@@ -132,11 +132,9 @@ export async function addBookToShelf(shelfId, bookOrId) {
   if (!shelfId) {
     throw new Error("Shelf ID is required");
   }
-  // Backend returns 204 NoContent, so we return the shelfId and bookId for success
   await apiRequest(`/api/Shelves/add-book-to-shelf/${encodeURIComponent(shelfId)}/books/${encodeURIComponent(bookId)}`, {
     method: "POST",
   });
-  // Return a simple success object since backend returns 204
   return { id: shelfId, bookId };
 }
 
@@ -157,7 +155,6 @@ export async function removeBookFromShelf(shelfId, bookId) {
   if (!shelfId || !bookId) {
     throw new Error("Shelf ID and Book ID are required");
   }
-  // Backend returns 204 NoContent, so we return success indicator
   await apiRequest(
     `/api/Shelves/remove-book-from-shelf/${encodeURIComponent(shelfId)}/books/${encodeURIComponent(bookId)}`,
     {

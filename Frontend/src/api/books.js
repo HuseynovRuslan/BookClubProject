@@ -8,7 +8,6 @@ export async function getAllBooks({ page = 1, pageSize = 20, query } = {}) {
     const createdBooks = loadCreatedBooks();
     let allBooks = [...mockBooks, ...createdBooks];
     
-    // Filter by query if provided
     if (query && query.trim()) {
       const searchTerm = query.toLowerCase().trim();
       allBooks = allBooks.filter((book) => {
@@ -53,13 +52,9 @@ export async function getBookById(id) {
     }
     return book;
   }
-  // Backend ApiResponse<BookDetailDto> qaytarır: { isSuccess, message, data: { ... } }
   const response = await apiRequest(`/api/Books/get-book-by-id/${encodeURIComponent(id)}`, { method: "GET" });
-  // ApiResponse wrapper-dan data-nı çıxar
-  // Handle both ApiResponse format (data property) and direct object
   const bookData = response?.data || response?.Data || response;
   
-  // Normalize Author object to string if needed (for backward compatibility)
   if (bookData && bookData.author && typeof bookData.author === 'object') {
     bookData.authorName = bookData.author.name || bookData.author.Name || bookData.authorName;
   } else if (bookData && bookData.Author && typeof bookData.Author === 'object') {
@@ -74,7 +69,6 @@ export async function updateBookStatus(bookId, targetShelfName) {
     await delay(150);
     return { id: bookId, status: targetShelfName, updatedAt: new Date().toISOString() };
   }
-  // Backend expects targetShelfName as query parameter
   const params = new URLSearchParams();
   if (targetShelfName) {
     params.append("targetShelfName", targetShelfName);
@@ -108,8 +102,6 @@ export async function addGenresToBook(bookId, genreIds) {
     await delay(200);
     return { bookId, genreIds, message: "Genres added (mock)" };
   }
-  // Backend expects a JSON array directly (List<string> GenreIds)
-  // The endpoint signature is: AddGenresToBook(string bookId, [FromBody] List<string> GenreIds)
   const genreIdsArray = Array.isArray(genreIds) ? genreIds : [genreIds];
   return apiRequest(`/api/Books/${encodeURIComponent(bookId)}/genres`, {
     method: "POST",

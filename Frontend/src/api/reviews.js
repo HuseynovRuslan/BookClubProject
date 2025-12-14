@@ -24,10 +24,8 @@ export async function getReviews({ page = 1, pageSize = 20, bookId = null, userI
     return paginate(reviews, page, pageSize);
   }
 
-  // Backend maksimum pageSize: 50 qəbul edir
   const validPageSize = Math.min(Math.max(1, pageSize), 50);
 
-  // Build query parameters
   const params = new URLSearchParams();
   params.append("pageNumber", page.toString());
   params.append("pageSize", validPageSize.toString());
@@ -35,7 +33,6 @@ export async function getReviews({ page = 1, pageSize = 20, bookId = null, userI
   if (userId) params.append("userId", userId);
 
   const response = await apiRequest(`/api/Reviews/get-all-reviews?${params.toString()}`, { method: "GET" });
-  // Backend returns PagedResult<BookReviewDto>
   return response;
 }
 
@@ -67,7 +64,6 @@ export async function createReview(payload) {
     saveMockReviews(next);
     return ensureReviewHasBook(newReview);
   }
-  // Backend expects ReviewText field, not text
   const backendPayload = {
     BookId: payload.bookId || payload.BookId,
     Rating: payload.rating || payload.Rating,
@@ -79,7 +75,6 @@ export async function createReview(payload) {
       body: backendPayload,
     });
   } catch (err) {
-    // Handle 409 Conflict - user already reviewed this book
     if (err.status === 409) {
       const errorMessage = err.data?.errorMessages?.[0] || 
                           err.data?.message || 
@@ -111,7 +106,6 @@ export async function updateReview(id, payload) {
     const updated = next.find((review) => review.id === id);
     return ensureReviewHasBook(updated);
   }
-  // Backend expects ReviewText field, not text
   const backendPayload = {
     Rating: payload.rating || payload.Rating,
     ReviewText: payload.text || payload.ReviewText || payload.reviewText || "",

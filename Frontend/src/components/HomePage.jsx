@@ -19,7 +19,6 @@ function HomePage({ onBookClick }) {
         : response?.items || response?.data || [];
       setBooks(items);
     } catch (err) {
-      // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
       const errorMsg = err.translationKey 
         ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
         : (err.message || t("error.booksLoad"));
@@ -35,7 +34,6 @@ function HomePage({ onBookClick }) {
 
   return (
     <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8">
-      {/* Header Section with Gradient Background */}
       <div className="mb-10 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-900/20 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-2xl -z-10"></div>
         <div className="px-6 py-8">
@@ -89,7 +87,7 @@ function HomePage({ onBookClick }) {
               key={book.id || book._id}
               book={book}
               onClick={() => onBookClick(book)}
-              priority={index < 6} // Prioritize first 6 images
+              priority={index < 6} 
             />
           ))}
         </div>

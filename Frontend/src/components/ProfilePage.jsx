@@ -46,11 +46,11 @@ export default function ProfilePage({
   onShowLogin,
   onShowRegister,
 }) {
-  const { userId: urlParam } = useParams(); // Can be userId (UUID) or username
+  const { userId: urlParam } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const t = useTranslation();
-  // Get user data passed from navigation state (from followers/following list)
+
   const passedUserData = location.state?.userData;
   const { user: authUser, refreshProfile, isGuest } = useAuth();
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -59,7 +59,7 @@ export default function ProfilePage({
   const [profile, setProfile] = useState(baseUser);
   const [editedUser, setEditedUser] = useState(baseUser);
 
-  // Helper function to translate shelf names
+
   const translateShelfName = (shelfName) => {
     if (!shelfName) return shelfName;
     const shelfMap = {
@@ -72,7 +72,7 @@ export default function ProfilePage({
   };
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
-    // Default to posts for other users, shelves for own profile
+
     return urlParam ? "posts" : "shelves";
   });
   const [profileLoading, setProfileLoading] = useState(true);
@@ -82,10 +82,10 @@ export default function ProfilePage({
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [imageError, setImageError] = useState(false);
-  const [avatarKey, setAvatarKey] = useState(0); // Force image reload when avatar changes
+  const [avatarKey, setAvatarKey] = useState(0);
   const [viewedUserPosts, setViewedUserPosts] = useState([]);
-  // Helper functions for localStorage
-  // Separate storage keys for own profile vs other users' profiles
+
+
   const getStorageKey = (type, userId, isOwn = false) => {
     if (isOwn) {
       return `my_follow_${type}_${userId}`;
@@ -106,7 +106,7 @@ export default function ProfilePage({
       });
       localStorage.setItem(key, value);
     } catch (err) {
-      // Failed to save to localStorage
+
     }
   };
 
@@ -116,17 +116,17 @@ export default function ProfilePage({
       const stored = localStorage.getItem(key);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Cache is valid for 24 hours (86400000 ms) - extended cache time
+
         const cacheAge = Date.now() - parsed.timestamp;
         if (cacheAge < 86400000) {
           return parsed.data;
         } else {
-          // Cache expired, but don't delete it - keep it as fallback
+
           return parsed.data;
         }
       }
     } catch (err) {
-      // Failed to load from localStorage
+
     }
     return null;
   };
@@ -144,18 +144,18 @@ export default function ProfilePage({
   const avatarInputRef = useRef(null);
   const avatarMenuRef = useRef(null);
   
-  // Determine if viewing own profile or another user's profile
+
   const isOwnProfile = useMemo(() => {
-    if (!urlParam) return true; // No param in URL means own profile
+    if (!urlParam) return true;
     if (!authUser?.id) return false;
     
-    // Check if urlParam matches current user's ID
+
     const currentUserId = authUser.id || authUser.Id;
     if (urlParam === currentUserId?.toString() || urlParam === currentUserId) {
       return true;
     }
     
-    // Check if urlParam matches current user's username (email prefix)
+
     const currentUsername = authUser.email?.split("@")[0] || authUser.username;
     if (urlParam === currentUsername) {
       return true;
@@ -168,15 +168,15 @@ export default function ProfilePage({
     if (baseUser) {
       setProfile(baseUser);
       setEditedUser(baseUser);
-      // Reset preview and image error when profile changes
+
       setPreviewImage(null);
       setImageError(false);
     }
-    // Only update when user ID or email changes, not on every baseUser object change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+
   }, [baseUser?.id, baseUser?.email]);
 
-  // Close avatar menu when clicking outside
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target)) {
@@ -195,11 +195,11 @@ export default function ProfilePage({
     try {
       let freshProfile;
       if (urlParam && !isOwnProfile) {
-        // Load another user's profile
+
         try {
-          // FIRST: Check if we have user data passed from navigation state
-          // This avoids API calls when coming from followers/following list or search
-          // Check both id and username match (urlParam can be either)
+
+
+
           const passedDataMatches = passedUserData && (
             passedUserData.id === urlParam || 
             passedUserData.id?.toString() === urlParam ||
@@ -220,38 +220,38 @@ export default function ProfilePage({
               surname: passedUserData.surname || passedUserData.lastName || "",
             };
           } else {
-            // No passed data, try to fetch from API
-            // Check if urlParam looks like a UUID (userId) or username
+
+
             const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(urlParam);
             
             if (isUUID) {
-              // Try getUserById first (returns null on 404, doesn't throw)
+
               freshProfile = await getUserById(urlParam);
             }
             
-            // If getUserById failed or urlParam is not UUID, try getUserByUsername
-            // getUserByUsername now also returns null on 404, doesn't throw
+
+
             if (!freshProfile) {
               freshProfile = await getUserByUsername(urlParam);
             }
           }
           
-          // If still no profile, show error
+
           if (!freshProfile) {
             setProfileError(t("profile.userNotFound"));
             setProfileLoading(false);
             return null;
           }
           
-          // normalizeProfileDto already normalized the data, but ensure name is set correctly
-          // Use the name from normalizeProfileDto - it should already prioritize username
+
+
           
-          // If name is still "User" and we have username, use username
+
           if ((!freshProfile.name || freshProfile.name === "User") && freshProfile.username && freshProfile.username.trim() !== "") {
             freshProfile.name = freshProfile.username;
           }
           
-          // Ensure all fields are set
+
           freshProfile = {
             ...freshProfile,
             id: freshProfile.id || freshProfile.Id || urlParam,
@@ -265,29 +265,29 @@ export default function ProfilePage({
             username: freshProfile.username || freshProfile.Username || freshProfile.userName || freshProfile.UserName || freshProfile.email?.split("@")[0] || "",
           };
         } catch (err) {
-          // If there's an error loading the profile, set error message
+
           setProfileError(err.message || t("profile.loadFailed"));
           setProfileLoading(false);
           return null;
         }
       } else {
-        // Load current user's profile - use authUser if available, otherwise fetch
+
         if (authUser && !urlParam) {
-          // Use existing authUser to avoid unnecessary API call
+
           freshProfile = authUser;
         } else {
-          // Only call refreshProfile if we don't have authUser
+
           freshProfile = await refreshProfile();
         }
       }
       
       if (freshProfile) {
-        // firstName və surname-ə görə name-i düzəldirik
+
         const fullName = freshProfile.firstName 
           ? `${freshProfile.firstName}${freshProfile.surname ? ` ${freshProfile.surname}` : ""}`.trim()
           : freshProfile.name || "";
         
-        // Update profile with normalized name
+
         const normalizedProfile = {
           ...freshProfile,
           name: fullName || freshProfile.name || "",
@@ -299,14 +299,14 @@ export default function ProfilePage({
           email: freshProfile.email || "",
         });
         
-        // Load followers/following counts and follow status
+
         if (freshProfile && freshProfile.id) {
           try {
-            // For own profile, use getFollowers/getFollowing (current user endpoints)
-            // For other users, try getUserFollowers/getUserFollowing (may not exist in backend)
+
+
             if (isOwnProfile) {
-              // OWN PROFILE: Load from localStorage with 'my_' prefix
-              // FIRST: Load from localStorage immediately (for instant display)
+
+
               const cachedFollowers = loadFromStorage('followers_list', freshProfile.id, true);
               const cachedFollowing = loadFromStorage('following_list', freshProfile.id, true);
               
@@ -317,23 +317,23 @@ export default function ProfilePage({
                 setFollowingCount(cachedFollowing.length);
               }
               
-              // THEN: Try to refresh from backend and update localStorage
+
               const [followers, following] = await Promise.allSettled([
                 getFollowers(),
                 getFollowing(),
               ]);
               
-              // Update followers count and save to localStorage (with isOwn=true)
+
               if (followers.status === 'fulfilled' && Array.isArray(followers.value)) {
                 setFollowersCount(followers.value.length);
                 saveToStorage('followers_list', freshProfile.id, followers.value, true);
                 saveToStorage('followers_count', freshProfile.id, followers.value.length, true);
               } else {
-                // Keep cached value - don't reset to 0
+
                 if (cachedFollowers !== null && Array.isArray(cachedFollowers) && cachedFollowers.length > 0) {
-                  // Already set above, keep it
+
                 } else {
-                  // Only set to 0 if we truly have no data
+
                   const savedCount = loadFromStorage('followers_count', freshProfile.id, true);
                   if (savedCount !== null && typeof savedCount === 'number' && savedCount > 0) {
                     setFollowersCount(savedCount);
@@ -341,17 +341,17 @@ export default function ProfilePage({
                 }
               }
               
-              // Update following count and save to localStorage (with isOwn=true)
+
               if (following.status === 'fulfilled' && Array.isArray(following.value)) {
                 setFollowingCount(following.value.length);
                 saveToStorage('following_list', freshProfile.id, following.value, true);
                 saveToStorage('following_count', freshProfile.id, following.value.length, true);
               } else {
-                // Keep cached value - don't reset to 0
+
                 if (cachedFollowing !== null && Array.isArray(cachedFollowing) && cachedFollowing.length > 0) {
-                  // Already set above, keep it
+
                 } else {
-                  // Only set to 0 if we truly have no data
+
                   const savedCount = loadFromStorage('following_count', freshProfile.id, true);
                   if (savedCount !== null && typeof savedCount === 'number' && savedCount > 0) {
                     setFollowingCount(savedCount);
@@ -361,14 +361,14 @@ export default function ProfilePage({
               
               setIsFollowingUser(false);
             } else {
-              // OTHER USER PROFILE: Load from localStorage with 'user_' prefix
-              // Try to load from localStorage first
+
+
               const cachedFollowersCount = loadFromStorage('followers_count', freshProfile.id, false);
               const cachedFollowingCount = loadFromStorage('following_count', freshProfile.id, false);
               const cachedFollowers = loadFromStorage('followers_list', freshProfile.id, false);
               const cachedFollowing = loadFromStorage('following_list', freshProfile.id, false);
               
-              // Load followers count from localStorage first (for instant display)
+
               let initialFollowersCount = 0;
               if (cachedFollowersCount !== null && typeof cachedFollowersCount === 'number') {
                 initialFollowersCount = cachedFollowersCount;
@@ -377,7 +377,7 @@ export default function ProfilePage({
               }
               setFollowersCount(initialFollowersCount);
               
-              // Load following count from localStorage first (for instant display)
+
               let initialFollowingCount = 0;
               if (cachedFollowingCount !== null && typeof cachedFollowingCount === 'number') {
                 initialFollowingCount = cachedFollowingCount;
@@ -386,36 +386,36 @@ export default function ProfilePage({
               }
               setFollowingCount(initialFollowingCount);
               
-              // Try to refresh from backend (but don't reset to 0 if it fails)
+
               try {
                 const [followersResult, followingResult] = await Promise.allSettled([
                   getUserFollowers(freshProfile.id),
                   getUserFollowing(freshProfile.id),
                 ]);
                 
-                // Update followers count from backend if available
+
                 if (followersResult.status === 'fulfilled' && Array.isArray(followersResult.value) && followersResult.value.length > 0) {
                   setFollowersCount(followersResult.value.length);
                   saveToStorage('followers_count', freshProfile.id, followersResult.value.length, false);
                   saveToStorage('followers_list', freshProfile.id, followersResult.value, false);
                 } else if (initialFollowersCount > 0) {
-                  // Keep the cached value if backend doesn't return data
+
                 }
                 
-                // Update following count from backend if available
+
                 if (followingResult.status === 'fulfilled' && Array.isArray(followingResult.value) && followingResult.value.length > 0) {
                   setFollowingCount(followingResult.value.length);
                   saveToStorage('following_count', freshProfile.id, followingResult.value.length, false);
                   saveToStorage('following_list', freshProfile.id, followingResult.value, false);
                 } else if (initialFollowingCount > 0) {
-                  // Keep the cached value if backend doesn't return data
+
                 }
               } catch (err) {
-                // Keep cached values - don't reset to 0
+
               }
               
-              // Check if current user is following this user
-              // Always refresh from backend to ensure accurate status
+
+
               try {
                 const isFollowing = await checkIsFollowing(freshProfile.id);
                 setIsFollowingUser(isFollowing);
@@ -424,8 +424,8 @@ export default function ProfilePage({
               }
             }
           } catch (err) {
-            // Silently handle errors - try to keep cached values
-            // Try to load from localStorage as fallback
+
+
             if (isOwnProfile && freshProfile?.id) {
               const savedFollowersCount = loadFromStorage('followers_count', freshProfile.id, true);
               const savedFollowingCount = loadFromStorage('following_count', freshProfile.id, true);
@@ -449,18 +449,18 @@ export default function ProfilePage({
           }
         }
         
-        // Load user posts/reviews if viewing another user
+
         if (urlParam && !isOwnProfile && freshProfile.id) {
           try {
-            // For now, we'll use getMyReviews as a placeholder
-            // In a real implementation, you'd have getUserReviews(userId)
+
+
             const reviews = await getMyReviews();
-            // Load saved posts from localStorage to get comments
+
             const savedPosts = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
             
-            // Filter reviews by user if possible, or use all reviews as placeholder
+
             const mappedPosts = reviews.map(review => {
-              // Find saved post with comments
+
               const savedPost = savedPosts.find(sp => sp.id === review.id || sp.reviewId === review.id);
               
               return {
@@ -480,7 +480,7 @@ export default function ProfilePage({
             
             setViewedUserPosts(mappedPosts);
           } catch (err) {
-            // Silently handle errors - set empty posts
+
             setViewedUserPosts([]);
           }
         }
@@ -493,37 +493,37 @@ export default function ProfilePage({
     } finally {
       setProfileLoading(false);
     }
-    // Remove refreshProfile from dependencies to prevent infinite loop
-    // refreshProfile is only called conditionally when needed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+
+
   }, [urlParam, isOwnProfile, passedUserData, t, authUser?.id]);
 
   useEffect(() => {
     loadProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [urlParam]);
 
-  // Load comments from localStorage and merge with posts on mount and when posts change
+
   useEffect(() => {
     try {
       const savedPosts = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
       
       if (isOwnProfile) {
-        // For own profile, merge comments with userPosts
+
         if (userPosts.length > 0) {
           const postMap = new Map();
           
-          // First, add all userPosts
+
           userPosts.forEach(post => {
             postMap.set(post.id, { ...post });
           });
           
-          // Then, update with saved posts (which have comments and deletions)
+
           savedPosts.forEach(savedPost => {
-            // For reviews, check both id and reviewId to match posts
+
             let existingPost = postMap.get(savedPost.id);
             if (!existingPost && savedPost.type === 'review' && savedPost.reviewId) {
-              // Try to find by reviewId
+
               for (const [id, post] of postMap.entries()) {
                 if (post.type === 'review' && (post.id === savedPost.reviewId || post.reviewId === savedPost.reviewId)) {
                   existingPost = post;
@@ -533,12 +533,12 @@ export default function ProfilePage({
             }
             
             if (existingPost) {
-              // Merge: keep existing post but update with saved comments
-              // Merge comments from both sources, avoiding duplicates by ID
+
+
               const existingCommentIds = new Set((existingPost.comments || []).map(c => c.id).filter(Boolean));
               const savedComments = (savedPost.comments || []).filter(c => c.id && !existingCommentIds.has(c.id));
               
-              // Combine: existing comments first (from userPosts), then saved comments (no duplicates)
+
               const mergedComments = [...(existingPost.comments || []), ...savedComments];
               
               postMap.set(existingPost.id, {
@@ -551,7 +551,7 @@ export default function ProfilePage({
           });
           
           const mergedPosts = Array.from(postMap.values());
-          // Only update if there are actual changes (to avoid infinite loops)
+
           setViewedUserPosts((prev) => {
             const prevIds = new Set(prev.map(p => p.id));
             const newIds = new Set(mergedPosts.map(p => p.id));
@@ -561,13 +561,13 @@ export default function ProfilePage({
               return mergedPosts;
             }
             
-            // Check if comments changed (including deletions)
+
             const commentsChanged = mergedPosts.some(newPost => {
               const oldPost = prev.find(p => p.id === newPost.id);
               if (!oldPost) return true;
               const oldComments = oldPost.comments || [];
               const newComments = newPost.comments || [];
-              // Check if length changed or any comment IDs are different
+
               if (oldComments.length !== newComments.length) return true;
               const oldCommentIds = new Set(oldComments.map(c => c.id));
               const newCommentIds = new Set(newComments.map(c => c.id));
@@ -579,13 +579,13 @@ export default function ProfilePage({
           });
         }
       } else {
-        // For other users' profiles, merge comments with viewedUserPosts when they're loaded
-        // This is handled in loadProfile function
+
+
       }
     } catch (err) {
-      // Error loading comments from localStorage
+
     }
-  }, [userPosts, isOwnProfile]); // Run when userPosts changes or isOwnProfile changes
+  }, [userPosts, isOwnProfile]);
 
   const handleProfileSave = async () => {
     if (!editedUser?.name?.trim()) {
@@ -601,25 +601,25 @@ export default function ProfilePage({
       setProfileMessage(null);
       setProfileError(null);
       
-      // name-i firstName və surname-ə ayırırıq
+
       const nameParts = editedUser.name.trim().split(/\s+/);
       const firstName = nameParts[0] || "";
       const surname = nameParts.slice(1).join(" ") || "";
       
-      // Update profile - note: email and role are not part of updateProfile API
+
       const updatedProfile = await updateProfileApi({
         firstName: firstName,
         lastName: surname,
         bio: editedUser.bio || "",
       });
       
-      // Immediately update local state with the response
+
       if (updatedProfile) {
         const fullName = updatedProfile.firstName 
           ? `${updatedProfile.firstName}${updatedProfile.surname ? ` ${updatedProfile.surname}` : ""}`.trim()
           : updatedProfile.name || "";
         
-        // Update profile state with bio included
+
         const updatedProfileWithBio = {
           ...updatedProfile,
           name: fullName,
@@ -633,15 +633,15 @@ export default function ProfilePage({
         });
       }
       
-      // Close edit mode first to show updated data
+
       setIsEditing(false);
       
-      // Refresh from server to ensure we have the latest data and update the display
+
       await loadProfile();
       
       setProfileMessage(t("profile.updated"));
       
-      // Clear message after 3 seconds
+
       setTimeout(() => setProfileMessage(null), 3000);
     } catch (err) {
       setProfileMessage(err.message || t("profile.updateFailed"));
@@ -655,7 +655,7 @@ export default function ProfilePage({
       return;
     }
     
-    // Create preview immediately
+
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreviewImage(e.target.result);
@@ -668,16 +668,16 @@ export default function ProfilePage({
     setProfileError(null);
     
     try {
-      // Update profile picture and get updated profile
+
       const updatedProfile = await updateProfilePicture(file);
       
-      // Immediately update local state with new avatar URL
+
       if (updatedProfile) {
         const fullName = updatedProfile.firstName 
           ? `${updatedProfile.firstName}${updatedProfile.surname ? ` ${updatedProfile.surname}` : ""}`.trim()
           : updatedProfile.name || "";
         
-        // Update profile state immediately with new avatar
+
         setProfile({
           ...updatedProfile,
           name: fullName,
@@ -691,19 +691,19 @@ export default function ProfilePage({
           avatarUrl: updatedProfile.avatarUrl || updatedProfile.AvatarUrl || updatedProfile.profilePictureUrl || updatedProfile.ProfilePictureUrl,
         });
         
-        // Clear preview and show new image immediately
+
         setPreviewImage(null);
         setImageError(false);
-        // Force image reload by updating key
+
         setAvatarKey(prev => prev + 1);
       }
       
-      // Immediately update AuthContext to update Navigation and other components
-      // This ensures the avatar appears instantly without manual refresh
+
+
       if (refreshProfile) {
         try {
           const refreshedUser = await refreshProfile();
-          // Update local state with refreshed user data
+
           if (refreshedUser) {
             const fullName = refreshedUser.firstName 
               ? `${refreshedUser.firstName}${refreshedUser.surname ? ` ${refreshedUser.surname}` : ""}`.trim()
@@ -725,23 +725,23 @@ export default function ProfilePage({
             });
           }
         } catch (err) {
-          // Error refreshing profile
+
         }
       }
       
-      // Also refresh from server in background (non-blocking)
+
       loadProfile().catch(() => {});
       
       setProfileMessage(t("profile.avatarUpdated"));
       
-      // Clear message after 3 seconds
+
       setTimeout(() => setProfileMessage(null), 3000);
     } catch (err) {
-      setPreviewImage(null); // Clear preview on error
+      setPreviewImage(null);
       setProfileMessage(err.message || t("profile.avatarFailed"));
     } finally {
       setAvatarUploading(false);
-      // Reset file input to allow selecting the same file again
+
       if (avatarInputRef.current) {
         avatarInputRef.current.value = "";
       }
@@ -756,16 +756,16 @@ export default function ProfilePage({
     setProfileError(null);
     
     try {
-      // Delete profile picture and get updated profile
+
       const updatedProfile = await deleteProfilePicture();
       
-      // Immediately update local state with removed avatar
+
       if (updatedProfile) {
         const fullName = updatedProfile.firstName 
           ? `${updatedProfile.firstName}${updatedProfile.surname ? ` ${updatedProfile.surname}` : ""}`.trim()
           : updatedProfile.name || "";
         
-        // Update profile state immediately (avatar removed)
+
         setProfile({
           ...updatedProfile,
           name: fullName,
@@ -779,18 +779,18 @@ export default function ProfilePage({
           avatarUrl: null,
         });
         
-        // Reset image error state
+
         setImageError(false);
-        // Force image reload by updating key (to show placeholder)
+
         setAvatarKey(prev => prev + 1);
       }
       
-      // Immediately update AuthContext to update Navigation and other components
-      // This ensures the avatar removal appears instantly without manual refresh
+
+
       if (refreshProfile) {
         try {
           const refreshedUser = await refreshProfile();
-          // Update local state with refreshed user data
+
           if (refreshedUser) {
             const fullName = refreshedUser.firstName 
               ? `${refreshedUser.firstName}${refreshedUser.surname ? ` ${refreshedUser.surname}` : ""}`.trim()
@@ -799,27 +799,27 @@ export default function ProfilePage({
             setProfile({
               ...refreshedUser,
               name: fullName,
-              avatarUrl: null, // Explicitly set to null when deleted
+              avatarUrl: null,
             });
             
             setEditedUser({
               ...refreshedUser,
               name: fullName,
               email: refreshedUser.email || editedUser.email || "",
-              avatarUrl: null, // Explicitly set to null when deleted
+              avatarUrl: null,
             });
           }
         } catch (err) {
-          // Error refreshing profile
+
         }
       }
       
-      // Also refresh from server in background (non-blocking)
+
       loadProfile().catch(() => {});
       
       setProfileMessage(t("profile.avatarRemoved"));
       
-      // Clear message after 3 seconds
+
       setTimeout(() => setProfileMessage(null), 3000);
     } catch (err) {
       setProfileMessage(err.message || t("profile.avatarRemoveFailed"));
@@ -855,21 +855,21 @@ export default function ProfilePage({
     
     setFollowLoading(true);
     
-    // Optimistically update UI before API call
+
     const wasFollowing = isFollowingUser;
     const previousFollowersCount = followersCount;
     const previousFollowingCount = followingCount;
     
     try {
       if (isFollowingUser) {
-        // Optimistically update: decrease followers count for viewed user, decrease following count for own profile
+
         if (!isOwnProfile) {
           const newCount = Math.max(0, followersCount - 1);
           setFollowersCount(newCount);
-          // IMMEDIATELY save to localStorage for other user
+
           saveToStorage('followers_count', userId, newCount, false);
           
-          // Also update the followers list - remove current user from viewed user's followers
+
           const cachedFollowersList = loadFromStorage('followers_list', userId, false) || [];
           const currentUserId = authUser?.id || authUser?.Id;
           
@@ -878,13 +878,13 @@ export default function ProfilePage({
             return followerId !== currentUserId;
           });
           saveToStorage('followers_list', userId, updatedFollowersList, false);
-          // Also update state immediately so it's removed from modal
+
           setFollowersList(updatedFollowersList);
         }
         if (isOwnProfile) {
           const newCount = Math.max(0, followingCount - 1);
           setFollowingCount(newCount);
-          // IMMEDIATELY save to localStorage for own profile
+
           saveToStorage('following_count', authUser.id, newCount);
         }
         setIsFollowingUser(false);
@@ -892,25 +892,25 @@ export default function ProfilePage({
         await unfollowUser(userId);
         setProfileMessage(t("profile.unfollow"));
       } else {
-        // Optimistically update: increase followers count for viewed user, increase following count for own profile
+
         if (!isOwnProfile) {
           const newCount = followersCount + 1;
           setFollowersCount(newCount);
-          // IMMEDIATELY save to localStorage for other user (with isOwn=false)
+
           saveToStorage('followers_count', userId, newCount, false);
           
-          // Also update the followers list - add current user to viewed user's followers
+
           const cachedFollowersList = loadFromStorage('followers_list', userId, false) || [];
           const currentUserId = authUser?.id || authUser?.Id;
           
-          // Check if current user is already in the list
+
           const currentUserInList = cachedFollowersList.some(f => {
             const followerId = f.id || f.Id || f.userId || f.UserId || f.followerId || f.FollowerId;
             return followerId === currentUserId;
           });
           
           if (!currentUserInList && currentUserId) {
-            // Add current user to the followers list
+
             const currentUserData = {
               id: currentUserId,
               userId: currentUserId,
@@ -923,17 +923,17 @@ export default function ProfilePage({
             };
             const updatedFollowersList = [...cachedFollowersList, currentUserData];
             saveToStorage('followers_list', userId, updatedFollowersList, false);
-            // Also update state immediately so it shows in modal (if modal is open)
+
             setFollowersList(updatedFollowersList);
           } else if (currentUserInList) {
-            // If already in list, just ensure state is updated
+
             setFollowersList(cachedFollowersList);
           }
         }
         if (isOwnProfile) {
           const newCount = followingCount + 1;
           setFollowingCount(newCount);
-          // IMMEDIATELY save to localStorage for own profile (with isOwn=true)
+
           if (authUser?.id) {
             saveToStorage('following_count', authUser.id, newCount, true);
           }
@@ -944,30 +944,30 @@ export default function ProfilePage({
         setProfileMessage(t("profile.follow"));
       }
       
-      // Refresh followers/following counts and follow status from backend after follow/unfollow
-      // Always refresh from backend to ensure accurate data
+
+
       try {
         if (isOwnProfile && authUser?.id) {
-          // Refresh own profile counts
+
           const [followers, following] = await Promise.allSettled([
             getFollowers(),
             getFollowing(),
           ]);
           
-          // Update followers count and save to localStorage (with isOwn=true)
+
           if (followers.status === 'fulfilled' && Array.isArray(followers.value)) {
             setFollowersCount(followers.value.length);
             saveToStorage('followers_list', authUser.id, followers.value, true);
           } else {
-            // If refresh fails, keep optimistic update and save to localStorage
-            // Save current optimistic count to localStorage (with isOwn=true)
+
+
             const currentFollowers = followersCount;
             saveToStorage('followers_count', authUser.id, currentFollowers, true);
             
-            // Try to get cached list and update count (with isOwn=true)
+
             const cachedFollowers = loadFromStorage('followers_list', authUser.id, true);
             if (cachedFollowers !== null && Array.isArray(cachedFollowers)) {
-              // Update count based on optimistic change and save updated list
+
               const updatedList = wasFollowing 
                 ? cachedFollowers.filter(f => {
                     const fId = f.id || f.Id || f.userId || f.UserId;
@@ -979,20 +979,20 @@ export default function ProfilePage({
             }
           }
           
-          // Update following count and save to localStorage (with isOwn=true)
+
           if (following.status === 'fulfilled' && Array.isArray(following.value)) {
             setFollowingCount(following.value.length);
             saveToStorage('following_list', authUser.id, following.value, true);
           } else {
-            // If refresh fails, keep optimistic update and save to localStorage
-            // Save current optimistic count to localStorage (with isOwn=true)
+
+
             const currentFollowing = followingCount;
             saveToStorage('following_count', authUser.id, currentFollowing, true);
             
-            // Try to get cached list and update count (with isOwn=true)
+
             const cachedFollowing = loadFromStorage('following_list', authUser.id, true);
             if (cachedFollowing !== null && Array.isArray(cachedFollowing)) {
-              // Update count based on optimistic change and save updated list
+
               const updatedList = wasFollowing
                 ? cachedFollowing.filter(f => {
                     const fId = f.id || f.Id || f.userId || f.UserId || f.followingId || f.FollowingId;
@@ -1004,34 +1004,34 @@ export default function ProfilePage({
             }
           }
         } else {
-          // For other users, try to refresh followers list from backend
-          // Re-check follow status to ensure it's accurate
+
+
           try {
             const isFollowingStatus = await checkIsFollowing(userId);
             setIsFollowingUser(isFollowingStatus);
             
-            // Try to refresh followers list from backend
+
             const [followersResult] = await Promise.allSettled([
               getUserFollowers(userId),
             ]);
             
-            // Update followers count and list from backend if available
+
             if (followersResult.status === 'fulfilled' && Array.isArray(followersResult.value) && followersResult.value.length > 0) {
               setFollowersCount(followersResult.value.length);
               setFollowersList(followersResult.value);
-              // Save to localStorage for this user (with isOwn=false)
+
               saveToStorage('followers_count', userId, followersResult.value.length, false);
               saveToStorage('followers_list', userId, followersResult.value, false);
             } else {
-              // If backend doesn't return data, keep optimistic update and save to localStorage
+
               const currentFollowersCount = followersCount;
               saveToStorage('followers_count', userId, currentFollowersCount, false);
               
-              // Also update the followers list in localStorage after API call
+
               const cachedFollowersList = loadFromStorage('followers_list', userId, false) || [];
               const currentUserId = authUser?.id || authUser?.Id;
               
-              // If we just followed and user is not in list, add them
+
               if (!wasFollowing && !cachedFollowersList.some(f => {
                 const followerId = f.id || f.Id || f.userId || f.UserId || f.followerId || f.FollowerId;
                 return followerId === currentUserId;
@@ -1050,7 +1050,7 @@ export default function ProfilePage({
                 saveToStorage('followers_list', userId, updatedFollowersList, false);
                 setFollowersList(updatedFollowersList);
               } else if (wasFollowing && currentUserId) {
-                // If we just unfollowed, remove from list
+
                 const updatedFollowersList = cachedFollowersList.filter(f => {
                   const followerId = f.id || f.Id || f.userId || f.UserId || f.followerId || f.FollowerId;
                   return followerId !== currentUserId;
@@ -1060,12 +1060,12 @@ export default function ProfilePage({
               }
             }
             
-            // Also save following count for current user (if viewing own profile)
+
             if (isOwnProfile && authUser?.id) {
               saveToStorage('following_count', authUser.id, followingCount, true);
             }
           } catch (err) {
-            // Revert optimistic update if follow status check fails
+
             setIsFollowingUser(wasFollowing);
             if (!isOwnProfile) {
               setFollowersCount(previousFollowersCount);
@@ -1073,7 +1073,7 @@ export default function ProfilePage({
           }
         }
       } catch (err) {
-        // On error, revert optimistic updates
+
         setIsFollowingUser(wasFollowing);
         if (!isOwnProfile) {
           setFollowersCount(previousFollowersCount);
@@ -1083,14 +1083,14 @@ export default function ProfilePage({
         }
       }
       
-      // Trigger a custom event to notify other components (like SocialFeedPage) to refresh
+
       window.dispatchEvent(new CustomEvent('followStatusChanged', { 
         detail: { userId: userId, isFollowing: !wasFollowing } 
       }));
       
       setTimeout(() => setProfileMessage(null), 3000);
     } catch (err) {
-      // Revert optimistic updates on error
+
       setIsFollowingUser(wasFollowing);
       if (!isOwnProfile) {
         setFollowersCount(previousFollowersCount);
@@ -1099,7 +1099,7 @@ export default function ProfilePage({
         setFollowingCount(previousFollowingCount);
       }
       
-      // Extract error message from different possible formats
+
       let errorMessage = t("profile.error");
       
       if (err.data) {
@@ -1135,42 +1135,42 @@ export default function ProfilePage({
       const userId = profile?.id || profile?.Id || profile?.userId || profile?.UserId;
       
       if (isOwnProfile) {
-        // Load current user's followers from API
+
         const followers = await getFollowers();
         const followersList = Array.isArray(followers) ? followers : [];
         setFollowersList(followersList);
-        // Update followers count based on list length
+
         setFollowersCount(followersList.length);
-        // Save to localStorage
+
         if (userId) {
           saveToStorage('followers_list', userId, followersList, true);
           saveToStorage('followers_count', userId, followersList.length, true);
         }
       } else {
-        // Load viewed user's followers from localStorage (backend doesn't have this endpoint)
+
         if (userId) {
-          // FIRST: Load from localStorage immediately for instant display
+
           const cachedFollowers = loadFromStorage('followers_list', userId, false);
           if (cachedFollowers !== null && Array.isArray(cachedFollowers) && cachedFollowers.length > 0) {
             setFollowersList(cachedFollowers);
-            // Update followers count based on cached list length
+
             setFollowersCount(cachedFollowers.length);
             setLoadingFollowers(false);
-            return; // Return early since we have cached data
+            return;
           }
           
-          // If no cached data, try API (will likely return empty array)
+
           try {
             const followers = await getUserFollowers(userId);
             const followersList = Array.isArray(followers) ? followers : [];
             setFollowersList(followersList);
-            // Update followers count based on list length
+
             setFollowersCount(followersList.length);
-            // Save to localStorage even if empty
+
             saveToStorage('followers_list', userId, followersList, false);
             saveToStorage('followers_count', userId, followersList.length, false);
           } catch (err) {
-            // Fallback to empty array
+
             setFollowersList([]);
             setFollowersCount(0);
           }
@@ -1180,13 +1180,13 @@ export default function ProfilePage({
         }
       }
     } catch (err) {
-      // Try to use cached value on error
+
       const userId = profile?.id || profile?.Id || profile?.userId || profile?.UserId;
       if (userId) {
         const cachedFollowers = loadFromStorage('followers_list', userId, isOwnProfile);
         if (cachedFollowers !== null && Array.isArray(cachedFollowers)) {
           setFollowersList(cachedFollowers);
-          // Update followers count based on cached list length
+
           setFollowersCount(cachedFollowers.length);
         } else {
           setFollowersList([]);
@@ -1215,28 +1215,28 @@ export default function ProfilePage({
         return;
       }
       
-      // Try to load from localStorage first
+
       const cachedFollowing = loadFromStorage('following_list', userId, isOwnProfile);
       if (cachedFollowing !== null && Array.isArray(cachedFollowing)) {
         setFollowingList(cachedFollowing);
       }
       
       if (isOwnProfile) {
-        // Load current user's following
+
         const following = await getFollowing();
         const followingArray = Array.isArray(following) ? following : [];
         setFollowingList(followingArray);
         saveToStorage('following_list', userId, followingArray, true);
       } else {
-        // Load viewed user's following (not current user's)
-        // Backend doesn't have this endpoint, so use cached value if available
+
+
         if (cachedFollowing === null) {
           setFollowingList([]);
         }
       }
     } catch (err) {
       console.error("Error loading following:", err);
-      // Try to use cached value on error
+
       const userId = profile?.id || profile?.Id || profile?.userId || profile?.UserId;
       if (userId) {
         const cachedFollowing = loadFromStorage('following_list', userId, isOwnProfile);
@@ -1253,7 +1253,7 @@ export default function ProfilePage({
     }
   };
 
-  // Calculate posts count - only include posts created by the profile owner
+
   const getProfileOwnerId = () => {
     if (isOwnProfile) {
       return authUser?.id || authUser?.Id;
@@ -1263,34 +1263,34 @@ export default function ProfilePage({
 
   const profileOwnerId = getProfileOwnerId();
 
-  // Filter posts to only count posts from the profile owner
+
   const filterPostsByOwner = (posts) => {
     return posts.filter(post => {
-      // Get post author ID - try different possible field names
+
       const postUserId = post.userId || post.UserId || 
                         post.user?.id || post.User?.Id ||
                         post.user?.userId || post.User?.UserId;
       
-      // Get post author username/name for comparison
+
       const postUsername = post.username || post.user?.name || post.user?.username;
       const profileUsername = profile?.username || profile?.name;
       
-      // Match by ID if both are available
+
       if (profileOwnerId && postUserId) {
         return String(postUserId) === String(profileOwnerId);
       }
       
-      // Match by username if IDs don't match or aren't available
+
       if (profileUsername && postUsername) {
         return String(postUsername).toLowerCase() === String(profileUsername).toLowerCase();
       }
       
-      // For local posts, check if they belong to the current user (own profile only)
+
       if (post.isLocal && isOwnProfile) {
-        return true; // Local posts are always from current user
+        return true;
       }
       
-      // If we can't determine ownership, exclude the post to be safe
+
       return false;
     });
   };
@@ -1298,11 +1298,11 @@ export default function ProfilePage({
   const stats = {
     posts: isOwnProfile 
       ? filterPostsByOwner(userPosts).length
-      : filterPostsByOwner(viewedUserPosts).filter(post => post.type !== "post").length, // Başqa user üçün normal postları sayma
+      : filterPostsByOwner(viewedUserPosts).filter(post => post.type !== "post").length,
     shelves: shelves?.length || 0,
   };
 
-  // Tabs: only show posts for other users, show shelves for own profile
+
   const tabs = isOwnProfile ? [
     ...((profile || {}).role === "writer" ? [{ id: "my-books", label: `${t("profile.myBooks")} (${userBooks.length})` }] : []),
     { id: "shelves", label: `${t("profile.shelves")} (${stats.shelves})` },
@@ -1315,39 +1315,39 @@ export default function ProfilePage({
     return book.rating || book.averageRating || book.avgRating || 0;
   };
 
-  // Wrapper function to handle post deletion in profile
+
   const handleDeletePost = async (postId, post) => {
     if (!onDeletePost) {
       console.error("onDeletePost is not available");
       return;
     }
     
-    // Validate inputs
+
     if (!postId || !post) {
       console.error("Invalid postId or post:", { postId, post });
       throw new Error("Post ID or post object is missing");
     }
     
     try {
-      // Optimistic update: Remove post from UI immediately for better UX
+
       if (isOwnProfile) {
         setViewedUserPosts((prev) => prev.filter((p) => p.id !== postId));
       }
       
-      // Call the parent's delete function (this will update userPosts prop, localStorage, etc.)
+
       await onDeletePost(postId, post);
       
-      // Note: userPosts prop will be updated by App.jsx, and useEffect will sync viewedUserPosts
-      // The optimistic update above provides instant feedback
+
+
     } catch (err) {
       console.error("Error deleting post in profile:", err);
       
-      // Revert optimistic update on error
+
       if (isOwnProfile && userPosts) {
         const deletedPost = userPosts.find(p => p.id === postId);
         if (deletedPost) {
           setViewedUserPosts((prev) => {
-            // Check if post is already in the list
+
             if (!prev.find(p => p.id === postId)) {
               return [...prev, deletedPost];
             }
@@ -1360,22 +1360,22 @@ export default function ProfilePage({
     }
   };
 
-  // Handle comment addition - save to backend API and sync with localStorage and parent
+
   const handleAddComment = async (postId, commentText) => {
     if (!commentText || !commentText.trim()) {
       throw new Error("Comment text cannot be empty");
     }
 
-    // Find the post to determine its type
+
     const post = isOwnProfile 
       ? userPosts.find(p => p.id === postId)
       : viewedUserPosts.find(p => p.id === postId);
     
-    const postType = post?.type || 'review'; // Default to 'review' if type is unknown
+    const postType = post?.type || 'review';
 
-    // Create comment object for optimistic update
+
     const newComment = {
-      id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // More unique ID
+      id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       username: authUser?.name || authUser?.username || authUser?.firstName || "You",
       userAvatar: authUser?.avatarUrl || authUser?.AvatarUrl || authUser?.profilePictureUrl || authUser?.ProfilePictureUrl || null,
       text: commentText.trim(),
@@ -1383,11 +1383,11 @@ export default function ProfilePage({
       createdAt: new Date().toISOString(),
     };
 
-    // Optimistic update: Update UI immediately
-    // For own profile, DON'T update local state here - parent's onAddComment will handle it
-    // This prevents duplicate comments
+
+
+
     if (!isOwnProfile) {
-      // Other user's profile: Update local state immediately
+
       setViewedUserPosts((prev) => {
         return prev.map((p) =>
           p.id === postId
@@ -1399,11 +1399,11 @@ export default function ProfilePage({
 
     let savedComment = null;
     try {
-      // Try to save to backend API
+
       savedComment = await createComment(postId, commentText.trim(), postType);
       
       if (savedComment) {
-        // Backend API available - use the saved comment data
+
         const backendComment = {
           id: savedComment.id || savedComment.Id || newComment.id,
           username: savedComment.username || savedComment.Username || newComment.username,
@@ -1413,9 +1413,9 @@ export default function ProfilePage({
           createdAt: savedComment.createdAt || savedComment.CreatedAt || newComment.createdAt,
         };
         
-        // Replace temporary comment with backend comment
-        // For own profile, parent's onAddComment will handle the update
-        // Only update local state for other users' profiles
+
+
+
         if (!isOwnProfile) {
           setViewedUserPosts((prev) => {
             return prev.map((p) =>
@@ -1429,11 +1429,11 @@ export default function ProfilePage({
           });
         }
       }
-      // If savedComment is null, API not available, continue with localStorage fallback
+
     } catch (err) {
-      // If API call fails (except 404), revert optimistic update
+
       if (err.status !== 404) {
-        // Revert optimistic update (only for other users' profiles)
+
         if (!isOwnProfile) {
           setViewedUserPosts((prev) => {
             return prev.map((p) =>
@@ -1445,20 +1445,20 @@ export default function ProfilePage({
         }
         throw err;
       }
-      // 404 means API not available, continue with localStorage fallback
+
     }
 
-    // For own profile, call parent's handler FIRST - it will handle localStorage and state updates
-    // This prevents duplicate comments
+
+
     if (isOwnProfile && onAddComment) {
       try {
-        // Parent handler will update userPosts, localStorage, and everything else
+
         await onAddComment(postId, commentText);
-        // Don't update viewedUserPosts here - useEffect will sync it with userPosts
-        // This prevents duplicate comments
+
+
       } catch (err) {
-        // If parent handler fails, we still have the comment in backend
-        // But we need to update viewedUserPosts manually since parent handler didn't update userPosts
+
+
         const finalComment = savedComment ? {
           id: savedComment.id || savedComment.Id || newComment.id,
           username: savedComment.username || savedComment.Username || newComment.username,
@@ -1468,7 +1468,7 @@ export default function ProfilePage({
           createdAt: savedComment.createdAt || savedComment.CreatedAt || newComment.createdAt,
         } : newComment;
         
-        // Only update if comment doesn't already exist (prevent duplicate)
+
         setViewedUserPosts((prev) => {
           return prev.map((p) => {
             if (p.id === postId) {
@@ -1490,7 +1490,7 @@ export default function ProfilePage({
         });
       }
     } else {
-      // For other users' profiles, save to localStorage
+
       try {
         const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
         const postIndex = existing.findIndex((post) => 
@@ -1512,7 +1512,7 @@ export default function ProfilePage({
               (post.type === 'review' && (post.reviewId === postId || post.id === postId));
             
             if (isTargetPost) {
-              // Check for duplicate before adding
+
               const hasComment = (post.comments || []).some(c => 
                 c.id === commentToSave.id || 
                 (c.text === commentToSave.text && c.username === commentToSave.username)
@@ -1544,9 +1544,9 @@ export default function ProfilePage({
     return Promise.resolve();
   };
 
-  // Handle comment deletion - delete from backend API and sync with localStorage and parent
+
   const handleDeleteComment = async (postId, commentId) => {
-    // Find the comment to check permissions - check both userPosts and viewedUserPosts
+
     const post = isOwnProfile 
       ? (userPosts.find(p => p.id === postId) || viewedUserPosts.find(p => p.id === postId))
       : viewedUserPosts.find(p => p.id === postId);
@@ -1557,7 +1557,7 @@ export default function ProfilePage({
       return;
     }
 
-    // Check permissions: comment owner OR post owner can delete
+
     const commentOwnerUsername = comment.username;
     const postOwnerUsername = post?.username || post?.user?.name || post?.user?.username;
     const currentUsername = authUser?.name || authUser?.username || authUser?.firstName;
@@ -1571,15 +1571,15 @@ export default function ProfilePage({
       return;
     }
 
-    // Optimistic update: Remove comment from UI immediately
-    // Update viewedUserPosts immediately
+
+
     setViewedUserPosts((prev) => {
       const updated = prev.map((p) =>
         p.id === postId
           ? { ...p, comments: p.comments?.filter(c => c.id !== commentId) || [] }
           : p
       );
-      // Also save to localStorage immediately to ensure persistence
+
       try {
         const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
         const updatedStorage = existing.map((post) =>
@@ -1589,20 +1589,20 @@ export default function ProfilePage({
         );
         localStorage.setItem("bookverse_social_feed", JSON.stringify(updatedStorage));
       } catch (err) {
-        // Error saving comment deletion to localStorage
+
       }
       return updated;
     });
 
     try {
-      // Try to delete from backend API
+
       const result = await deleteComment(commentId);
       
-      // If API returns null, it means endpoint doesn't exist (404), continue with localStorage
+
     } catch (err) {
-      // If API call fails (except 404), revert optimistic update
+
       if (err.status !== 404) {
-        // Revert optimistic update by re-adding the comment
+
         setViewedUserPosts((prev) => {
           return prev.map((p) =>
             p.id === postId
@@ -1613,24 +1613,24 @@ export default function ProfilePage({
         alert("Comment silinərkən xəta baş verdi. Yenidən cəhd edin.");
         return;
       }
-      // 404 means API not available, continue with localStorage fallback
+
     }
     
-    // Call parent's handler if available (for App.jsx to sync with localPosts and userPosts)
-    // This is important for own profile to update userPosts prop
+
+
     if (onDeleteComment) {
       try {
-        // Check if parent handler is async
+
         const result = onDeleteComment(postId, commentId);
         if (result && typeof result.then === 'function') {
           await result;
         }
       } catch (err) {
-        // Don't throw - we've already updated local state
+
       }
     }
     
-    // Ensure localStorage is updated (already done in optimistic update, but double-check)
+
     try {
       const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
       const updated = existing.map((post) =>
@@ -1640,13 +1640,13 @@ export default function ProfilePage({
       );
       localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
     } catch (err) {
-      // Don't throw - localStorage is just a fallback
+
     }
   };
 
-  // Handle like change - sync with localStorage and parent
+
   const handleLikeChange = (postId, likes, isLiked) => {
-    // Update local state
+
     if (isOwnProfile) {
       setViewedUserPosts((prev) => {
         return prev.map((post) =>
@@ -1661,19 +1661,19 @@ export default function ProfilePage({
       });
     }
     
-    // Sync with localStorage (for both own profile and other users' profiles)
+
     try {
       const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
       const postIndex = existing.findIndex((post) => post.id === postId);
       
       if (postIndex !== -1) {
-        // Post exists, update it
+
         const updated = existing.map((post) =>
           post.id === postId ? { ...post, likes, isLiked } : post
         );
         localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
       } else {
-        // Post doesn't exist in localStorage, add it with the like status
+
         const postToAdd = viewedUserPosts.find((p) => p.id === postId);
         if (postToAdd) {
           const postWithLike = {
@@ -1686,19 +1686,19 @@ export default function ProfilePage({
         }
       }
     } catch (err) {
-      // Error saving like to localStorage
+
     }
     
-    // Call parent's onLikeChange if available (for App.jsx to sync with localPosts and userPosts)
+
     if (onLikeChange) {
       onLikeChange(postId, likes, isLiked);
     }
   };
 
-  // Handle post report - hide post from current user's view
+
   const handleReportPost = async (postId, post) => {
     try {
-      // Save reported post to localStorage (only hides from current user's feed)
+
       const REPORTED_POSTS_KEY = "bookverse_reported_posts";
       const reportedPosts = JSON.parse(localStorage.getItem(REPORTED_POSTS_KEY) || "[]");
       if (!reportedPosts.includes(postId)) {
@@ -1706,11 +1706,11 @@ export default function ProfilePage({
         localStorage.setItem(REPORTED_POSTS_KEY, JSON.stringify(reportedPosts));
       }
       
-      // Remove from viewedUserPosts so it disappears immediately
+
       setViewedUserPosts((prev) => prev.filter((p) => p.id !== postId));
       
-      // Note: We don't call onDeletePost because we don't want to delete from backend
-      // Post is only hidden from current user's view
+
+
     } catch (err) {
       throw err;
     }
@@ -1841,44 +1841,44 @@ export default function ProfilePage({
   const renderPostsTab = () => {
     let postsToShow = isOwnProfile ? userPosts : viewedUserPosts;
     
-    // Filter posts to only show posts from the profile owner
-    // Get the profile owner's ID
+
+
     const profileOwnerId = isOwnProfile 
       ? (authUser?.id || authUser?.Id) 
       : (profile?.id || profile?.Id || profile?.userId || profile?.UserId);
     
-    // Filter posts to only show posts from the profile owner
+
     postsToShow = postsToShow.filter(post => {
-      // Get post author ID - try different possible field names
+
       const postUserId = post.userId || post.UserId || 
                         post.user?.id || post.User?.Id ||
                         post.user?.userId || post.User?.UserId;
       
-      // Get post author username/name for comparison
+
       const postUsername = post.username || post.user?.name || post.user?.username;
       const profileUsername = profile?.username || profile?.name;
       
-      // Match by ID if both are available
+
       if (profileOwnerId && postUserId) {
         return String(postUserId) === String(profileOwnerId);
       }
       
-      // Match by username if IDs don't match or aren't available
+
       if (profileUsername && postUsername) {
         return String(postUsername).toLowerCase() === String(profileUsername).toLowerCase();
       }
       
-      // For local posts, check if they belong to the current user (own profile only)
+
       if (post.isLocal && isOwnProfile) {
-        return true; // Local posts are always from current user
+        return true;
       }
       
-      // If we can't determine ownership, exclude the post to be safe
+
       return false;
     });
     
-    // Başqa istifadəçinin profili açılanda normal postları (type: "post") gizlə
-    // Yalnız review-lər görsənsin
+
+
     if (!isOwnProfile) {
       postsToShow = postsToShow.filter(post => post.type !== "post");
     }
@@ -1913,11 +1913,11 @@ export default function ProfilePage({
               onDeleteComment={handleDeleteComment}
               onLikeChange={handleLikeChange}
               onPostUpdate={isOwnProfile ? async (postId, updatedPost) => {
-                // Update viewedUserPosts when post is edited
+
                 setViewedUserPosts((prev) => {
                   return prev.map((p) => (p.id === postId ? { ...p, ...updatedPost } : p));
                 });
-                // Also call parent's onPostUpdate if available
+
                 if (onPostUpdate) {
                   await onPostUpdate(postId, updatedPost);
                 }
@@ -2066,7 +2066,7 @@ export default function ProfilePage({
                   src={(() => {
                     const imageUrl = getImageUrl(profile.avatarUrl);
                     if (!imageUrl) return '';
-                    // Add cache-busting parameter to force refresh when avatar changes
+
                     const separator = imageUrl.includes('?') ? '&' : '?';
                     return `${imageUrl}${separator}v=${avatarKey}`;
                   })()}
@@ -2341,7 +2341,7 @@ export default function ProfilePage({
               ) : (
                 <div className="space-y-3">
                   {followersList.map((user, index) => {
-                    // Extract userId from various possible fields
+
                     const userId = user.id || user.Id || user.userId || user.UserId || user.followerId || user.FollowerId || user.followingUserId || user.FollowingUserId;
                     const username = user.username || user.Username || user.userName || user.UserName || user.email?.split("@")[0] || "";
                     const name = user.name || user.Name || username || "User";
@@ -2358,14 +2358,14 @@ export default function ProfilePage({
                           e.preventDefault();
                           e.stopPropagation();
                           setShowFollowersModal(false);
-                          // Navigate to the clicked user's profile (including current user's own profile)
+
                           if (userId) {
                             const isCurrentUser = userId === (authUser?.id || authUser?.Id);
                             if (isCurrentUser) {
-                              // If clicking on own profile, navigate to own profile
+
                               navigate(`/profile/${userId}`);
                             } else {
-                              // Pass user data as state to avoid API call
+
                               navigate(`/profile/${userId}`, { 
                                 state: { 
                                   userData: {
@@ -2441,14 +2441,14 @@ export default function ProfilePage({
               ) : (
                 <div className="space-y-3">
                   {followingList.map((user, index) => {
-                    // Extract userId from various possible fields
-                    // IMPORTANT: For following list, the user object should contain the followed user's ID
+
+
                     const userId = user.id || user.Id || user.userId || user.UserId || user.followingId || user.FollowingId || user.followedUserId || user.FollowedUserId || user.followingUserId || user.FollowingUserId;
                     const username = user.username || user.Username || user.userName || user.UserName || user.email?.split("@")[0] || "";
                     const name = user.name || user.Name || username || "User";
                     const avatarUrl = getImageUrl(user.avatarUrl || user.AvatarUrl || user.profilePictureUrl || user.ProfilePictureUrl);
                     
-                    // Skip if userId is not available
+
                     if (!userId) {
                       return null;
                     }
@@ -2460,14 +2460,14 @@ export default function ProfilePage({
                           e.preventDefault();
                           e.stopPropagation();
                           setShowFollowingModal(false);
-                          // Navigate to the clicked user's profile (including current user's own profile)
+
                           if (userId) {
                             const isCurrentUser = userId === (authUser?.id || authUser?.Id);
                             if (isCurrentUser) {
-                              // If clicking on own profile, navigate to own profile
+
                               navigate(`/profile/${userId}`);
                             } else {
-                              // Pass user data as state to avoid API call
+
                               navigate(`/profile/${userId}`, { 
                                 state: { 
                                   userData: {

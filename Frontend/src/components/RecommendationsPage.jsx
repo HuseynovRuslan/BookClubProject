@@ -12,7 +12,7 @@ export default function RecommendationsPage({ onBookClick }) {
   const [trendingBooks, setTrendingBooks] = useState([]);
   const scrollRefs = useRef({});
 
-  // Helper function to translate category names
+
   const translateCategoryName = (categoryName) => {
     if (!categoryName) return categoryName;
     const categoryMap = {
@@ -43,13 +43,13 @@ export default function RecommendationsPage({ onBookClick }) {
     return categoryMap[categoryName] || categoryName;
   };
 
-  // Function to get cached trending books or generate new ones
+
   const getCachedTrendingBooks = (allBooks) => {
     if (!allBooks || allBooks.length === 0) return [];
     
     const cacheKey = 'trendingBooks';
     const timestampKey = 'trendingBooksTimestamp';
-    const oneWeekInMs = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
+    const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
     
     try {
       const cached = localStorage.getItem(cacheKey);
@@ -60,33 +60,33 @@ export default function RecommendationsPage({ onBookClick }) {
         const now = Date.now();
         const timeDiff = now - cachedTime;
         
-        // If less than 1 week has passed, use cached books
+
         if (timeDiff < oneWeekInMs) {
           const cachedBooks = JSON.parse(cached);
-          // Verify that cached book IDs still exist in current books
+
           const validCachedBooks = cachedBooks.filter(cachedBook => 
             allBooks.some(book => (book.id || book._id) === (cachedBook.id || cachedBook._id))
           );
           
-          // If we have valid cached books, return them
+
           if (validCachedBooks.length > 0) {
             return validCachedBooks;
           }
         }
       }
       
-      // Generate new random trending books (10 books)
+
       const shuffled = [...allBooks].sort(() => 0.5 - Math.random());
       const newTrendingBooks = shuffled.slice(0, 10);
       
-      // Cache the new trending books
+
       localStorage.setItem(cacheKey, JSON.stringify(newTrendingBooks));
       localStorage.setItem(timestampKey, Date.now().toString());
       
       return newTrendingBooks;
     } catch (error) {
       console.error('Error managing trending books cache:', error);
-      // Fallback: generate new random books
+
       const shuffled = [...allBooks].sort(() => 0.5 - Math.random());
       return shuffled.slice(0, 10);
     }
@@ -100,12 +100,12 @@ export default function RecommendationsPage({ onBookClick }) {
     setLoading(true);
     setError(null);
     try {
-      // Fetch books in batches (max 50 per request)
+
       const allItems = [];
       let page = 1;
       let hasMore = true;
       
-      while (hasMore && page <= 10) { // Limit to 10 pages (500 books max)
+      while (hasMore && page <= 10) {
         const response = await getAllBooks({ page, pageSize: 50 });
         const items = Array.isArray(response)
           ? response
@@ -113,7 +113,7 @@ export default function RecommendationsPage({ onBookClick }) {
         
         if (Array.isArray(items) && items.length > 0) {
           allItems.push(...items);
-          // If we got less than 50 items, we've reached the end
+
           if (items.length < 50) {
             hasMore = false;
           }
@@ -125,12 +125,12 @@ export default function RecommendationsPage({ onBookClick }) {
       
       setBooks(allItems);
       
-      // Get or generate trending books (cached for 1 week)
+
       const cachedTrending = getCachedTrendingBooks(allItems);
       setTrendingBooks(cachedTrending);
       
       
-      // Extract unique genres
+
       const uniqueGenres = new Set();
       allItems.forEach(book => {
         if (book.genres && Array.isArray(book.genres)) {
@@ -146,7 +146,7 @@ export default function RecommendationsPage({ onBookClick }) {
       
       setGenres(Array.from(uniqueGenres).sort());
     } catch (err) {
-      // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+
       const errorMsg = err.translationKey 
         ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
         : (err.message || t("error.booksLoad"));

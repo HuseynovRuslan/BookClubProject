@@ -17,14 +17,10 @@ function accountToProfile(account) {
   };
 }
 
-/**
- * Normalizes backend UserProfileDto to frontend profile format
- * Handles ApiResponse wrapper and field name variations (camelCase/PascalCase)
- */
+
 function normalizeProfileDto(dto) {
   if (!dto) return null;
   
-  // Handle ApiResponse wrapper - extract Data/data if present
   let profileData = dto;
   if (dto.Data !== undefined) {
     profileData = dto.Data;
@@ -34,12 +30,10 @@ function normalizeProfileDto(dto) {
   
   console.log("normalizeProfileDto - raw profileData:", profileData);
   
-  // Build full name from FirstName and LastName (handle both camelCase and PascalCase)
   const firstName = profileData.firstName || profileData.FirstName || "";
   const lastName = profileData.lastName || profileData.LastName || profileData.surname || profileData.Surname || "";
   const fullName = `${firstName}${lastName ? ` ${lastName}` : ""}`.trim();
   
-  // Extract username - try all possible field names
   const username = profileData.username || 
                    profileData.Username || 
                    profileData.userName || 
@@ -49,30 +43,23 @@ function normalizeProfileDto(dto) {
                    (profileData.email ? profileData.email.split("@")[0] : "") ||
                    "";
   
-  // Get name field - prioritize username, then fullName, then profileData.name, then email prefix
   let name = "";
   
-  // First priority: username (e.g., "9alii")
   if (username && username.trim() !== "" && username !== "User") {
     name = username;
   }
-  // Second priority: fullName (firstName + lastName)
   else if (fullName && fullName.trim() !== "") {
     name = fullName;
   }
-  // Third priority: existing name (if not "User")
   else if (profileData.name && profileData.name.trim() !== "" && profileData.name !== "User") {
     name = profileData.name;
   }
-  // Fourth priority: Name (PascalCase)
   else if (profileData.Name && profileData.Name.trim() !== "" && profileData.Name !== "User") {
     name = profileData.Name;
   }
-  // Fifth priority: email prefix
   else if (profileData.email && profileData.email.trim() !== "") {
     name = profileData.email.split("@")[0];
   }
-  // Final fallback
   else {
     name = "User";
   }
@@ -100,7 +87,6 @@ export async function getCurrentUserProfile() {
   const response = await apiRequest("/api/Users/get-current-user-profile", { method: "GET" });
   const profile = normalizeProfileDto(response);
   
-  // If email is not in profile response, try to get it from JWT token
   if (profile && !profile.email) {
     const emailFromToken = getEmailFromToken();
     if (emailFromToken) {
@@ -126,8 +112,6 @@ export async function updateProfile(payload) {
     return accountToProfile(updated);
   }
   
-  // Backend expects FirstName and LastName (not name and surname)
-  // Note: email and role are not part of UpdateUserProfileCommand
   const backendPayload = {
     FirstName: payload.firstName || payload.name?.split(/\s+/)[0] || "",
     LastName: payload.lastName || payload.surname || payload.name?.split(/\s+/).slice(1).join(" ") || "",
@@ -139,7 +123,6 @@ export async function updateProfile(payload) {
     body: backendPayload,
   });
   
-  // Return updated profile by fetching it again
   return getCurrentUserProfile();
 }
 
@@ -172,7 +155,6 @@ export async function updateProfilePicture(file) {
     body: formData,
   });
   
-  // Return updated profile by fetching it again
   return getCurrentUserProfile();
 }
 
@@ -189,7 +171,6 @@ export async function deleteProfilePicture() {
     method: "DELETE",
   });
   
-  // Return updated profile by fetching it again
   return getCurrentUserProfile();
 }
 
@@ -207,19 +188,14 @@ export async function getUserByUsername(username) {
     const response = await apiRequest(`/api/Users/get-user-profile-by-username/${encodeURIComponent(username)}`, {
       method: "GET",
     });
-    // rawRequest now returns null for 404 on user profile endpoints
     if (response === null) {
       return null;
     }
     return normalizeProfileDto(response);
   } catch (err) {
-    // If endpoint doesn't exist (404), return null instead of throwing
-    // Don't log 404 errors - they're expected when user doesn't exist
     if (err.status === 404) {
-      // Endpoint doesn't exist or user not found - return null silently
       return null;
     }
-    // For other errors, log and throw
     console.error("Error getting user by username:", err);
     throw err;
   }
@@ -235,31 +211,24 @@ export async function getUserById(userId) {
     throw new Error("Mock user not found");
   }
   
-  // Try different possible endpoint names
   try {
     const response = await apiRequest(`/api/Users/get-user-profile-by-id/${encodeURIComponent(userId)}`, {
       method: "GET",
     });
-    // rawRequest now returns null for 404 on user profile endpoints
     if (response === null) {
       return null;
     }
     return normalizeProfileDto(response);
   } catch (err) {
-    // If endpoint doesn't exist (404), return null instead of throwing
-    // Don't log 404 errors - they're expected when user doesn't exist
     if (err.status === 404) {
-      // Endpoint doesn't exist or user not found - return null silently
       return null;
     }
-    // For other errors, log and throw
     console.error("Error getting user by ID:", err);
     throw err;
   }
 }
 
 export async function searchUsers(query) {
-  // Query boş olsa, heç bir nəticə qaytarmayın
   if (!query || !query.trim()) {
     return [];
   }
@@ -277,18 +246,14 @@ export async function searchUsers(query) {
     return matches;
   }
   
-  // Request backend to filter out admin users
-  // Note: Backend should ideally filter admin users, but we also filter on frontend for safety
   const response = await apiRequest(`/api/Users/get-all-users?searchTerm=${encodeURIComponent(query.trim())}`, {
     method: "GET",
   });
   
   console.log("searchUsers API response:", response);
   
-  // Handle different response formats
   let users = [];
   if (response) {
-    // Check if it's a PagedResult format
     if (response.items && Array.isArray(response.items)) {
       users = response.items;
     } else if (response.Items && Array.isArray(response.Items)) {
@@ -306,7 +271,6 @@ export async function searchUsers(query) {
   
   const searchLower = query.trim().toLowerCase();
   
-  // Normalize each user to consistent format and filter by username/name
   return users
     .map(user => {
       const firstName = user.firstName || user.FirstName || "";
@@ -330,14 +294,11 @@ export async function searchUsers(query) {
       };
     })
     .filter(user => {
-      // Filter out admin users (both frontend and backend should filter)
-      // Check multiple possible role formats
       const role = user.role || user.Role || "";
       const roleLower = String(role).toLowerCase().trim();
       const isAdmin = roleLower === "admin" || role === "Admin" || role === "ADMIN";
       if (isAdmin) return false;
       
-      // Filter: yalnız username və ya name-ə görə match edən userləri göstər
       const usernameMatch = user.username.toLowerCase().includes(searchLower);
       const nameMatch = user.name.toLowerCase().includes(searchLower);
       return usernameMatch || nameMatch;
@@ -349,13 +310,10 @@ export async function getMyShelves() {
     await delay(200);
     return loadMockShelves();
   }
-  // Backend PagedResult<ShelfDto> qaytarır: { items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }
   const response = await apiRequest("/api/Users/get-current-user-shelves", { method: "GET" });
 
-  // Handle PagedResult format
   let shelves = [];
   if (response) {
-    // Check if it's a PagedResult object
     if (response.items && Array.isArray(response.items)) {
       shelves = response.items;
     } else if (response.Items && Array.isArray(response.Items)) {
@@ -365,9 +323,7 @@ export async function getMyShelves() {
     }
   }
 
-  // Normalize field names (handle both camelCase and PascalCase from backend)
   return shelves.map(shelf => {
-    // Determine isDefault from various possible field names
     const isDefault = shelf.isDefault !== undefined ? shelf.isDefault :
       (shelf.IsDefault !== undefined ? shelf.IsDefault : false);
 
@@ -375,7 +331,6 @@ export async function getMyShelves() {
       id: shelf.id || shelf.Id,
       name: shelf.name || shelf.Name,
       isDefault: isDefault,
-      // Set type based on isDefault or existing type field
       type: isDefault ? 'default' : (shelf.type || shelf.Type || 'custom'),
       bookCount: shelf.bookCount || shelf.BookCount || 0,
       books: (shelf.books || shelf.Books || []).map(book => ({
@@ -398,7 +353,6 @@ export async function getMyReviews() {
   }
   const response = await apiRequest("/api/Users/get-current-user-reviews", { method: "GET" });
   
-  // Handle PagedResult format
   let reviews = [];
   if (response) {
     if (response.items && Array.isArray(response.items)) {
@@ -410,7 +364,6 @@ export async function getMyReviews() {
     }
   }
   
-  // Normalize review format
   return reviews.map(review => ({
     id: review.id || review.Id,
     bookId: review.bookId || review.BookId,
@@ -436,7 +389,6 @@ export async function getMySocials() {
 
 async function mockChangePassword(payload) {
   await delay(500);
-  // Simulate validation
   if (!payload.currentPassword || !payload.newPassword || !payload.confirmPassword) {
     throw new Error("Bütün sahələr doldurulmalıdır");
   }
@@ -455,8 +407,6 @@ export async function changePassword(payload) {
   }
 
   try {
-    // Backend expects: { currentPassword, newPassword, confirmPassword }
-    // Try PascalCase first (common in .NET backends)
     const backendPayload = {
       CurrentPassword: payload.currentPassword || payload.CurrentPassword || "",
       NewPassword: payload.newPassword || payload.NewPassword || "",
@@ -471,7 +421,6 @@ export async function changePassword(payload) {
         body: backendPayload,
       });
     } catch (err) {
-      // If PascalCase fails with 400, try camelCase
       if (err.status === 400) {
         console.log("PascalCase failed, trying camelCase:", err);
         const camelCasePayload = {

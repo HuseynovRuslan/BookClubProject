@@ -76,11 +76,11 @@ export default function SignUpPage({ onSwitchToSignIn }) {
         role: "reader"
       });
 
-      // Show success message
+
       setSuccess(t("auth.registrationSuccess"));
       setIsSubmitting(false);
 
-      // Clear form
+
       setUsername("");
       setName("");
       setSurname("");
@@ -88,7 +88,7 @@ export default function SignUpPage({ onSwitchToSignIn }) {
       setPassword("");
       setBirthDate("");
 
-      // Redirect to login page after showing success message
+
       setTimeout(() => {
         if (onSwitchToSignIn) {
           onSwitchToSignIn();
@@ -97,14 +97,14 @@ export default function SignUpPage({ onSwitchToSignIn }) {
         }
       }, 2000);
     } catch (err) {
-      // Get user-friendly error message
+
       let errorMessage = t("error.default");
       
-      // Check if error has translation key
+
       if (err.translationKey) {
         errorMessage = t(err.translationKey);
       } else if (err.message) {
-        // Check error message content for specific cases
+
         const message = err.message.toLowerCase();
         if (message.includes("already exists") || message.includes("duplicate") || message.includes("taken")) {
           errorMessage = t("error.409");
@@ -121,17 +121,17 @@ export default function SignUpPage({ onSwitchToSignIn }) {
         } else if (err.status === 404) {
           errorMessage = t("error.404");
         } else {
-          // Try to use translation if message is a translation key
+
           const translated = t(err.message);
           if (translated !== err.message) {
             errorMessage = translated;
           } else {
-            // Use original message if it's already user-friendly
+
             errorMessage = err.message;
           }
         }
       } else if (err.status) {
-        // Use status-based translation
+
         errorMessage = t(`error.${err.status}`) || t("error.default");
       }
       

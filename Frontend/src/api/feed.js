@@ -56,7 +56,6 @@ export async function getFeed({ page = 1, pageSize = 20 } = {}) {
     return buildMockFeed({ page, pageSize });
   }
 
-  // Backend maksimum pageSize: 50 qəbul edir
   const validPageSize = Math.min(Math.max(1, pageSize), 50);
 
   const params = new URLSearchParams();
@@ -65,15 +64,11 @@ export async function getFeed({ page = 1, pageSize = 20 } = {}) {
 
   const response = await apiRequest(`/api/Feed/get-feed?${params.toString()}`, { method: "GET" });
 
-  // Backend returns PagedResult<FeedItemDto>
-  // Normalize FeedItemDto to frontend format
+
   let items = [];
   if (response) {
     const rawItems = response.items || response.Items || [];
     items = rawItems.map(item => {
-      // Backend format: { id, activityType, createdAt, user, quote, review, book, shelfName }
-      // Frontend format: { id, type, username, bookTitle, bookCover, review, rating, reviewId, likes, comments, timestamp }
-
       const rawUserAvatar = item.user?.avatarUrl || item.User?.AvatarUrl || item.user?.profilePictureUrl || item.User?.ProfilePictureUrl || item.user?.avatar || item.User?.Avatar || null;
       
       const normalized = {
@@ -82,42 +77,35 @@ export async function getFeed({ page = 1, pageSize = 20 } = {}) {
         username: item.user?.username || item.User?.Username || item.user?.userName || item.User?.UserName || 'Anonymous',
         userAvatar: rawUserAvatar,
         timestamp: formatTimestamp(item.createdAt || item.CreatedAt),
-        likes: 0, // Backend-də likes yoxdur, default 0
-        comments: [], // Backend-də comments yoxdur, default []
+        likes: 0,
+        comments: [], 
       };
 
-      // Handle Review activity
       if (item.review || item.Review) {
         const review = item.review || item.Review;
         normalized.type = 'review';
-        // Backend BookReviewDto format: { id, bookId, bookTitle, bookCoverImageUrl, userId, username, rating, reviewText, createdAt }
         normalized.bookTitle = review.bookTitle || review.BookTitle || '';
         normalized.bookCover = review.bookCoverImageUrl || review.BookCoverImageUrl || review.book?.coverImageUrl || review.Book?.CoverImageUrl || review.bookCover || review.BookCover || '';
         normalized.review = review.reviewText || review.ReviewText || review.text || review.Text || '';
         normalized.rating = review.rating || review.Rating || 0;
         normalized.reviewId = review.id || review.Id || normalized.id;
-        // Username already set from item.user, but review might have its own username
         if (review.username || review.Username) {
           normalized.username = review.username || review.Username;
         }
-        // Review might have user avatar
         if (review.userAvatar || review.UserAvatar || review.user?.avatarUrl || review.User?.AvatarUrl) {
           normalized.userAvatar = review.userAvatar || review.UserAvatar || review.user?.avatarUrl || review.User?.AvatarUrl;
         }
         console.log("Normalized review:", normalized);
       }
-      // Handle Quote activity
       else if (item.quote || item.Quote) {
         const quote = item.quote || item.Quote;
-        const book = item.book || item.Book; // Book info from FeedItemDto
+        const book = item.book || item.Book; 
         normalized.type = 'quote';
         normalized.bookTitle = book?.title || book?.Title || quote.bookTitle || quote.BookTitle || quote.book?.title || quote.Book?.Title || '';
         normalized.bookCover = book?.coverImageUrl || book?.CoverImageUrl || quote.book?.coverImageUrl || quote.Book?.CoverImageUrl || quote.bookCover || quote.BookCover || '';
         normalized.review = quote.text || quote.Text || quote.content || quote.Content || '';
         normalized.likes = quote.likesCount || quote.LikesCount || 0;
         
-        // Extract bookAuthor from book object (BookDto has AuthorName field)
-        // Priority: book.AuthorName (from BookDto) > book.author.name > other sources
         normalized.bookAuthor = book?.authorName || 
                                 book?.AuthorName ||
                                 book?.author?.name ||
@@ -132,23 +120,17 @@ export async function getFeed({ page = 1, pageSize = 20 } = {}) {
                                 quote.BookAuthor ||
                                 '';
         
-        // Extract quoteId properly - ensure it's a string
-        // Backend returns QuoteDto with Id field (capital I)
         let quoteIdValue = quote.Id || quote.id || quote.quoteId || quote.QuoteId || normalized.id;
         
-        // If quoteId is still an object, try to extract from it
         if (quoteIdValue && typeof quoteIdValue !== 'string') {
           quoteIdValue = quoteIdValue.Id || quoteIdValue.id || quoteIdValue.quoteId || quoteIdValue.QuoteId || String(quoteIdValue);
         }
         
-        // Final check - ensure it's a string
         normalized.quoteId = quoteIdValue ? String(quoteIdValue).trim() : null;
-        // Quote might have user avatar
         if (quote.userAvatar || quote.UserAvatar || quote.user?.avatarUrl || quote.User?.AvatarUrl) {
           normalized.userAvatar = quote.userAvatar || quote.UserAvatar || quote.user?.avatarUrl || quote.User?.AvatarUrl;
         }
       }
-      // Handle BookAdded activity
       else if (item.book || item.Book) {
         const book = item.book || item.Book;
         normalized.type = 'post';
@@ -172,7 +154,6 @@ export async function getFeed({ page = 1, pageSize = 20 } = {}) {
 export async function uploadPostImage(file) {
   if (USE_API_MOCKS) {
     await delay(500);
-    // Return a mock URL
     return "/images/posts/mock-post-image.jpg";
   }
 
@@ -183,11 +164,9 @@ export async function uploadPostImage(file) {
     const response = await apiRequest("/api/Feed/upload-post-image", {
       method: "POST",
       body: formData,
-      // Don't set Content-Type header - browser will set it with boundary for FormData
       headers: {},
     });
 
-    // Backend returns ApiResponse<string> with data field
     return response?.data || response || null;
   } catch (error) {
     console.error("Error uploading post image:", error);

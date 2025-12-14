@@ -11,7 +11,7 @@ export default function SearchPage({ onBookClick }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [searchMode, setSearchMode] = useState(searchParams.get("mode") || "books"); // "books" or "users"
+  const [searchMode, setSearchMode] = useState(searchParams.get("mode") || "books");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,7 +32,7 @@ export default function SearchPage({ onBookClick }) {
       try {
         if (mode === "users") {
           const users = await searchUsers(query.trim());
-          // searchUsers already returns normalized data
+
           setResults(Array.isArray(users) ? users : []);
         } else {
           const response = await getAllBooks({ page: 1, pageSize: 50, query: query.trim() });
@@ -49,7 +49,7 @@ export default function SearchPage({ onBookClick }) {
     []
   );
 
-  // Update URL params when mode changes
+
   useEffect(() => {
     const query = searchQuery.trim();
     const params = {};
@@ -62,7 +62,7 @@ export default function SearchPage({ onBookClick }) {
     setSearchParams(params);
   }, [searchMode, setSearchParams]);
 
-  // Debounced search effect
+
   useEffect(() => {
     const query = searchQuery.trim();
     if (query) {
@@ -105,11 +105,11 @@ export default function SearchPage({ onBookClick }) {
   };
 
   const handleUserClick = (user) => {
-    // Backend-də username ilə endpoint var, ona görə username istifadə edək
+
     const username = user.username || user.Username || user.userName || user.UserName || user.email?.split("@")[0];
     const userId = user.id || user.Id || user.userId || user.UserId;
     
-    // Prepare user data to pass via navigation state (avoids API call)
+
     const userData = {
       id: userId,
       name: user.name || user.Name || username || "User",
@@ -122,8 +122,8 @@ export default function SearchPage({ onBookClick }) {
       surname: user.surname || user.Surname || user.lastName || user.LastName || "",
     };
     
-    // Əvvəlcə username ilə cəhd edək, yoxdursa userId
-    // Pass user data as state to avoid API call
+
+
     if (username) {
       navigate(`/profile/${username}`, { 
         state: { 
@@ -277,8 +277,8 @@ export default function SearchPage({ onBookClick }) {
                   /* User Results */
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                     {results.filter(user => {
-                      // Filter out admin users on frontend (additional safety layer)
-                      // Backend should also filter, but we filter here too for robustness
+
+
                       const role = user.role || user.Role || "reader";
                       const roleLower = String(role).toLowerCase().trim();
                       return roleLower !== "admin" && role !== "Admin" && role !== "ADMIN";

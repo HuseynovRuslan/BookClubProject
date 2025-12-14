@@ -7,15 +7,15 @@ export default function ShelfSelectionModal({
   isOpen,
   onClose,
   book,
-  mode = "add", // "add" or "move"
-  currentShelfId = null, // For "move" mode, exclude current shelf
+  mode = "add",
+  currentShelfId = null,
   onSelect,
 }) {
   const t = useTranslation();
   const { shelves, loading } = useShelves();
   const [selectedShelfId, setSelectedShelfId] = useState(null);
 
-  // Helper function to translate shelf names
+
   const translateShelfName = (shelfName) => {
     if (!shelfName) return shelfName;
     const shelfMap = {
@@ -29,20 +29,20 @@ export default function ShelfSelectionModal({
 
   if (!isOpen) return null;
 
-  // Filter shelves based on mode
-  // For "add" mode, show default shelves first, then custom shelves
+
+
   const availableShelves = shelves.filter((shelf) => {
     if (mode === "move" && currentShelfId) {
-      // For move mode, exclude current shelf
+
       return shelf.id !== currentShelfId;
     }
     if (mode === "add") {
-      // For add mode, show ALL shelves (both default and custom)
+
       return true;
     }
     return true;
   }).sort((a, b) => {
-    // Sort: default shelves first (Want to Read, Currently Reading, Read), then custom shelves
+
     if (mode === "add") {
       const isADefault = a.isDefault === true || a.IsDefault === true;
       const isBDefault = b.isDefault === true || b.IsDefault === true;
@@ -50,7 +50,7 @@ export default function ShelfSelectionModal({
       if (isADefault && !isBDefault) return -1;
       if (!isADefault && isBDefault) return 1;
       
-      // If both are default, sort by name order: Want to Read, Currently Reading, Read
+
       if (isADefault && isBDefault) {
         const defaultOrder = ["Want to Read", "Currently Reading", "Read"];
         const aIndex = defaultOrder.indexOf(a.name);
@@ -60,7 +60,7 @@ export default function ShelfSelectionModal({
         if (bIndex !== -1) return 1;
       }
       
-      // Custom shelves: sort alphabetically
+
       return (a.name || "").localeCompare(b.name || "");
     }
     return 0;
@@ -128,7 +128,7 @@ export default function ShelfSelectionModal({
                   key={shelf.id}
                   onClick={() => {
                     setSelectedShelfId(shelf.id);
-                    // Immediately call onSelect when shelf is clicked (no need to click confirm button)
+
                     if (onSelect) {
                       onSelect(shelf.id);
                       setSelectedShelfId(null);
