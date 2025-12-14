@@ -128,7 +128,7 @@ export default function SocialFeedPage({
   onShowLogin,
   onShowRegister,
 }) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, isGuest } = useAuth();
   const t = useTranslation();
   const [remotePosts, setRemotePosts] = useState(() => {
     // Load saved posts from localStorage on initial state
@@ -145,8 +145,10 @@ export default function SocialFeedPage({
 
   // Load following users list
   const loadFollowing = useCallback(async () => {
-    if (!authUser?.id) {
+    // If guest mode, skip API call
+    if (isGuest || !authUser?.id) {
       setFollowingLoading(false);
+      setFollowingUsers([]);
       return;
     }
     try {
@@ -165,7 +167,7 @@ export default function SocialFeedPage({
     } finally {
       setFollowingLoading(false);
     }
-  }, [authUser]);
+  }, [authUser, isGuest]);
 
   useEffect(() => {
     loadFollowing();
@@ -186,6 +188,11 @@ export default function SocialFeedPage({
 
   // Helper function to fetch comments from backend for posts
   const fetchCommentsForPosts = useCallback(async (posts) => {
+    // If guest mode, skip API calls and return posts as-is (comments from localStorage only)
+    if (isGuest) {
+      return posts;
+    }
+    
     const { getComments } = await import("../api/comments");
     
     const commentPromises = posts.map(async (post) => {
@@ -220,7 +227,7 @@ export default function SocialFeedPage({
     });
     
     return Promise.all(commentPromises);
-  }, []);
+  }, [isGuest]);
 
   const fetchFeed = useCallback(async () => {
     setLoading(true);
@@ -228,6 +235,13 @@ export default function SocialFeedPage({
     try {
       // Load saved posts from localStorage first to ensure quotes persist
       const savedPosts = loadFromStorage();
+      
+      // If guest mode, only use localStorage posts (skip API call)
+      if (isGuest) {
+        setRemotePosts(savedPosts);
+        setLoading(false);
+        return;
+      }
       
       // Fetch a large number of posts since pagination is removed
       const response = await getFeed({ page: 1, pageSize: 100 });
@@ -343,7 +357,7 @@ export default function SocialFeedPage({
     } finally {
       setLoading(false);
     }
-  }, [followingUsers, authUser, fetchCommentsForPosts]);
+  }, [followingUsers, authUser, fetchCommentsForPosts, isGuest]);
 
   // Fetch feed on mount and when following users change
   useEffect(() => {
