@@ -532,6 +532,9 @@ function App() {
     }
   };
 
+  // Check if user is admin
+  const isAdmin = user?.role === "Admin" || user?.role === "admin";
+
   return (
     <Router>
       {initializing ? (
@@ -550,6 +553,16 @@ function App() {
           ) : (
             <LoginPage onSwitchToSignUp={() => setAuthMode("signup")} />
           )}
+        </div>
+      ) : isAdmin ? (
+        // Admin mode: Only show Admin Panel, no sidebar or navigation
+        <div className="bg-white text-black min-h-screen">
+          <main className="min-h-screen">
+            <Routes>
+              <Route path="/admin" element={<AdminPanelPage />} />
+              <Route path="*" element={<Navigate to="/admin" replace />} />
+            </Routes>
+          </main>
         </div>
       ) : (
       <div className="bg-white text-black min-h-screen">
