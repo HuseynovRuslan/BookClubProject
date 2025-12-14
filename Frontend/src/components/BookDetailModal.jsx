@@ -24,7 +24,6 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
 
   const loadBookDetails = useCallback(async () => {
     if (!book?.id && !book?._id) {
-      console.warn("Book ID not found:", book);
       setLoading(false);
       return;
     }
@@ -32,20 +31,13 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
     setLoading(true);
     try {
       const bookId = book.id || book._id;
-      console.log("Loading book details for ID:", bookId);
       
       const [bookData, reviewsData] = await Promise.all([
         getBookById(bookId),
-        getReviews({ page: 1, pageSize: 50, bookId: bookId }).catch((err) => {
-          console.error("Error fetching reviews:", err);
+        getReviews({ page: 1, pageSize: 50, bookId: bookId }).catch(() => {
           return null; // Return null on error
         })
       ]);
-      
-      console.log("Book data received:", bookData);
-      console.log("Reviews data received:", reviewsData);
-      console.log("Reviews data type:", typeof reviewsData);
-      console.log("Reviews data is array:", Array.isArray(reviewsData));
       
       // Backend-dən gələn bookData ApiResponse formatında ola bilər
       const finalBookData = bookData?.data || bookData || book;
@@ -54,9 +46,7 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
       // Filter reviews for this book (reviewsData is already filtered by bookId from API)
       let filteredReviews = [];
       if (reviewsData) {
-        console.log("Raw reviewsData:", reviewsData);
         const reviewsResponse = reviewsData?.items || reviewsData?.Items || reviewsData || [];
-        console.log("Reviews response array:", reviewsResponse);
         filteredReviews = Array.isArray(reviewsResponse) ? reviewsResponse : [];
         console.log("Filtered reviews before normalize:", filteredReviews);
         

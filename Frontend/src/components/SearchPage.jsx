@@ -33,7 +33,6 @@ export default function SearchPage({ onBookClick }) {
         if (mode === "users") {
           const users = await searchUsers(query.trim());
           // searchUsers already returns normalized data
-          console.log("Search users result:", users);
           setResults(Array.isArray(users) ? users : []);
         } else {
           const response = await getAllBooks({ page: 1, pageSize: 50, query: query.trim() });
@@ -41,7 +40,6 @@ export default function SearchPage({ onBookClick }) {
           setResults(items);
         }
       } catch (err) {
-        console.error("Search error:", err);
         setError(err.message || t("search.failed"));
         setResults([]);
       } finally {

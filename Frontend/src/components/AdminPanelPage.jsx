@@ -141,8 +141,6 @@ function BooksManagement() {
         searchTerm: searchTerm.trim() || undefined,
       });
       
-      console.log("Fetch books response:", response);
-      
       // Handle PagedResult format (Items property with capital I, or items with lowercase)
       let booksList = [];
       let total = 0;
@@ -164,13 +162,9 @@ function BooksManagement() {
         total = response.length;
       }
       
-      console.log("Parsed books list:", booksList);
-      console.log("Total count:", total);
-      
       setBooks(booksList);
       setTotalCount(total);
     } catch (error) {
-      console.error("Failed to fetch books:", error);
       setBooks([]);
       setTotalCount(0);
     } finally {
@@ -252,9 +246,6 @@ function BooksManagement() {
           }
         }
         
-        console.log("Total authors fetched:", allAuthors.length);
-        console.log("Total genres fetched:", allGenres.length);
-        
         // Use the first page response for detailed logging (for debugging)
         const authorsRes = allAuthors.length > 0 ? { items: allAuthors } : null;
         const genresRes = allGenres.length > 0 ? { items: allGenres } : null;
@@ -262,13 +253,7 @@ function BooksManagement() {
         setAuthors(allAuthors);
         setGenres(allGenres);
       } catch (error) {
-        console.error("Failed to fetch authors/genres:", error);
-        console.error("Error details:", {
-          message: error.message,
-          status: error.status,
-          data: error.data,
-          stack: error.stack
-        });
+        // Failed to fetch authors/genres
         setAuthors([]);
         setGenres([]);
       }

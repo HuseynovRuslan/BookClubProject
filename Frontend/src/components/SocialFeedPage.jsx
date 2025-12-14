@@ -17,7 +17,6 @@ const getReportedPosts = () => {
     if (!reported) return [];
     return JSON.parse(reported);
   } catch (err) {
-    console.error("Error loading reported posts:", err);
     return [];
   }
 };
@@ -31,7 +30,7 @@ const saveReportedPost = (postId) => {
       localStorage.setItem(REPORTED_POSTS_KEY, JSON.stringify(reportedPosts));
     }
   } catch (err) {
-    console.error("Error saving reported post:", err);
+    // Error saving reported post
   }
 };
 
@@ -51,7 +50,7 @@ const saveToStorage = (posts) => {
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedPosts));
   } catch (err) {
-    console.error("Error saving to localStorage:", err);
+    // Error saving to localStorage
   }
 };
 
@@ -90,7 +89,6 @@ const loadFromStorage = () => {
           
           // If still contains [object Object], try to keep the original value as string
           if (cleanedPost.quoteId && cleanedPost.quoteId.includes('[object')) {
-            console.warn("quoteId contains [object Object], keeping original value. Original:", quoteIdObj);
             // Keep the original object as string representation instead of null
             cleanedPost.quoteId = String(quoteIdObj);
           }
@@ -110,12 +108,10 @@ const loadFromStorage = () => {
       (post.reviewId !== posts[idx]?.reviewId)
     )) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedPosts));
-      console.log(`Cleaned ${posts.length - cleanedPosts.length} invalid posts from localStorage`);
     }
     
     return cleanedPosts;
   } catch (err) {
-    console.error("Error loading from localStorage:", err);
     return [];
   }
 };
@@ -166,7 +162,6 @@ export default function SocialFeedPage({
       }
       setFollowingUsers(userIds);
     } catch (err) {
-      console.error("Error loading following users:", err);
       // On error, still show all posts (fallback behavior)
       setFollowingUsers([]);
     } finally {
@@ -226,10 +221,7 @@ export default function SocialFeedPage({
           comments: normalizedComments,
         };
       } catch (err) {
-        // If API not available (404) or other error (including 401 for guest), return post without comments
-        if (err.status !== 404 && err.status !== 401) {
-          console.error(`Error fetching comments for post ${postId}:`, err);
-        }
+        // If API not available (404) or other error, return post without comments
         return post; // Return post without comments on error
       }
     });
@@ -356,19 +348,11 @@ export default function SocialFeedPage({
         new Map(additionalPosts.map(post => [post.id, post])).values()
       );
       
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/45687df3-eadd-450e-98a3-bb43b3daaefc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SocialFeedPage.jsx:135',message:'mergedPosts before setState',data:{mergedPostsCount:finalPosts.length,firstPostUserAvatar:finalPosts[0]?.userAvatar,additionalPostsCount:uniqueAdditionalPosts.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
-      
       setRemotePosts([...finalPosts, ...uniqueAdditionalPosts]);
     } catch (err) {
-      console.error("Error fetching feed:", err);
       setError(err.message || "Failed to load feed.");
       // On error, load from localStorage
       const saved = loadFromStorage();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/45687df3-eadd-450e-98a3-bb43b3daaefc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SocialFeedPage.jsx:141',message:'loaded from localStorage on error',data:{savedCount:saved.length,firstPostUserAvatar:saved[0]?.userAvatar},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
       setRemotePosts(saved);
     } finally {
       setLoading(false);
@@ -521,7 +505,6 @@ export default function SocialFeedPage({
       }
       
       if (!post) {
-        console.error("Post not found for comment:", postId);
         throw new Error("Post not found");
       }
       
@@ -544,7 +527,6 @@ export default function SocialFeedPage({
             }];
           }
           // Post not found anywhere - return prev unchanged
-          console.warn("Post not found in state or localStorage for comment:", postId);
           return prev;
         }
         
@@ -593,7 +575,7 @@ export default function SocialFeedPage({
         });
         saveToStorage(updatedPosts);
       } catch (err) {
-        console.error("Error saving comment to localStorage:", err);
+        // Error saving comment to localStorage
       }
       
       // 5. Save to backend API
@@ -604,7 +586,6 @@ export default function SocialFeedPage({
       } catch (err) {
         // If API call fails (except 404), revert optimistic update
         if (err.status !== 404) {
-          console.error("Error creating comment via API:", err);
           setRemotePosts((prev) => {
             return prev.map((p) => {
               const isTargetPost = p.id === postId || (p.type === 'review' && p.reviewId === postId);
@@ -669,7 +650,7 @@ export default function SocialFeedPage({
           });
           saveToStorage(updatedPosts);
         } catch (err) {
-          console.error("Error updating localStorage with backend comment:", err);
+          // Error updating localStorage with backend comment
         }
       }
       
@@ -678,7 +659,6 @@ export default function SocialFeedPage({
         try {
           await onAddComment(postId, text);
         } catch (err) {
-          console.error("Error adding comment via parent handler:", err);
           // Don't revert - comment is already saved
         }
       }
@@ -708,7 +688,6 @@ export default function SocialFeedPage({
     }
     
     if (!comment || !post) {
-      console.warn("Comment not found for deletion:", commentId);
       alert("Comment tapılmadı");
       return;
     }
@@ -751,13 +730,9 @@ export default function SocialFeedPage({
       const result = await deleteComment(commentId);
       
       // If API returns null, it means endpoint doesn't exist (404), continue with localStorage
-      if (result === null) {
-        console.log("Comments delete API not available, using localStorage only");
-      }
     } catch (err) {
       // If API call fails (except 404), revert optimistic update
       if (err.status !== 404) {
-        console.error("Error deleting comment from backend:", err);
         // Revert optimistic update by re-adding the comment
         setRemotePosts((prev) => {
           const updated = prev.map((post) =>
@@ -804,7 +779,6 @@ export default function SocialFeedPage({
           await result;
         }
       } catch (err) {
-        console.error("Error deleting comment via parent handler:", err);
         // Don't throw - we've already updated local state
       }
     }
@@ -829,7 +803,7 @@ export default function SocialFeedPage({
         });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
       } catch (err) {
-        console.error("Error saving post update to localStorage:", err);
+        // Error saving post update to localStorage
       }
       return updated;
     });
@@ -852,12 +826,11 @@ export default function SocialFeedPage({
           const filtered = existing.filter((p) => p.id !== postId);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
         } catch (err) {
-          console.error("Error saving post deletion to localStorage:", err);
+          // Error saving post deletion to localStorage
         }
         return updated;
       });
     } catch (err) {
-      console.error("Error deleting remote post:", err);
       throw err; // Re-throw to let component handle error display
     }
   }, [onDeletePost]);
@@ -873,7 +846,6 @@ export default function SocialFeedPage({
       // Also remove from local posts if it exists there
       // Note: We don't call onDeletePost because we don't want to delete from backend
     } catch (err) {
-      console.error("Error reporting post:", err);
       throw err;
     }
   }, []);

@@ -97,7 +97,6 @@ export default function ProfilePage({
   const saveToStorage = (type, userId, data, isOwn = false) => {
     try {
       if (!userId) {
-        console.warn("saveToStorage: userId is null or undefined, cannot save", { type, userId, data, isOwn });
         return;
       }
       const key = getStorageKey(type, userId, isOwn);
@@ -106,9 +105,8 @@ export default function ProfilePage({
         timestamp: Date.now(),
       });
       localStorage.setItem(key, value);
-      console.log("saveToStorage: Successfully saved", { type, userId, data, key, isOwn });
     } catch (err) {
-      console.error("Failed to save to localStorage:", err, { type, userId, data, isOwn });
+      // Failed to save to localStorage
     }
   };
 
@@ -124,12 +122,11 @@ export default function ProfilePage({
           return parsed.data;
         } else {
           // Cache expired, but don't delete it - keep it as fallback
-          console.log(`Cache expired for ${type} of user ${userId} (isOwn: ${isOwn}), but keeping as fallback`);
           return parsed.data;
         }
       }
     } catch (err) {
-      console.warn("Failed to load from localStorage:", err, { type, userId, isOwn });
+      // Failed to load from localStorage
     }
     return null;
   };
@@ -248,12 +245,10 @@ export default function ProfilePage({
           
           // normalizeProfileDto already normalized the data, but ensure name is set correctly
           // Use the name from normalizeProfileDto - it should already prioritize username
-          console.log("Raw profile from API (after normalizeProfileDto):", freshProfile);
           
           // If name is still "User" and we have username, use username
           if ((!freshProfile.name || freshProfile.name === "User") && freshProfile.username && freshProfile.username.trim() !== "") {
             freshProfile.name = freshProfile.username;
-            console.log("Updated name from username:", freshProfile.username);
           }
           
           // Ensure all fields are set
@@ -269,8 +264,6 @@ export default function ProfilePage({
             avatarUrl: freshProfile.avatarUrl || freshProfile.AvatarUrl || freshProfile.profilePictureUrl || null,
             username: freshProfile.username || freshProfile.Username || freshProfile.userName || freshProfile.UserName || freshProfile.email?.split("@")[0] || "",
           };
-          
-          console.log("Final profile after ProfilePage normalization:", freshProfile);
         } catch (err) {
           // If there's an error loading the profile, set error message
           setProfileError(err.message || t("profile.loadFailed"));
@@ -336,7 +329,6 @@ export default function ProfilePage({
                 saveToStorage('followers_list', freshProfile.id, followers.value, true);
                 saveToStorage('followers_count', freshProfile.id, followers.value.length, true);
               } else {
-                console.warn("Failed to load followers count:", followers.reason);
                 // Keep cached value - don't reset to 0
                 if (cachedFollowers !== null && Array.isArray(cachedFollowers) && cachedFollowers.length > 0) {
                   // Already set above, keep it
@@ -355,7 +347,6 @@ export default function ProfilePage({
                 saveToStorage('following_list', freshProfile.id, following.value, true);
                 saveToStorage('following_count', freshProfile.id, following.value.length, true);
               } else {
-                console.warn("Failed to load following count:", following.reason);
                 // Keep cached value - don't reset to 0
                 if (cachedFollowing !== null && Array.isArray(cachedFollowing) && cachedFollowing.length > 0) {
                   // Already set above, keep it
@@ -409,7 +400,6 @@ export default function ProfilePage({
                   saveToStorage('followers_list', freshProfile.id, followersResult.value, false);
                 } else if (initialFollowersCount > 0) {
                   // Keep the cached value if backend doesn't return data
-                  console.log("Backend didn't return followers, keeping cached count:", initialFollowersCount);
                 }
                 
                 // Update following count from backend if available
@@ -419,10 +409,8 @@ export default function ProfilePage({
                   saveToStorage('following_list', freshProfile.id, followingResult.value, false);
                 } else if (initialFollowingCount > 0) {
                   // Keep the cached value if backend doesn't return data
-                  console.log("Backend didn't return following, keeping cached count:", initialFollowingCount);
                 }
               } catch (err) {
-                console.warn("Error refreshing followers/following from backend:", err);
                 // Keep cached values - don't reset to 0
               }
               
@@ -430,16 +418,13 @@ export default function ProfilePage({
               // Always refresh from backend to ensure accurate status
               try {
                 const isFollowing = await checkIsFollowing(freshProfile.id);
-                console.log("ProfilePage - isFollowing check result:", isFollowing, "for userId:", freshProfile.id);
                 setIsFollowingUser(isFollowing);
               } catch (err) {
-                console.error("Error checking follow status:", err);
                 setIsFollowingUser(false);
               }
             }
           } catch (err) {
             // Silently handle errors - try to keep cached values
-            console.error("Error loading profile counts:", err);
             // Try to load from localStorage as fallback
             if (isOwnProfile && freshProfile?.id) {
               const savedFollowersCount = loadFromStorage('followers_count', freshProfile.id, true);
@@ -598,7 +583,7 @@ export default function ProfilePage({
         // This is handled in loadProfile function
       }
     } catch (err) {
-      console.error("Error loading comments from localStorage:", err);
+      // Error loading comments from localStorage
     }
   }, [userPosts, isOwnProfile]); // Run when userPosts changes or isOwnProfile changes
 
@@ -740,12 +725,12 @@ export default function ProfilePage({
             });
           }
         } catch (err) {
-          console.error("Error refreshing profile:", err);
+          // Error refreshing profile
         }
       }
       
       // Also refresh from server in background (non-blocking)
-      loadProfile().catch(err => console.error("Background profile refresh error:", err));
+      loadProfile().catch(() => {});
       
       setProfileMessage(t("profile.avatarUpdated"));
       
@@ -825,12 +810,12 @@ export default function ProfilePage({
             });
           }
         } catch (err) {
-          console.error("Error refreshing profile:", err);
+          // Error refreshing profile
         }
       }
       
       // Also refresh from server in background (non-blocking)
-      loadProfile().catch(err => console.error("Background profile refresh error:", err));
+      loadProfile().catch(() => {});
       
       setProfileMessage(t("profile.avatarRemoved"));
       
@@ -904,8 +889,7 @@ export default function ProfilePage({
         }
         setIsFollowingUser(false);
         
-        const result = await unfollowUser(userId);
-        console.log("Unfollow result:", result);
+        await unfollowUser(userId);
         setProfileMessage(t("profile.unfollow"));
       } else {
         // Optimistically update: increase followers count for viewed user, increase following count for own profile
@@ -940,11 +924,9 @@ export default function ProfilePage({
             const updatedFollowersList = [...cachedFollowersList, currentUserData];
             saveToStorage('followers_list', userId, updatedFollowersList, false);
             // Also update state immediately so it shows in modal (if modal is open)
-            console.log("Updating followers list state with:", updatedFollowersList);
             setFollowersList(updatedFollowersList);
           } else if (currentUserInList) {
             // If already in list, just ensure state is updated
-            console.log("Current user already in followers list, updating state");
             setFollowersList(cachedFollowersList);
           }
         }
@@ -952,18 +934,13 @@ export default function ProfilePage({
           const newCount = followingCount + 1;
           setFollowingCount(newCount);
           // IMMEDIATELY save to localStorage for own profile (with isOwn=true)
-          console.log("Saving following count to localStorage (FOLLOW - OWN PROFILE):", newCount, "for own profile:", authUser?.id);
           if (authUser?.id) {
             saveToStorage('following_count', authUser.id, newCount, true);
-            // Verify it was saved
-            const saved = loadFromStorage('following_count', authUser.id, true);
-            console.log("Verified saved following count (OWN PROFILE):", saved);
           }
         }
         setIsFollowingUser(true);
         
-        const result = await followUser(userId);
-        console.log("Follow result:", result);
+        await followUser(userId);
         setProfileMessage(t("profile.follow"));
       }
       
@@ -983,7 +960,6 @@ export default function ProfilePage({
             saveToStorage('followers_list', authUser.id, followers.value, true);
           } else {
             // If refresh fails, keep optimistic update and save to localStorage
-            console.warn("Failed to refresh followers count, keeping optimistic value");
             // Save current optimistic count to localStorage (with isOwn=true)
             const currentFollowers = followersCount;
             saveToStorage('followers_count', authUser.id, currentFollowers, true);
@@ -1009,7 +985,6 @@ export default function ProfilePage({
             saveToStorage('following_list', authUser.id, following.value, true);
           } else {
             // If refresh fails, keep optimistic update and save to localStorage
-            console.warn("Failed to refresh following count, keeping optimistic value");
             // Save current optimistic count to localStorage (with isOwn=true)
             const currentFollowing = followingCount;
             saveToStorage('following_count', authUser.id, currentFollowing, true);
@@ -1034,7 +1009,6 @@ export default function ProfilePage({
           try {
             const isFollowingStatus = await checkIsFollowing(userId);
             setIsFollowingUser(isFollowingStatus);
-            console.log("Refreshed follow status after follow/unfollow:", isFollowingStatus);
             
             // Try to refresh followers list from backend
             const [followersResult] = await Promise.allSettled([
@@ -1048,7 +1022,6 @@ export default function ProfilePage({
               // Save to localStorage for this user (with isOwn=false)
               saveToStorage('followers_count', userId, followersResult.value.length, false);
               saveToStorage('followers_list', userId, followersResult.value, false);
-              console.log("Refreshed followers list from backend:", followersResult.value);
             } else {
               // If backend doesn't return data, keep optimistic update and save to localStorage
               const currentFollowersCount = followersCount;
@@ -1092,7 +1065,6 @@ export default function ProfilePage({
               saveToStorage('following_count', authUser.id, followingCount, true);
             }
           } catch (err) {
-            console.error("Error refreshing follow status:", err);
             // Revert optimistic update if follow status check fails
             setIsFollowingUser(wasFollowing);
             if (!isOwnProfile) {
@@ -1101,7 +1073,6 @@ export default function ProfilePage({
           }
         }
       } catch (err) {
-        console.error("Error refreshing counts:", err);
         // On error, revert optimistic updates
         setIsFollowingUser(wasFollowing);
         if (!isOwnProfile) {
@@ -1119,10 +1090,6 @@ export default function ProfilePage({
       
       setTimeout(() => setProfileMessage(null), 3000);
     } catch (err) {
-      console.error("Follow/Unfollow error:", err);
-      console.error("Error status:", err.status);
-      console.error("Error data:", err.data);
-      
       // Revert optimistic updates on error
       setIsFollowingUser(wasFollowing);
       if (!isOwnProfile) {
@@ -1185,7 +1152,6 @@ export default function ProfilePage({
           // FIRST: Load from localStorage immediately for instant display
           const cachedFollowers = loadFromStorage('followers_list', userId, false);
           if (cachedFollowers !== null && Array.isArray(cachedFollowers) && cachedFollowers.length > 0) {
-            console.log("Loading followers from localStorage:", cachedFollowers);
             setFollowersList(cachedFollowers);
             // Update followers count based on cached list length
             setFollowersCount(cachedFollowers.length);
@@ -1204,7 +1170,6 @@ export default function ProfilePage({
             saveToStorage('followers_list', userId, followersList, false);
             saveToStorage('followers_count', userId, followersList.length, false);
           } catch (err) {
-            console.error("Error loading followers from API:", err);
             // Fallback to empty array
             setFollowersList([]);
             setFollowersCount(0);
@@ -1215,7 +1180,6 @@ export default function ProfilePage({
         }
       }
     } catch (err) {
-      console.error("Error loading followers:", err);
       // Try to use cached value on error
       const userId = profile?.id || profile?.Id || profile?.userId || profile?.UserId;
       if (userId) {
@@ -1469,7 +1433,6 @@ export default function ProfilePage({
     } catch (err) {
       // If API call fails (except 404), revert optimistic update
       if (err.status !== 404) {
-        console.error("Error saving comment to backend:", err);
         // Revert optimistic update (only for other users' profiles)
         if (!isOwnProfile) {
           setViewedUserPosts((prev) => {
@@ -1494,7 +1457,6 @@ export default function ProfilePage({
         // Don't update viewedUserPosts here - useEffect will sync it with userPosts
         // This prevents duplicate comments
       } catch (err) {
-        console.error("Error adding comment via parent handler:", err);
         // If parent handler fails, we still have the comment in backend
         // But we need to update viewedUserPosts manually since parent handler didn't update userPosts
         const finalComment = savedComment ? {
@@ -1592,7 +1554,6 @@ export default function ProfilePage({
     const comment = post?.comments?.find(c => c.id === commentId);
     
     if (!comment) {
-      console.warn("Comment not found for deletion:", commentId);
       return;
     }
 
@@ -1606,7 +1567,6 @@ export default function ProfilePage({
                        (post?.isLocal && isOwnProfile);
     
     if (!isCommentOwner && !isPostOwner) {
-      console.error("User does not have permission to delete this comment");
       alert("Bu comment-i silmək üçün icazəniz yoxdur");
       return;
     }
@@ -1629,7 +1589,7 @@ export default function ProfilePage({
         );
         localStorage.setItem("bookverse_social_feed", JSON.stringify(updatedStorage));
       } catch (err) {
-        console.error("Error saving comment deletion to localStorage:", err);
+        // Error saving comment deletion to localStorage
       }
       return updated;
     });
@@ -1639,13 +1599,9 @@ export default function ProfilePage({
       const result = await deleteComment(commentId);
       
       // If API returns null, it means endpoint doesn't exist (404), continue with localStorage
-      if (result === null) {
-        console.log("Comments delete API not available, using localStorage only");
-      }
     } catch (err) {
       // If API call fails (except 404), revert optimistic update
       if (err.status !== 404) {
-        console.error("Error deleting comment from backend:", err);
         // Revert optimistic update by re-adding the comment
         setViewedUserPosts((prev) => {
           return prev.map((p) =>
@@ -1670,7 +1626,6 @@ export default function ProfilePage({
           await result;
         }
       } catch (err) {
-        console.error("Error deleting comment via parent handler:", err);
         // Don't throw - we've already updated local state
       }
     }
@@ -1685,7 +1640,6 @@ export default function ProfilePage({
       );
       localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
     } catch (err) {
-      console.error("Error deleting comment from localStorage:", err);
       // Don't throw - localStorage is just a fallback
     }
   };
@@ -1732,7 +1686,7 @@ export default function ProfilePage({
         }
       }
     } catch (err) {
-      console.error("Error saving like to localStorage:", err);
+      // Error saving like to localStorage
     }
     
     // Call parent's onLikeChange if available (for App.jsx to sync with localPosts and userPosts)
@@ -1758,7 +1712,6 @@ export default function ProfilePage({
       // Note: We don't call onDeletePost because we don't want to delete from backend
       // Post is only hidden from current user's view
     } catch (err) {
-      console.error("Error reporting post:", err);
       throw err;
     }
   };
@@ -2394,9 +2347,7 @@ export default function ProfilePage({
                     const name = user.name || user.Name || username || "User";
                     const avatarUrl = getImageUrl(user.avatarUrl || user.AvatarUrl || user.profilePictureUrl || user.ProfilePictureUrl);
                     
-                    // Debug: log user object if userId is missing
                     if (!userId) {
-                      console.warn("User in followers list has no userId:", user, "at index:", index);
                       return null;
                     }
                     
@@ -2499,7 +2450,6 @@ export default function ProfilePage({
                     
                     // Skip if userId is not available
                     if (!userId) {
-                      console.warn("User in following list has no userId:", user, "at index:", index);
                       return null;
                     }
                     

@@ -49,14 +49,6 @@ function normalizeProfileDto(dto) {
                    (profileData.email ? profileData.email.split("@")[0] : "") ||
                    "";
   
-  console.log("normalizeProfileDto - extracted username:", username, "from fields:", {
-    username: profileData.username,
-    Username: profileData.Username,
-    userName: profileData.userName,
-    UserName: profileData.UserName,
-    email: profileData.email
-  });
-  
   // Get name field - prioritize username, then fullName, then profileData.name, then email prefix
   let name = "";
   
@@ -84,8 +76,6 @@ function normalizeProfileDto(dto) {
   else {
     name = "User";
   }
-  
-  console.log("normalizeProfileDto - final name:", name);
   
   return {
     id: profileData.id || profileData.Id || "",
