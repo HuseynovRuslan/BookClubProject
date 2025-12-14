@@ -549,10 +549,16 @@ export default function ProfilePage({
             
             if (existingPost) {
               // Merge: keep existing post but update with saved comments
-              // Use saved comments (which may have deletions) instead of existing comments
+              // Merge comments from both sources, avoiding duplicates by ID
+              const existingCommentIds = new Set((existingPost.comments || []).map(c => c.id).filter(Boolean));
+              const savedComments = (savedPost.comments || []).filter(c => c.id && !existingCommentIds.has(c.id));
+              
+              // Combine: existing comments first (from userPosts), then saved comments (no duplicates)
+              const mergedComments = [...(existingPost.comments || []), ...savedComments];
+              
               postMap.set(existingPost.id, {
                 ...existingPost,
-                comments: savedPost.comments || existingPost.comments || [],
+                comments: mergedComments,
                 likes: savedPost.likes !== undefined ? savedPost.likes : existingPost.likes,
                 isLiked: savedPost.isLiked !== undefined ? savedPost.isLiked : existingPost.isLiked,
               });
@@ -1379,31 +1385,18 @@ export default function ProfilePage({
     };
 
     // Optimistic update: Update UI immediately
-    const updateLocalState = (commentToAdd) => {
-      if (isOwnProfile) {
-        // For own profile, update is handled by parent's onAddComment
-        // But we can also update viewedUserPosts for consistency
-        setViewedUserPosts((prev) => {
-          return prev.map((p) =>
-            p.id === postId
-              ? { ...p, comments: [...(p.comments || []), commentToAdd] }
-              : p
-          );
-        });
-      } else {
-        // Other user's profile: Update local state
-        setViewedUserPosts((prev) => {
-          return prev.map((p) =>
-            p.id === postId
-              ? { ...p, comments: [...(p.comments || []), commentToAdd] }
-              : p
-          );
-        });
-      }
-    };
-
-    // Update UI optimistically
-    updateLocalState(newComment);
+    // For own profile, DON'T update local state here - parent's onAddComment will handle it
+    // This prevents duplicate comments
+    if (!isOwnProfile) {
+      // Other user's profile: Update local state immediately
+      setViewedUserPosts((prev) => {
+        return prev.map((p) =>
+          p.id === postId
+            ? { ...p, comments: [...(p.comments || []), newComment] }
+            : p
+        );
+      });
+    }
 
     let savedComment = null;
     try {
@@ -1422,18 +1415,9 @@ export default function ProfilePage({
         };
         
         // Replace temporary comment with backend comment
-        if (isOwnProfile) {
-          setViewedUserPosts((prev) => {
-            return prev.map((p) =>
-              p.id === postId
-                ? { 
-                    ...p, 
-                    comments: p.comments?.map(c => c.id === newComment.id ? backendComment : c) || [backendComment]
-                  }
-                : p
-            );
-          });
-        } else {
+        // For own profile, parent's onAddComment will handle the update
+        // Only update local state for other users' profiles
+        if (!isOwnProfile) {
           setViewedUserPosts((prev) => {
             return prev.map((p) =>
               p.id === postId
@@ -1451,16 +1435,8 @@ export default function ProfilePage({
       // If API call fails (except 404), revert optimistic update
       if (err.status !== 404) {
         console.error("Error saving comment to backend:", err);
-        // Revert optimistic update
-        if (isOwnProfile) {
-          setViewedUserPosts((prev) => {
-            return prev.map((p) =>
-              p.id === postId
-                ? { ...p, comments: p.comments?.filter(c => c.id !== newComment.id) || [] }
-                : p
-            );
-          });
-        } else {
+        // Revert optimistic update (only for other users' profiles)
+        if (!isOwnProfile) {
           setViewedUserPosts((prev) => {
             return prev.map((p) =>
               p.id === postId
@@ -1474,62 +1450,97 @@ export default function ProfilePage({
       // 404 means API not available, continue with localStorage fallback
     }
 
-    // Save to localStorage as fallback or backup
-    try {
-      const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
-      // For reviews, check both id and reviewId to find the post
-      const postIndex = existing.findIndex((post) => 
-        post.id === postId || 
-        (post.type === 'review' && (post.reviewId === postId || post.reviewId === post.reviewId))
-      );
-      
-      const commentToSave = savedComment ? {
-        id: savedComment.id || savedComment.Id || newComment.id,
-        username: savedComment.username || savedComment.Username || newComment.username,
-        userAvatar: savedComment.userAvatar || savedComment.UserAvatar || savedComment.user?.avatarUrl || savedComment.User?.AvatarUrl || newComment.userAvatar,
-        text: savedComment.text || savedComment.Text || savedComment.commentText || savedComment.CommentText || commentText.trim(),
-        timestamp: savedComment.timestamp || savedComment.createdAt || savedComment.CreatedAt || newComment.timestamp,
-      } : newComment;
-      
-      if (postIndex !== -1) {
-        // Post exists, update it
-        const updated = existing.map((post) => {
-          // Check if this is the post we're looking for (by id or reviewId)
-          const isTargetPost = post.id === postId || 
-            (post.type === 'review' && (post.reviewId === postId || post.id === postId));
-          
-          if (isTargetPost) {
-            return { ...post, comments: [...(post.comments || []), commentToSave] };
-          }
-          return post;
-        });
-        localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
-      } else {
-        // Post doesn't exist in localStorage, add it with the comment
-        const postToAdd = viewedUserPosts.find((p) => p.id === postId) || userPosts.find((p) => p.id === postId);
-        if (postToAdd) {
-          const postWithComment = {
-            ...postToAdd,
-            // Ensure reviewId is set for reviews
-            ...(postToAdd.type === 'review' && !postToAdd.reviewId ? { reviewId: postToAdd.id } : {}),
-            comments: [...(postToAdd.comments || []), commentToSave],
-          };
-          existing.push(postWithComment);
-          localStorage.setItem("bookverse_social_feed", JSON.stringify(existing));
-        }
-      }
-    } catch (err) {
-      console.error("Error saving comment to localStorage:", err);
-      // Don't throw - localStorage is just a fallback
-    }
-
-    // For own profile, also call parent's handler to sync with App.jsx
+    // For own profile, call parent's handler FIRST - it will handle localStorage and state updates
+    // This prevents duplicate comments
     if (isOwnProfile && onAddComment) {
       try {
+        // Parent handler will update userPosts, localStorage, and everything else
         await onAddComment(postId, commentText);
+        // Don't update viewedUserPosts here - useEffect will sync it with userPosts
+        // This prevents duplicate comments
       } catch (err) {
         console.error("Error adding comment via parent handler:", err);
-        // Don't throw - we've already updated local state
+        // If parent handler fails, we still have the comment in backend
+        // But we need to update viewedUserPosts manually since parent handler didn't update userPosts
+        const finalComment = savedComment ? {
+          id: savedComment.id || savedComment.Id || newComment.id,
+          username: savedComment.username || savedComment.Username || newComment.username,
+          userAvatar: savedComment.userAvatar || savedComment.UserAvatar || savedComment.user?.avatarUrl || savedComment.User?.AvatarUrl || newComment.userAvatar,
+          text: savedComment.text || savedComment.Text || savedComment.commentText || savedComment.CommentText || commentText.trim(),
+          timestamp: savedComment.timestamp || savedComment.createdAt || savedComment.CreatedAt || newComment.timestamp,
+          createdAt: savedComment.createdAt || savedComment.CreatedAt || newComment.createdAt,
+        } : newComment;
+        
+        // Only update if comment doesn't already exist (prevent duplicate)
+        setViewedUserPosts((prev) => {
+          return prev.map((p) => {
+            if (p.id === postId) {
+              const hasComment = p.comments?.some(c => 
+                c.id === finalComment.id || 
+                (c.text === finalComment.text && c.username === finalComment.username && 
+                 Math.abs(new Date(c.timestamp).getTime() - new Date(finalComment.timestamp).getTime()) < 5000)
+              );
+              if (!hasComment) {
+                return {
+                  ...p,
+                  comments: [...(p.comments || []), finalComment],
+                };
+              }
+              return p;
+            }
+            return p;
+          });
+        });
+      }
+    } else {
+      // For other users' profiles, save to localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
+        const postIndex = existing.findIndex((post) => 
+          post.id === postId || 
+          (post.type === 'review' && (post.reviewId === postId || post.id === postId))
+        );
+        
+        const commentToSave = savedComment ? {
+          id: savedComment.id || savedComment.Id || newComment.id,
+          username: savedComment.username || savedComment.Username || newComment.username,
+          userAvatar: savedComment.userAvatar || savedComment.UserAvatar || savedComment.user?.avatarUrl || savedComment.User?.AvatarUrl || newComment.userAvatar,
+          text: savedComment.text || savedComment.Text || savedComment.commentText || savedComment.CommentText || commentText.trim(),
+          timestamp: savedComment.timestamp || savedComment.createdAt || savedComment.CreatedAt || newComment.timestamp,
+        } : newComment;
+        
+        if (postIndex !== -1) {
+          const updated = existing.map((post) => {
+            const isTargetPost = post.id === postId || 
+              (post.type === 'review' && (post.reviewId === postId || post.id === postId));
+            
+            if (isTargetPost) {
+              // Check for duplicate before adding
+              const hasComment = (post.comments || []).some(c => 
+                c.id === commentToSave.id || 
+                (c.text === commentToSave.text && c.username === commentToSave.username)
+              );
+              if (!hasComment) {
+                return { ...post, comments: [...(post.comments || []), commentToSave] };
+              }
+            }
+            return post;
+          });
+          localStorage.setItem("bookverse_social_feed", JSON.stringify(updated));
+        } else {
+          const postToAdd = viewedUserPosts.find((p) => p.id === postId);
+          if (postToAdd) {
+            const postWithComment = {
+              ...postToAdd,
+              ...(postToAdd.type === 'review' && !postToAdd.reviewId ? { reviewId: postToAdd.id } : {}),
+              comments: [...(postToAdd.comments || []), commentToSave],
+            };
+            existing.push(postWithComment);
+            localStorage.setItem("bookverse_social_feed", JSON.stringify(existing));
+          }
+        }
+      } catch (err) {
+        console.error("Error saving comment to localStorage:", err);
       }
     }
     
@@ -2200,12 +2211,6 @@ export default function ProfilePage({
                     <div className="text-base font-black text-amber-600 dark:text-amber-600">{stats.posts}</div>
                     <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">{t("profile.posts")}</div>
                   </div>
-                  {isOwnProfile && (
-                    <div className="px-2 py-1.5 rounded-md bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-50 dark:to-red-50 border border-blue-200 dark:border-blue-200 shadow-sm">
-                      <div className="text-base font-black text-orange-600 dark:text-orange-600">{stats.shelves}</div>
-                      <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-700 mt-0.5">{t("profile.shelves")}</div>
-                    </div>
-                  )}
                   <div 
                     onClick={handleFollowersClick}
                     className="px-2 py-1.5 rounded-md bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-50 dark:to-indigo-50 border border-purple-200 dark:border-purple-200 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105"

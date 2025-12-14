@@ -173,6 +173,74 @@ export async function login({ email, password }) {
       status: error.status,
       data: error.data
     });
+    
+    // Enhance error message for better user experience
+    if (error.status === 401) {
+      // 401 usually means invalid credentials
+      const enhancedError = new Error("error.login.invalidCredentials");
+      enhancedError.status = 401;
+      enhancedError.translationKey = "error.login.invalidCredentials";
+      enhancedError.data = error.data;
+      throw enhancedError;
+    } else if (error.status === 404) {
+      // 404 usually means user not found
+      const enhancedError = new Error("error.login.userNotFound");
+      enhancedError.status = 404;
+      enhancedError.translationKey = "error.login.userNotFound";
+      enhancedError.data = error.data;
+      throw enhancedError;
+    } else if (error.status === 400 || error.status === 422) {
+      // 400/422 usually means invalid input
+      const enhancedError = new Error("error.login.invalidCredentials");
+      enhancedError.status = error.status;
+      enhancedError.translationKey = "error.login.invalidCredentials";
+      enhancedError.data = error.data;
+      throw enhancedError;
+    } else if (error.message && error.message.includes("network")) {
+      // Network errors
+      const enhancedError = new Error("error.login.networkError");
+      enhancedError.status = error.status;
+      enhancedError.translationKey = "error.login.networkError";
+      enhancedError.data = error.data;
+      throw enhancedError;
+    }
+    
+    // Preserve translation key if already set
+    if (error.translationKey) {
+      throw error;
+    }
+    
+    // For other errors, try to extract meaningful message from backend
+    if (error.data) {
+      const data = error.data;
+      let message = error.message;
+      
+      // Check for backend error messages
+      if (data.detail) {
+        message = data.detail;
+      } else if (data.message) {
+        message = data.message;
+      } else if (data.errorMessages && Array.isArray(data.errorMessages) && data.errorMessages.length > 0) {
+        message = data.errorMessages[0];
+      }
+      
+      // Check message content for specific error types
+      const lowerMessage = message.toLowerCase();
+      if (lowerMessage.includes("user not found") || lowerMessage.includes("does not exist")) {
+        const enhancedError = new Error("error.login.userNotFound");
+        enhancedError.status = error.status;
+        enhancedError.translationKey = "error.login.userNotFound";
+        enhancedError.data = error.data;
+        throw enhancedError;
+      } else if (lowerMessage.includes("password") || lowerMessage.includes("invalid") || lowerMessage.includes("incorrect")) {
+        const enhancedError = new Error("error.login.invalidCredentials");
+        enhancedError.status = error.status;
+        enhancedError.translationKey = "error.login.invalidCredentials";
+        enhancedError.data = error.data;
+        throw enhancedError;
+      }
+    }
+    
     throw error;
   }
 }
