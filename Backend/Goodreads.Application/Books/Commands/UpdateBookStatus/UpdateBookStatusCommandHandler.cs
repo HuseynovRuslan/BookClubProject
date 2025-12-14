@@ -76,29 +76,6 @@ public class UpdateBookStatusCommandHandler : IRequestHandler<UpdateBookStatusCo
         await _unitOfWork.SaveChangesAsync();
         _logger.LogInformation("Book {BookId} updated to status {ShelfName}", request.BookId, request.TargetShelfName);
 
- 
-        //var currentYear = DateTime.UtcNow.Year;
-
-        //var readShelf = await _unitOfWork.Shelves.GetSingleOrDefaultAsync(
-        //     filter: s => s.UserId == userId && s.Name == DefaultShelves.Read);
-
-        //if (readShelf == null)
-        //    return Result.Fail(ShelfErrors.NotFound("Read Shelf"));
-
-        //var completedBooksCount = await _unitOfWork.BookShelves.CountAsync(
-        //    bs => bs.ShelfId == readShelf.Id && bs.AddedAt.Year == currentYear);
-
-        //var userChallenge = await _unitOfWork.UserYearChallenges.GetSingleOrDefaultAsync(
-        //    filter: c => c.UserId == userId && c.Year == currentYear);
-
-        //if (userChallenge != null && userChallenge.CompletedBooksCount != completedBooksCount)
-        //{
-        //    userChallenge.CompletedBooksCount = completedBooksCount;
-        //    _unitOfWork.UserYearChallenges.Update(userChallenge);
-        //    await _unitOfWork.SaveChangesAsync();
-        //    _logger.LogInformation("Updated yearly challenge completed count for user {UserId} to {Count}", userId, completedBooksCount);
-        //}
-
         return Result.Ok();
     }
 

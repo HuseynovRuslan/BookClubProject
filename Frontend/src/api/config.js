@@ -1,15 +1,7 @@
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://localhost:7050";
-// Mock dataları deaktiv et - Real API istifadə olunur
-const USE_API_MOCKS = false; // Real API aktiv
-
-// Console'da API durumunu göster
-if (USE_API_MOCKS) {
-  console.log("⚠️ Mock datalar aktif - API yerine localStorage kullanılıyor");
-} else {
-  console.log("✅ Backend API aktif - Gerçek API kullanılıyor:", API_BASE_URL);
-}
+const USE_API_MOCKS = false;
 
 const ACCESS_TOKEN_KEY = "bookverse_access_token";
 const REFRESH_TOKEN_KEY = "bookverse_refresh_token";
@@ -67,7 +59,6 @@ export function getEmailFromToken() {
     // Extract email from claims (JWT standard uses 'email' claim)
     return decodedPayload.email || decodedPayload.Email || null;
   } catch (error) {
-    console.warn('Failed to decode JWT token for email:', error);
     return null;
   }
 }

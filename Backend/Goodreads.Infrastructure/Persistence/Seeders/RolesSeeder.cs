@@ -10,7 +10,6 @@ internal class RolesSeeder(ApplicationDbContext dbContext, UserManager<User> use
     {
         if (await dbContext.Database.CanConnectAsync())
         {
-            // Create roles using RoleManager
             if (!await roleManager.RoleExistsAsync(Roles.Admin))
             {
                 await roleManager.CreateAsync(new IdentityRole(Roles.Admin));
@@ -21,7 +20,6 @@ internal class RolesSeeder(ApplicationDbContext dbContext, UserManager<User> use
                 await roleManager.CreateAsync(new IdentityRole(Roles.User));
             }
 
-            // Seed an admin user (testing)
             if (!await dbContext.Users.AnyAsync(u => u.UserName == "admin"))
             {
                 var adminUser = new User

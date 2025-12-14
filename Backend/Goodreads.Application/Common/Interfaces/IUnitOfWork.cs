@@ -1,5 +1,4 @@
-﻿// Bu using-ləri mütləq əlavə et:
-using Goodreads.Domain.Entities;
+﻿using Goodreads.Domain.Entities;
 
 namespace Goodreads.Application.Common.Interfaces
 {

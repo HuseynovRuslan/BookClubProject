@@ -52,9 +52,7 @@ internal class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand,
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = WebUtility.UrlEncode(token);
 
-        var confirmationLink = $"https://localhost:7050/api/auth/confirm-email?userId={user.Id}&token={encodedToken}"; // Should be Frontend
-
-        // await _emailService.SendEmailAsync(user.Email, "Confirm your email", $"Click <a href='{confirmationLink}'>here</a> to confirm your email.");
+        var confirmationLink = $"https://localhost:7050/api/auth/confirm-email?userId={user.Id}&token={encodedToken}";
 
         return Result<string>.Ok(confirmationLink);
     }

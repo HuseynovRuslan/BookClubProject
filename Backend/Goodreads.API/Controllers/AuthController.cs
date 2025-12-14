@@ -6,7 +6,7 @@ using Goodreads.Application.Auth.Commands.Logout;
 using Goodreads.Application.Auth.Commands.RefreshToken;
 using Goodreads.Application.Auth.Commands.RegisterUser;
 using Goodreads.Application.Auth.Commands.ResetEmailConfirmation;
-using Goodreads.Application.Auth.Commands.ResetPassword;
+//using Goodreads.Application.Auth.Commands.ResetPassword;
 using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
 using MediatR;
@@ -110,16 +110,16 @@ public class AuthController : BaseController
             onFailure => CustomResults.Problem(onFailure));
     }
 
-    [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword([FromQuery] string userId, [FromQuery] string token, [FromBody] ResetPasswordRequest request)
-    {
-        var command = new ResetPasswordCommand(userId, token, request.NewPassword);
-        var result = await Sender.Send(command);
+    //[HttpPost("reset-password")]
+    //public async Task<IActionResult> ResetPassword([FromQuery] string userId, [FromQuery] string token, [FromBody] ResetPasswordRequest request)
+    //{
+    //    var command = new ResetPasswordCommand(userId, token, request.NewPassword);
+    //    var result = await Sender.Send(command);
         
-        return result.Match(
-            () => Ok(ApiResponse.Success("Password reset successfully.")),
-            onFailure => CustomResults.Problem(onFailure));
-    }
+    //    return result.Match(
+    //        () => Ok(ApiResponse.Success("Password reset successfully.")),
+    //        onFailure => CustomResults.Problem(onFailure));
+    //}
 
 
 }

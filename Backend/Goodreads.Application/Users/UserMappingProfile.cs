@@ -8,7 +8,6 @@ public class UserMappingProfile : Profile
                 string.IsNullOrEmpty(src.ProfilePictureUrl) 
                     ? "/images/default-profile.png" 
                     : src.ProfilePictureUrl))
-            // Role is set manually in query handlers using UserManager.GetRolesAsync()
             .ForMember(dest => dest.Role, opt => opt.Ignore());
 
         CreateMap<User, UserProfileDto>()
@@ -16,7 +15,6 @@ public class UserMappingProfile : Profile
                 string.IsNullOrEmpty(src.ProfilePictureUrl) 
                     ? "/images/default-profile.png" 
                     : src.ProfilePictureUrl))
-            // Role is set manually in query handlers using UserManager.GetRolesAsync()
             .ForMember(dest => dest.Role, opt => opt.Ignore());
 
         CreateMap<Social, SocialDto>();

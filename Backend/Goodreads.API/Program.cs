@@ -58,9 +58,10 @@ app.MapControllers();
 
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
+    // QEYD: Production-da environment variable və ya appsettings.json-dan oxuyun
     Authorization = new[] { new HangfireCustomBasicAuthenticationFilter(){
-        User = "admin",
-        Pass = "admin"
+        User = builder.Configuration["Hangfire:Username"] ?? "admin",
+        Pass = builder.Configuration["Hangfire:Password"] ?? "admin"
     } },
 });
 

@@ -79,13 +79,11 @@ public class GetAllQuotesQueryHandler : IRequestHandler<GetAllQuotesQuery, Paged
         {
             var quoteDto = _mapper.Map<QuoteDto>(quote);
             
-            // Add book info if available
             if (!string.IsNullOrEmpty(quote.BookId) && books.TryGetValue(quote.BookId, out var book))
             {
                 quoteDto.Book = _mapper.Map<BookDto>(book);
             }
             
-            // Add user info if available
             if (users.TryGetValue(quote.CreatedByUserId, out var user))
             {
                 quoteDto.User = _mapper.Map<UserDto>(user);
