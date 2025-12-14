@@ -17,13 +17,10 @@ internal class AuthorAuthorizationService(
         if (userContext.IsInRole(Roles.Admin))
             return true;
 
-        // Check if user claimed this author profile
         var author = await unitOfWork.Authors.GetByIdAsync(authorId);
         if (author == null)
             return false;
 
-        // For now, we'll check if author has UserId (claimed author)
-        // In future, you might want to add IsClaimed property
         return author.UserId == userId;
     }
 }

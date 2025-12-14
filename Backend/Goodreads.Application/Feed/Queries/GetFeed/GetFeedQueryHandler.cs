@@ -106,7 +106,6 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
                     Quote = _mapper.Map<QuoteDto>(quote)
                 };
                 
-                // Add book info if available
                 if (!string.IsNullOrEmpty(quote.BookId) && quoteBooks.TryGetValue(quote.BookId, out var book))
                 {
                     feedItem.Book = _mapper.Map<BookDto>(book);
@@ -122,7 +121,6 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             }
         }
 
-        // Add reviews
         foreach (var review in reviewsList)
         {
             var user = await _userManager.FindByIdAsync(review.UserId);
@@ -139,7 +137,6 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             }
         }
 
-        // Add book additions
         foreach (var bookShelf in bookShelvesList)
         {
             var shelf = await _unitOfWork.Shelves.GetByIdAsync(bookShelf.ShelfId);

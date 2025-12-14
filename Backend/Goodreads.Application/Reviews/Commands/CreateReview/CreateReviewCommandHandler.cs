@@ -66,27 +66,6 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
             }
         }
 
-        //// Update Year Challenge
-        //var currentYear = DateTime.UtcNow.Year;
-
-        //var userChallenge = (await _unitOfWork.UserYearChallenges.GetSingleOrDefaultAsync(
-        //    c => c.UserId == userId && c.Year == currentYear));
-
-        //if (userChallenge != null)
-        //{
-        //    var readBookCount = await _unitOfWork.BookShelves.CountAsync(bs =>
-        //        bs.Shelf.UserId == userId &&
-        //        bs.Shelf.IsDefault &&
-        //        bs.Shelf.Name == DefaultShelves.Read &&
-        //        bs.AddedAt.Year == currentYear);
-
-        //    if (userChallenge.CompletedBooksCount != readBookCount)
-        //    {
-        //        userChallenge.CompletedBooksCount = readBookCount;
-        //        _unitOfWork.UserYearChallenges.Update(userChallenge);
-        //    }
-        //}
-
         await _unitOfWork.SaveChangesAsync();
 
         return Result<string>.Ok(review.Id);
