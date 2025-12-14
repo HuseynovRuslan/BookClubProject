@@ -333,9 +333,9 @@ export default function SearchPage({ onBookClick }) {
                                   {user.bio}
                                 </p>
                               )}
-                              {user.role && (
+                              {user.role === "writer" && (
                                 <span className="inline-block mt-2 px-2 py-1 rounded-md bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 text-gray-900 dark:text-gray-900 text-xs font-bold border border-amber-200 dark:border-amber-200">
-                                  {user.role === "writer" ? `✍️ ${t("profile.writer")}` : `📚 ${t("profile.reader")}`}
+                                  ✍️ {t("profile.writer")}
                                 </span>
                               )}
                             </div>

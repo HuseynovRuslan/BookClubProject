@@ -630,20 +630,30 @@ export default function ProfilePage({
       
       // Immediately update local state with the response
       if (updatedProfile) {
-        setProfile(updatedProfile);
         const fullName = updatedProfile.firstName 
           ? `${updatedProfile.firstName}${updatedProfile.surname ? ` ${updatedProfile.surname}` : ""}`.trim()
           : updatedProfile.name || "";
-        setEditedUser({
+        
+        // Update profile state with bio included
+        const updatedProfileWithBio = {
           ...updatedProfile,
           name: fullName,
+          bio: updatedProfile.bio || editedUser.bio || "",
+        };
+        
+        setProfile(updatedProfileWithBio);
+        setEditedUser({
+          ...updatedProfileWithBio,
           email: updatedProfile.email || editedUser.email || "",
         });
       }
       
-      // Also refresh from server to ensure we have the latest data
-      await loadProfile();
+      // Close edit mode first to show updated data
       setIsEditing(false);
+      
+      // Refresh from server to ensure we have the latest data and update the display
+      await loadProfile();
+      
       setProfileMessage(t("profile.updated"));
       
       // Clear message after 3 seconds
@@ -2250,6 +2260,7 @@ export default function ProfilePage({
                         ...profile,
                         name: fullName,
                         email: profile?.email || "",
+                        bio: profile?.bio || "",
                       });
                       setProfileMessage(null);
                       setProfileError(null);
@@ -2270,6 +2281,7 @@ export default function ProfilePage({
                         ...profile,
                         name: fullName,
                         email: profile?.email || "",
+                        bio: profile?.bio || "",
                       });
                       setIsEditing(true);
                     }}
