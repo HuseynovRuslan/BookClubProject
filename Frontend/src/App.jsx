@@ -69,7 +69,6 @@ function App() {
       if (!reported) return [];
       return JSON.parse(reported);
     } catch (err) {
-      console.error("Error loading reported posts:", err);
       return [];
     }
   };
@@ -102,7 +101,7 @@ function App() {
         setUserPosts(userPostsFromStorage);
       }
     } catch (err) {
-      console.error("Error loading userPosts from localStorage:", err);
+      // Error loading userPosts from localStorage
     }
   }, [currentUser]);
 
@@ -180,7 +179,7 @@ function App() {
         });
         localStorage.setItem("bookverse_social_feed", JSON.stringify([cleanPost, ...cleanedExisting]));
       } catch (err) {
-        console.error("Error saving post to localStorage:", err);
+        // Error saving post to localStorage
       }
       return updated;
     });
@@ -200,7 +199,6 @@ function App() {
       // User books-a da əlavə et
       setUserBooks((prev) => [bookWithMeta, ...prev]);
     } catch (err) {
-      console.error("Error creating book:", err);
       // Fallback: yalnız local state-ə əlavə et
       const bookWithMeta = {
         ...newBook,

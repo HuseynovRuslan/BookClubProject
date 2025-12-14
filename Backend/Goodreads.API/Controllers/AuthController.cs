@@ -1,10 +1,12 @@
 ﻿using Goodreads.API.Common;
 using Goodreads.Application.Auth.Commands.ConfirmEmail;
+using Goodreads.Application.Auth.Commands.ForgotPassword;
 using Goodreads.Application.Auth.Commands.LoginUser;
 using Goodreads.Application.Auth.Commands.Logout;
 using Goodreads.Application.Auth.Commands.RefreshToken;
 using Goodreads.Application.Auth.Commands.RegisterUser;
 using Goodreads.Application.Auth.Commands.ResetEmailConfirmation;
+using Goodreads.Application.Auth.Commands.ResetPassword;
 using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
 using MediatR;
@@ -13,6 +15,11 @@ using Microsoft.AspNetCore.Mvc;
 using SharedKernel;
 
 namespace Goodreads.API.Controllers;
+
+public class ResetPasswordRequest
+{
+    public string NewPassword { get; set; } = default!;
+}
 
 [ApiController]
 [Route("api/[controller]")]
@@ -93,32 +100,26 @@ public class AuthController : BaseController
             failure => CustomResults.Problem(failure));
     }
 
-    //[HttpPost("forgot-password")]
-    //[EndpointSummary("Request password reset link")]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
+    {
+        var result = await Sender.Send(command);
 
-    //public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
-    //{
-    //    var result = await mediator.Send(command);
+        return result.Match(
+            resetLink => Ok(ApiResponse<string>.Success(resetLink, "Password reset link sent to your email.")),
+            onFailure => CustomResults.Problem(onFailure));
+    }
 
-    //    return result.Match(
-    //        resetLink => Ok(ApiResponse<string>.Success(resetLink, "password reset link sent.")),
-    //        onFailure => CustomResults.Problem(onFailure));
-    //}
-
-
-    //[HttpPost("reset-password")]
-    //[EndpointSummary("Reset user password")]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    //[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> ResetPassword([FromQuery] string userId, [FromQuery] string token, [FromBody] string NewPassword)
-    //{
-    //    var result = await mediator.Send(new ResetPasswordCommand(userId, token, NewPassword));
-    //    return result.Match(
-    //        () => Ok(ApiResponse.Success("password reset successfully.")),
-    //        onFailure => CustomResults.Problem(onFailure));
-    //}
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromQuery] string userId, [FromQuery] string token, [FromBody] ResetPasswordRequest request)
+    {
+        var command = new ResetPasswordCommand(userId, token, request.NewPassword);
+        var result = await Sender.Send(command);
+        
+        return result.Match(
+            () => Ok(ApiResponse.Success("Password reset successfully.")),
+            onFailure => CustomResults.Problem(onFailure));
+    }
 
 
 }

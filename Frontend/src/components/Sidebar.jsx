@@ -20,13 +20,6 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
     }
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
-  
-  // Debug: Check user role
-  if (user) {
-    console.log("Sidebar - User object:", user);
-    console.log("Sidebar - User role:", user.role);
-    console.log("Sidebar - isAdmin:", isAdmin);
-  }
 
   // Əsas menyu
   const mainMenuItems = [

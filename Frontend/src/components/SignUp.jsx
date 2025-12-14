@@ -102,7 +102,6 @@ export default function SignUpPage({ onSwitchToSignIn }) {
           navigate("/social");
         } catch (loginErr) {
           // If auto-login fails, redirect to login page
-          console.error("Auto-login failed:", loginErr);
           if (onSwitchToSignIn) {
             onSwitchToSignIn();
           } else {

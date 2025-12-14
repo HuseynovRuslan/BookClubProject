@@ -156,7 +156,6 @@ export default function SocialFeedPost({
         onLikeChange(post.id, newLikes, liked);
       }
     } catch (err) {
-      console.error("Error toggling like:", err);
       // Revert optimistic update on error
       setIsLiked((prev) => !prev);
       setLikes((prev) => prev + (isLiked ? -1 : 1));
@@ -191,7 +190,6 @@ export default function SocialFeedPost({
       // Keep comment box open after submitting so user can add more comments
     } catch (err) {
       // Preserve comment text on error
-      console.error("Error submitting comment:", err);
       setCommentError(err.message || t("post.commentError") || "Failed to submit comment. Please try again.");
     } finally {
       setIsSubmittingComment(false);
@@ -211,7 +209,6 @@ export default function SocialFeedPost({
     // SECURITY: Only allow deletion if user is the owner
     // Backend should also verify ownership before allowing delete
     if (!isPostOwner) {
-      console.error("Attempted to delete post without ownership");
       alert(t("post.noPermission") || "You don't have permission to delete this post.");
       return;
     }
@@ -227,7 +224,6 @@ export default function SocialFeedPost({
     try {
       await onDeletePost(post.id, post);
     } catch (err) {
-      console.error("Error deleting post:", err);
       alert(t("post.deleteError") || "Failed to delete post. Please try again.");
     } finally {
       setIsDeleting(false);
@@ -259,7 +255,6 @@ export default function SocialFeedPost({
         }
       }
     } catch (err) {
-      console.error("Error reporting post:", err);
       alert(t("post.reportError") || "Failed to report post. Please try again.");
     } finally {
       setIsDeleting(false);
@@ -281,7 +276,6 @@ export default function SocialFeedPost({
     // SECURITY: Only allow editing if user is the owner
     // Backend should also verify ownership before allowing edit/delete
     if (!isPostOwner) {
-      console.error("Attempted to edit post without ownership");
       alert(t("post.noPermission") || "You don't have permission to edit this post.");
       return;
     }
@@ -371,7 +365,6 @@ export default function SocialFeedPost({
         // The parent's onPostUpdate should update the post prop, which will trigger useEffect
       }
     } catch (err) {
-      console.error("Error updating post:", err);
       alert(t("post.updateError") || "Failed to update post. Please try again.");
     } finally {
       setIsDeleting(false);
@@ -564,20 +557,6 @@ export default function SocialFeedPost({
                                          post.authorName ||
                                          post.AuthorName ||
                                          '';
-                        
-                        // Debug log to see what we have
-                        if (isQuote) {
-                          console.log("=== Quote post author check ===");
-                          console.log("post.bookAuthor:", post.bookAuthor);
-                          console.log("post.author:", post.author);
-                          console.log("post.book:", post.book);
-                          console.log("post.book?.authorName:", post.book?.authorName);
-                          console.log("post.Book?.AuthorName:", post.Book?.AuthorName);
-                          console.log("post.book?.author:", post.book?.author);
-                          console.log("post.Book?.Author:", post.Book?.Author);
-                          console.log("Final authorName:", authorName);
-                          console.log("Full post object:", post);
-                        }
                         
                         // Show author name if we have it
                         if (authorName && authorName.trim() !== '') {
@@ -861,7 +840,6 @@ export default function SocialFeedPost({
                           await result;
                         }
                       } catch (err) {
-                        console.error("Error deleting comment:", err);
                         // Error is already handled in the handler
                       }
                     }}
