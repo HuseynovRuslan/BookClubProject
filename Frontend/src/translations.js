@@ -33,6 +33,12 @@ export const translations = {
     "error.authorNotFound": "Could not determine the book's author. Please try again.",
     "error.authRequired": "You must log in. Please log in again.",
     "error.selectBook": "Please select a book",
+    "error.login.invalidCredentials": "Email or password is incorrect. Please check your credentials and try again.",
+    "error.login.userNotFound": "User not found. Please check your email address.",
+    "error.login.wrongPassword": "Password is incorrect. Please try again.",
+    "error.login.accountLocked": "Your account has been locked. Please contact support.",
+    "error.login.networkError": "Could not connect to server. Please check your internet connection.",
+    "error.login.unknownError": "An error occurred during login. Please try again.",
     
     // Guest Mode
     "guest.restrictionTitle": "Account Required",
@@ -473,6 +479,12 @@ export const translations = {
     "error.authorNotFound": "Не удалось определить автора книги. Пожалуйста, попробуйте снова.",
     "error.authRequired": "Вы должны войти в систему. Пожалуйста, войдите снова.",
     "error.selectBook": "Пожалуйста, выберите книгу",
+    "error.login.invalidCredentials": "Email или пароль неверны. Пожалуйста, проверьте свои учетные данные и попробуйте снова.",
+    "error.login.userNotFound": "Пользователь не найден. Пожалуйста, проверьте свой email адрес.",
+    "error.login.wrongPassword": "Пароль неверен. Пожалуйста, попробуйте снова.",
+    "error.login.accountLocked": "Ваш аккаунт заблокирован. Пожалуйста, свяжитесь с поддержкой.",
+    "error.login.networkError": "Не удалось подключиться к серверу. Пожалуйста, проверьте подключение к интернету.",
+    "error.login.unknownError": "Произошла ошибка при входе. Пожалуйста, попробуйте снова.",
     
     // Guest Mode
     "guest.restrictionTitle": "Требуется аккаунт",
@@ -847,6 +859,12 @@ export const translations = {
     "error.authorNotFound": "Kitabın yazarı belirlenemedi. Lütfen tekrar deneyin.",
     "error.authRequired": "Giriş yapmalısınız. Lütfen tekrar giriş yapın.",
     "error.selectBook": "Lütfen bir kitap seçin",
+    "error.login.invalidCredentials": "Email veya şifre yanlış. Lütfen bilgilerinizi kontrol edin ve tekrar deneyin.",
+    "error.login.userNotFound": "Kullanıcı bulunamadı. Lütfen email adresinizi kontrol edin.",
+    "error.login.wrongPassword": "Şifre yanlış. Lütfen tekrar deneyin.",
+    "error.login.accountLocked": "Hesabınız kilitlenmiş. Lütfen destek ile iletişime geçin.",
+    "error.login.networkError": "Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.",
+    "error.login.unknownError": "Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.",
     
     // Guest Mode
     "guest.restrictionTitle": "Hesap Gerekli",
@@ -1278,6 +1296,12 @@ export const translations = {
     "error.authorNotFound": "Kitabın müəllifini müəyyən etmək mümkün olmadı. Zəhmət olmasa yenidən cəhd edin.",
     "error.authRequired": "Giriş etməlisiniz. Zəhmət olmasa yenidən giriş edin.",
     "error.selectBook": "Zəhmət olmasa kitab seçin",
+    "error.login.invalidCredentials": "Email və ya şifrə yanlışdır. Zəhmət olmasa məlumatlarınızı yoxlayın və yenidən cəhd edin.",
+    "error.login.userNotFound": "İstifadəçi tapılmadı. Zəhmət olmasa email ünvanınızı yoxlayın.",
+    "error.login.wrongPassword": "Şifrə yanlışdır. Zəhmət olmasa yenidən cəhd edin.",
+    "error.login.accountLocked": "Hesabınız bloklanıb. Zəhmət olmasa dəstək ilə əlaqə saxlayın.",
+    "error.login.networkError": "Serverə qoşula bilmədi. Zəhmət olmasa internet əlaqənizi yoxlayın.",
+    "error.login.unknownError": "Giriş zamanı xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
     
     // Guest Mode
     "guest.restrictionTitle": "Hesab Tələb Olunur",

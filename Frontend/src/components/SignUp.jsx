@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTranslation } from "../hooks/useTranslation";
 import { login as loginAPI } from "../api/auth";
 
 export default function SignUpPage({ onSwitchToSignIn }) {
   const navigate = useNavigate();
+  const t = useTranslation();
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
@@ -106,7 +108,45 @@ export default function SignUpPage({ onSwitchToSignIn }) {
         }
       }, 1500);
     } catch (err) {
-      setError(err.message || "Failed to create account. Please try again.");
+      // Get user-friendly error message
+      let errorMessage = t("error.default");
+      
+      // Check if error has translation key
+      if (err.translationKey) {
+        errorMessage = t(err.translationKey);
+      } else if (err.message) {
+        // Check error message content for specific cases
+        const message = err.message.toLowerCase();
+        if (message.includes("already exists") || message.includes("duplicate") || message.includes("taken")) {
+          errorMessage = t("error.409");
+        } else if (message.includes("not found") || message.includes("does not exist")) {
+          errorMessage = t("error.404");
+        } else if (message.includes("invalid") || message.includes("incorrect") || message.includes("format")) {
+          errorMessage = t("error.400");
+        } else if (message.includes("network") || message.includes("fetch") || message.includes("connection")) {
+          errorMessage = t("error.network");
+        } else if (err.status === 409) {
+          errorMessage = t("error.409");
+        } else if (err.status === 400 || err.status === 422) {
+          errorMessage = t("error.400");
+        } else if (err.status === 404) {
+          errorMessage = t("error.404");
+        } else {
+          // Try to use translation if message is a translation key
+          const translated = t(err.message);
+          if (translated !== err.message) {
+            errorMessage = translated;
+          } else {
+            // Use original message if it's already user-friendly
+            errorMessage = err.message;
+          }
+        }
+      } else if (err.status) {
+        // Use status-based translation
+        errorMessage = t(`error.${err.status}`) || t("error.default");
+      }
+      
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };

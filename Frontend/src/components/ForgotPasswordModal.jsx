@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { X, Mail, CheckCircle } from "lucide-react";
+import { useTranslation } from "../hooks/useTranslation";
 import { forgotPassword } from "../api/auth";
 
 export default function ForgotPasswordModal({ isOpen, onClose }) {
+  const t = useTranslation();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -24,7 +26,41 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
       await forgotPassword(email.trim());
       setSuccess(true);
     } catch (err) {
-      setError(err.message || "Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.");
+      // Get user-friendly error message
+      let errorMessage = t("error.default");
+      
+      // Check if error has translation key
+      if (err.translationKey) {
+        errorMessage = t(err.translationKey);
+      } else if (err.message) {
+        // Check error message content for specific cases
+        const message = err.message.toLowerCase();
+        if (message.includes("not found") || message.includes("does not exist") || message.includes("user not found")) {
+          errorMessage = t("error.404");
+        } else if (message.includes("invalid") || message.includes("incorrect") || message.includes("format")) {
+          errorMessage = t("error.400");
+        } else if (message.includes("network") || message.includes("fetch") || message.includes("connection")) {
+          errorMessage = t("error.network");
+        } else if (err.status === 404) {
+          errorMessage = t("error.404");
+        } else if (err.status === 400 || err.status === 422) {
+          errorMessage = t("error.400");
+        } else {
+          // Try to use translation if message is a translation key
+          const translated = t(err.message);
+          if (translated !== err.message) {
+            errorMessage = translated;
+          } else {
+            // Use original message if it's already user-friendly
+            errorMessage = err.message;
+          }
+        }
+      } else if (err.status) {
+        // Use status-based translation
+        errorMessage = t(`error.${err.status}`) || t("error.default");
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

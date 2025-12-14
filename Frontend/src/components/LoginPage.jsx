@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTranslation } from "../hooks/useTranslation";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 
 export default function LoginPage({ onSwitchToSignUp }) {
   const navigate = useNavigate();
+  const t = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +33,53 @@ export default function LoginPage({ onSwitchToSignUp }) {
       // Redirect to Social Feed after successful login
       navigate("/social");
     } catch (err) {
-      setError(err.message || "Failed to sign in. Please try again.");
+      // Get user-friendly error message
+      let errorMessage = t("error.login.unknownError");
+      
+      // Check if error has translation key
+      if (err.translationKey) {
+        errorMessage = t(err.translationKey);
+      } else if (err.message) {
+        // Check error message content for specific cases
+        const message = err.message.toLowerCase();
+        if (message.includes("invalid") || message.includes("incorrect") || message.includes("wrong")) {
+          errorMessage = t("error.login.invalidCredentials");
+        } else if (message.includes("not found") || message.includes("user not found") || message.includes("does not exist")) {
+          errorMessage = t("error.login.userNotFound");
+        } else if (message.includes("password")) {
+          errorMessage = t("error.login.wrongPassword");
+        } else if (message.includes("locked") || message.includes("blocked")) {
+          errorMessage = t("error.login.accountLocked");
+        } else if (message.includes("network") || message.includes("fetch") || message.includes("connection")) {
+          errorMessage = t("error.login.networkError");
+        } else if (err.status === 401) {
+          errorMessage = t("error.login.invalidCredentials");
+        } else if (err.status === 404) {
+          errorMessage = t("error.login.userNotFound");
+        } else if (err.status === 400 || err.status === 422) {
+          errorMessage = t("error.login.invalidCredentials");
+        } else {
+          // Try to use translation if message is a translation key
+          const translated = t(err.message);
+          if (translated !== err.message) {
+            errorMessage = translated;
+          } else {
+            // Use original message if it's already user-friendly
+            errorMessage = err.message;
+          }
+        }
+      } else if (err.status) {
+        // Use status-based translation
+        if (err.status === 401) {
+          errorMessage = t("error.login.invalidCredentials");
+        } else if (err.status === 404) {
+          errorMessage = t("error.login.userNotFound");
+        } else {
+          errorMessage = t(`error.${err.status}`) || t("error.login.unknownError");
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
