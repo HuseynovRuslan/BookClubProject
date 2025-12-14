@@ -36,6 +36,9 @@ export default function RecommendationsPage({ onBookClick }) {
       "Education": t("category.education"),
       "Art": t("category.art"),
       "Music": t("category.music"),
+      "Classic": t("category.classic"),
+      "Literary Fiction": t("category.literaryFiction"),
+      "Historical Fiction": t("category.historicalFiction"),
     };
     return categoryMap[categoryName] || categoryName;
   };

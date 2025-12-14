@@ -381,8 +381,8 @@ export default function MorePage() {
                       <Lock className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <div className="font-bold text-gray-900 mb-1">Şifrəni Dəyiş</div>
-                      <div className="text-sm text-gray-600">Hesab təhlükəsizliyini artır</div>
+                      <div className="font-bold text-gray-900 mb-1">{t("settings.changePasswordTitle") || "Change Password"}</div>
+                      <div className="text-sm text-gray-600">{t("settings.changePasswordDesc") || "Enhance account security"}</div>
                     </div>
                   </div>
                   <button
@@ -392,7 +392,7 @@ export default function MorePage() {
                     }}
                     className="px-4 py-2 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold text-sm transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
-                    Dəyişdir
+                    {t("settings.change") || "Change"}
                   </button>
                 </div>
               </div>

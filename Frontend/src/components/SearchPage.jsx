@@ -177,12 +177,17 @@ export default function SearchPage({ onBookClick }) {
           <div className="relative bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-50 dark:via-orange-50 dark:to-red-50 rounded-3xl p-8 md:p-12 border-2 border-amber-100 dark:border-amber-100 shadow-xl">
             <div className="flex items-center gap-5 mb-8">
               <div className="relative">
-                <div className="w-2 h-12 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-lg"></div>
-                <div className="absolute top-0 left-0 w-2 h-12 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-md opacity-50"></div>
+                <div className="w-2 h-16 bg-gradient-to-b from-amber-500 via-orange-500 to-red-700 rounded-full shadow-xl"></div>
+                <div className="absolute top-0 left-0 w-2 h-16 bg-gradient-to-b from-amber-400 via-orange-400 to-red-600 rounded-full blur-sm opacity-60 animate-pulse"></div>
               </div>
-              <h1 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-gray-900 tracking-tight leading-none">
-                {t("search.title")} {searchMode === "users" ? t("search.users") : t("search.books")}
-              </h1>
+              <div className="flex-1">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent leading-tight mb-2 drop-shadow-sm">
+                  {t("search.title")}
+                </h1>
+                <p className="text-xl sm:text-2xl font-semibold text-gray-700 dark:text-gray-700">
+                  {searchMode === "users" ? t("search.users") : t("search.books")}
+                </p>
+              </div>
             </div>
 
             {/* Mode Toggle */}
