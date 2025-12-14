@@ -4,7 +4,6 @@ import { Eye, EyeOff, Globe } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
 import { useLanguage } from "../context/LanguageContext.jsx";
-import { login as loginAPI } from "../api/auth";
 
 export default function SignUpPage({ onSwitchToSignIn }) {
   const navigate = useNavigate();
@@ -80,10 +79,6 @@ export default function SignUpPage({ onSwitchToSignIn }) {
       // Show success message
       setSuccess(t("auth.registrationSuccess"));
       setIsSubmitting(false);
-      
-      // Store email and password for auto-login
-      const savedEmail = email.trim();
-      const savedPassword = password;
 
       // Clear form
       setUsername("");
@@ -93,22 +88,14 @@ export default function SignUpPage({ onSwitchToSignIn }) {
       setPassword("");
       setBirthDate("");
 
-      // Auto-login after registration and redirect to Social Feed
-      setTimeout(async () => {
-        try {
-          // Auto-login using the API
-          await loginAPI({ email: savedEmail, password: savedPassword });
-          // Redirect to Social Feed after successful auto-login
-          navigate("/social");
-        } catch (loginErr) {
-          // If auto-login fails, redirect to login page
-          if (onSwitchToSignIn) {
-            onSwitchToSignIn();
-          } else {
-            navigate("/login");
-          }
+      // Redirect to login page after showing success message
+      setTimeout(() => {
+        if (onSwitchToSignIn) {
+          onSwitchToSignIn();
+        } else {
+          navigate("/login");
         }
-      }, 1500);
+      }, 2000);
     } catch (err) {
       // Get user-friendly error message
       let errorMessage = t("error.default");
