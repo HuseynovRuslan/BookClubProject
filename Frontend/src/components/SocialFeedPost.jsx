@@ -12,7 +12,7 @@ export default function SocialFeedPost({
   post,
   currentUsername,
   enableInteractions = false,
-  allowEditDelete = false, // New prop: allow edit/delete (only in profile page)
+  allowEditDelete = false,
   onAddComment,
   onDeleteComment,
   onDeletePost,
@@ -35,7 +35,7 @@ export default function SocialFeedPost({
         .toUpperCase()
     : "BV";
   
-  // Get user avatar from post
+
   const userAvatar = post.userAvatar || 
                      post.user?.avatarUrl || 
                      post.user?.AvatarUrl ||
@@ -44,13 +44,13 @@ export default function SocialFeedPost({
                     post.avatarUrl ||
                     post.avatar;
 
-  // Sync likes from post prop (for external updates)
+
   const [likes, setLikes] = useState(post.likes || 0);
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [isLiking, setIsLiking] = useState(false);
   const [likeAnimation, setLikeAnimation] = useState(false);
   
-  // Update likes when post prop changes (for synchronization)
+
   useEffect(() => {
     if (post.likes !== undefined) {
       setLikes(post.likes);
@@ -60,23 +60,23 @@ export default function SocialFeedPost({
     }
   }, [post.likes, post.isLiked]);
   
-  // Force re-render when post.comments changes (for comment synchronization)
+
   useEffect(() => {
-    // This effect ensures component re-renders when comments are added
+
   }, [post.comments]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.review || post.text || "");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  // Update editText when post changes (for external updates)
+
   useEffect(() => {
     if (!isEditing) {
       setEditText(post.review || post.text || "");
     }
   }, [post.review, post.text, isEditing]);
 
-  // Handle ESC key to close delete confirmation modal
+
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape" && showDeleteConfirm) {
@@ -94,13 +94,13 @@ export default function SocialFeedPost({
   const [commentError, setCommentError] = useState("");
   const [showAllComments, setShowAllComments] = useState(false);
   const comments = post.comments || [];
-  // Show only first comment initially, or all if showAllComments is true
+
   const displayedComments = showAllComments ? comments : comments.slice(0, 1);
   const isReview = post.type === "review" || Boolean(post.reviewId);
   const isQuote = post.type === "quote" || Boolean(post.quoteId);
   
-  // Check if current user is the post owner
-  // Check by username, user ID, or post userId
+
+
   const postUserId = post.userId || post.UserId || 
                      post.user?.id || post.User?.Id ||
                      post.user?.userId || post.User?.UserId;
@@ -109,9 +109,9 @@ export default function SocialFeedPost({
                       post.user?.name === currentUsername ||
                       post.user?.username === currentUsername ||
                       (currentUserId && postUserId && currentUserId === postUserId) ||
-                      (post.isLocal && currentUsername); // Local posts are always from current user
+                      (post.isLocal && currentUsername);
 
-  // Close menu when clicking outside
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -134,41 +134,41 @@ export default function SocialFeedPost({
       return;
     }
     
-    // Trigger animation
+
     setLikeAnimation(true);
     setTimeout(() => setLikeAnimation(false), 400);
     
-    // Only Quote-lər üçün like API-si var
+
     if (!isQuote || !post.quoteId) {
-      // Review və ya BookAdded üçün yalnız local state dəyişirik
+
       const newLiked = !isLiked;
       const newLikes = likes + (newLiked ? 1 : -1);
       setIsLiked(newLiked);
       setLikes(newLikes);
-      // Notify parent to save to localStorage
+
       if (onLikeChange) {
         onLikeChange(post.id, newLikes, newLiked);
       }
       return;
     }
 
-    if (isLiking) return; // Prevent double-click
+    if (isLiking) return;
 
     setIsLiking(true);
     try {
       const response = await likeQuote(post.quoteId);
-      // Backend returns ApiResponse<bool> where true = liked, false = unliked
+
       const liked = response.data !== undefined ? response.data : response;
       setIsLiked(liked);
-      // Update likes count based on like/unlike
+
       const newLikes = liked && !isLiked ? likes + 1 : (!liked && isLiked ? Math.max(0, likes - 1) : likes);
       setLikes(newLikes);
-      // Notify parent to save to localStorage
+
       if (onLikeChange) {
         onLikeChange(post.id, newLikes, liked);
       }
     } catch (err) {
-      // Revert optimistic update on error
+
       setIsLiked((prev) => !prev);
       setLikes((prev) => prev + (isLiked ? -1 : 1));
     } finally {
@@ -189,19 +189,19 @@ export default function SocialFeedPost({
     setCommentError("");
     
     try {
-      // onAddComment expects (postId, text) format
-      // Make it async-safe - if it returns a promise, await it
+
+
       const result = onAddComment(post.id, textToSubmit);
       if (result && typeof result.then === 'function') {
         await result;
       }
       
-      // Only clear comment text after successful submission
+
       setCommentText("");
       setCommentError("");
-      // Keep comment box open after submitting so user can add more comments
+
     } catch (err) {
-      // Preserve comment text on error
+
       setCommentError(err.message || t("post.commentError") || "Failed to submit comment. Please try again.");
     } finally {
       setIsSubmittingComment(false);
@@ -218,8 +218,8 @@ export default function SocialFeedPost({
     e.stopPropagation();
     setShowMenu(false);
     
-    // SECURITY: Only allow deletion if user is the owner
-    // Backend should also verify ownership before allowing delete
+
+
     if (!isPostOwner) {
       alert(t("post.noPermission") || "You don't have permission to delete this post.");
       return;
@@ -227,7 +227,7 @@ export default function SocialFeedPost({
     
     if (!onDeletePost) return;
     
-    // Show confirmation modal
+
     setShowDeleteConfirm(true);
   };
 
@@ -248,19 +248,19 @@ export default function SocialFeedPost({
     e.stopPropagation();
     setShowMenu(false);
     
-    // Confirm report
+
     if (!window.confirm(t("post.confirmReport") || "Are you sure you want to report this post? It will be removed from your feed.")) {
       return;
     }
     
     setIsDeleting(true);
     try {
-      // Report the post - this will hide it from current user's feed only
-      // Post is NOT deleted from backend, only hidden from this user's view
+
+
       if (onReportPost) {
         await onReportPost(post.id, post);
       } else {
-        // Fallback: save to localStorage directly if callback not provided
+
         const reportedPosts = JSON.parse(localStorage.getItem("bookverse_reported_posts") || "[]");
         if (!reportedPosts.includes(post.id)) {
           reportedPosts.push(post.id);
@@ -286,8 +286,8 @@ export default function SocialFeedPost({
   };
 
   const handleSaveEdit = async () => {
-    // SECURITY: Only allow editing if user is the owner
-    // Backend should also verify ownership before allowing edit/delete
+
+
     if (!isPostOwner) {
       alert(t("post.noPermission") || "You don't have permission to edit this post.");
       return;
@@ -299,17 +299,17 @@ export default function SocialFeedPost({
       return;
     }
 
-    setIsDeleting(true); // Reuse loading state
+    setIsDeleting(true);
     try {
-      // Handle quote editing
+
       if (isQuote && post.quoteId) {
-        // Extract quoteId properly - try all possible ways
+
         let quoteId = null;
         
         if (typeof post.quoteId === 'string') {
           quoteId = post.quoteId.trim();
         } else if (typeof post.quoteId === 'object' && post.quoteId !== null) {
-          // Try all possible ways to extract the ID from the object
+
           quoteId = post.quoteId.id || 
                    post.quoteId.Id || 
                    post.quoteId.quoteId ||
@@ -332,12 +332,12 @@ export default function SocialFeedPost({
           throw new Error("Invalid quoteId: " + quoteId);
         }
 
-        // Prepare payload for updateQuote
+
         const updatePayload = {
           Text: trimmedText,
         };
         
-        // Add Tags if they exist
+
         if (post.tags !== undefined && post.tags !== null) {
           updatePayload.Tags = Array.isArray(post.tags) ? post.tags : (post.tags ? [post.tags] : []);
         }
@@ -348,30 +348,30 @@ export default function SocialFeedPost({
           await updateQuote(quoteId, updatePayload);
         } catch (quoteErr) {
           console.error("Error updating quote from backend:", quoteErr);
-          // If backend update fails, still update localStorage for better UX
-          // But show a warning
+
+
           if (quoteErr.status !== 404) {
-            throw quoteErr; // Re-throw if it's not a 404 (endpoint not found)
+            throw quoteErr;
           }
           console.warn("Quote update endpoint not found (404), updating localStorage only");
         }
 
-        // Update local state immediately for instant UI update
+
         const updatedPost = { ...post, review: trimmedText, text: trimmedText };
         setIsEditing(false);
         
-        // Notify parent to update the post - this will trigger a re-render with new post data
+
         if (onPostUpdate) {
           await onPostUpdate(post.id, updatedPost);
         } else if (onLikeChange) {
-          // Fallback to onLikeChange if onPostUpdate not available
+
           onLikeChange(post.id, likes, isLiked);
         }
         
-        // Force component to re-render with updated post data
-        // The parent's onPostUpdate should update the post prop, which will trigger useEffect
+
+
       }
-      // Handle review editing
+
       else if (isReview && post.reviewId) {
         const { updateReview } = await import("../api/reviews");
         const reviewId = String(post.reviewId || post.reviewId?.id || post.reviewId?.Id || post.reviewId);
@@ -381,40 +381,40 @@ export default function SocialFeedPost({
           rating: post.rating || 0
         });
 
-        // Update local state immediately for instant UI update
+
         const updatedPost = { ...post, review: trimmedText, text: trimmedText };
         setIsEditing(false);
         
-        // Notify parent to update the post - this will trigger a re-render with new post data
+
         if (onPostUpdate) {
           await onPostUpdate(post.id, updatedPost);
         } else if (onLikeChange) {
           onLikeChange(post.id, likes, isLiked);
         }
         
-        // Force component to re-render with updated post data
-        // The parent's onPostUpdate should update the post prop, which will trigger useEffect
+
+
       }
-      // Handle other post types (status, goal, normal post) - update in localStorage only
+
       else {
-        // Update local state immediately for instant UI update
+
         const updatedPost = { ...post, review: trimmedText, text: trimmedText };
         setIsEditing(false);
         
-        // Notify parent to update the post - this will trigger a re-render with new post data
+
         if (onPostUpdate) {
           await onPostUpdate(post.id, updatedPost);
         } else if (onLikeChange) {
           onLikeChange(post.id, likes, isLiked);
         }
         
-        // Force component to re-render with updated post data
-        // The parent's onPostUpdate should update the post prop, which will trigger useEffect
+
+
       }
     } catch (err) {
       console.error("Error updating post:", err);
       
-      // Get user-friendly error message
+
       let errorMessage = t("post.updateError") || "Failed to update post. Please try again.";
       
       if (err.message) {
@@ -432,7 +432,7 @@ export default function SocialFeedPost({
         } else if (err.status === 401) {
           errorMessage = t("error.401") || "You must log in. Please log in again.";
         } else {
-          // Use specific error message if available
+
           errorMessage = err.message;
         }
       } else if (err.status) {
@@ -458,7 +458,7 @@ export default function SocialFeedPost({
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
         {userAvatar ? (() => {
-          // Filter out blob URLs - they're invalid after page reload
+
           if (userAvatar && userAvatar.startsWith('blob:')) {
             return null;
           }
@@ -637,7 +637,7 @@ export default function SocialFeedPost({
                         {post.bookTitle}
                       </h3>
                       {(() => {
-                        // Try to get author name from multiple possible locations
+
                         const authorName = post.bookAuthor || 
                                          post.author || 
                                          post.book?.authorName ||
@@ -650,7 +650,7 @@ export default function SocialFeedPost({
                                          post.AuthorName ||
                                          '';
                         
-                        // Show author name if we have it
+
                         if (authorName && authorName.trim() !== '') {
                           return (
                             <p className="text-xs font-normal text-gray-700 dark:text-gray-700 mt-0.5">
@@ -674,14 +674,14 @@ export default function SocialFeedPost({
       {!isQuote && (post.bookCover || post.postImage) && (
         <div className="mb-3 -mx-4">
           {post.bookCover ? (() => {
-            // Filter out blob URLs - they're invalid after page reload
+
             if (post.bookCover && post.bookCover.startsWith('blob:')) {
               return null;
             }
             const bookCoverUrl = getImageUrl(post.bookCover);
             if (!bookCoverUrl) return null;
             return (
-              // Book cover - use standard book size (not stretched)
+
               <img
                 src={bookCoverUrl}
                 alt={post.bookTitle || "Book cover"}
@@ -692,15 +692,15 @@ export default function SocialFeedPost({
               />
             );
           })() : (() => {
-            // Allow blob URLs for newly created posts (they're valid until page reload)
-            // But prefer postImageUrl (backend URL) if it exists
+
+
             const imageToUse = post.postImageUrl || post.postImage;
             const postImageUrl = imageToUse && imageToUse.startsWith('blob:') 
               ? imageToUse 
               : getImageUrl(imageToUse);
             if (!postImageUrl) return null;
             return (
-              // Regular post image - Facebook style: maintain aspect ratio, reasonable max size
+
               <div className="flex justify-center">
                 <img
                   src={postImageUrl}
@@ -852,14 +852,14 @@ export default function SocialFeedPost({
               setShowGuestModal(true);
               return;
             }
-            // Toggle showAllComments when clicking comment button
+
             if (comments.length > 1) {
               setShowAllComments(!showAllComments);
             }
-            // If no comments or only 1 comment, open comment box
+
             if (comments.length <= 1) {
               setShowCommentBox(true);
-              // Scroll to comment input after a short delay to ensure it's rendered
+
               setTimeout(() => {
                 const commentInput = document.querySelector(`textarea[placeholder*="${t("post.writeComment")}"]`);
                 if (commentInput) {
@@ -908,7 +908,7 @@ export default function SocialFeedPost({
                 className="flex items-start gap-3 bg-gradient-to-br from-white via-amber-50/30 to-orange-50/20 dark:from-white dark:via-amber-50/30 dark:to-orange-50/20 rounded-xl p-3 border-2 border-gray-200 dark:border-gray-200 shadow-md hover:shadow-lg transition-all duration-200 group"
               >
                 {commentAvatar ? (() => {
-                  // Filter out blob URLs - they're invalid after page reload
+
                   if (commentAvatar && commentAvatar.startsWith('blob:')) {
                     return null;
                   }
@@ -953,12 +953,12 @@ export default function SocialFeedPost({
                     onClick={async () => {
                       try {
                         const result = onDeleteComment(post.id, comment.id);
-                        // If it's a promise, await it
+
                         if (result && typeof result.then === 'function') {
                           await result;
                         }
                       } catch (err) {
-                        // Error is already handled in the handler
+
                       }
                     }}
                     title={t("post.delete") || "Delete comment"}
@@ -990,7 +990,7 @@ export default function SocialFeedPost({
                     value={commentText}
                     onChange={(e) => {
                       setCommentText(e.target.value);
-                      setCommentError(""); // Clear error when user types
+                      setCommentError("");
                     }}
                     rows={3}
                     autoFocus

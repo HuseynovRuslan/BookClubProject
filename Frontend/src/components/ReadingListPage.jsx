@@ -24,10 +24,10 @@ export default function ReadingListPage() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [selectedShelf, setSelectedShelf] = useState(null);
   const [showShelfModal, setShowShelfModal] = useState(false);
-  const [showBookMenu, setShowBookMenu] = useState({}); // { bookId: true/false }
+  const [showBookMenu, setShowBookMenu] = useState({});
   const menuRefs = useRef({});
 
-  // Listen for shelf updates
+
   useEffect(() => {
     const handleShelfUpdate = () => {
       refreshShelves();
@@ -38,7 +38,7 @@ export default function ReadingListPage() {
     };
   }, [refreshShelves]);
 
-  // Close menu when clicking outside
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       const clickedOutside = Object.keys(menuRefs.current).every(
@@ -76,7 +76,7 @@ export default function ReadingListPage() {
     setEditingShelfName(shelf.name);
   };
 
-  // Sort shelves: Want to Read, Currently Reading, Read first, then others
+
   const sortedShelves = useMemo(() => {
     if (!shelves || shelves.length === 0) return [];
     
@@ -93,7 +93,7 @@ export default function ReadingListPage() {
       }
     });
     
-    // Sort default shelves in the specified order
+
     defaultShelvesList.sort((a, b) => {
       const aIndex = defaultShelves.indexOf(a.name);
       const bIndex = defaultShelves.indexOf(b.name);
@@ -112,7 +112,7 @@ export default function ReadingListPage() {
         return;
       }
       
-      // Check if book is already in target shelf
+
       const bookId = book.id || book._id;
       const isAlreadyInTarget = targetShelf.books?.some(b => (b.id || b._id) === bookId);
       
@@ -122,27 +122,27 @@ export default function ReadingListPage() {
         return;
       }
       
-      // Check if target shelf is a default shelf
+
       const isDefaultShelf = targetShelf.isDefault === true || targetShelf.IsDefault === true || targetShelf.type === 'default';
       
-      // First, remove from current shelf (if it's not a default shelf)
+
       if (currentShelfId && currentShelfId !== targetShelfId) {
         const currentShelf = shelves.find(s => s.id === currentShelfId);
         const isCurrentDefault = currentShelf?.isDefault === true || currentShelf?.IsDefault === true || currentShelf?.type === 'default';
         
-        // Only remove from current shelf if it's a custom shelf
+
         if (!isCurrentDefault) {
           await removeBookFromShelf(currentShelfId, bookId);
         }
       }
       
-      // Then, add to target shelf
+
       if (isDefaultShelf) {
-        // For default shelves, use updateBookStatus
+
         const { updateBookStatus } = await import("../api/books");
         await updateBookStatus(bookId, targetShelf.name);
       } else {
-        // For custom shelves, use addBookToShelf
+
         await addBookToShelf(targetShelfId, book);
       }
       
@@ -152,7 +152,7 @@ export default function ReadingListPage() {
     } catch (err) {
       console.error("Error moving book:", err);
       
-      // Handle specific error messages
+
       let errorMessage = t("readingList.moveFailed");
       if (err.status === 409) {
         if (err.detail && err.detail.includes("default shelf")) {
@@ -197,7 +197,7 @@ export default function ReadingListPage() {
     await handleMoveBook(selectedBook, selectedShelf.id, targetShelfId);
   };
 
-  // Helper function to translate shelf names
+
   const translateShelfName = (shelfName) => {
     if (!shelfName) return shelfName;
     const shelfMap = {

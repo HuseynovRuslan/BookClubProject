@@ -62,7 +62,6 @@ function writeToStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // ignore
   }
 }
 
@@ -72,7 +71,6 @@ export function loadMockShelves() {
     return stored;
   }
 
-  // Boş shelf'ler oluştur (demo kitap yok)
   const emptyShelves = DEFAULT_SHELVES.map((shelf) => ({
     ...shelf,
     books: [],
@@ -92,7 +90,6 @@ export function loadMockReviews() {
   if (stored && Array.isArray(stored)) {
     return stored;
   }
-  // Boş array döndür (demo review yok)
   writeToStorage(REVIEWS_KEY, []);
   return [];
 }

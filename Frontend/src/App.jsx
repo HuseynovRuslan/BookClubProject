@@ -38,7 +38,6 @@ function App() {
   const [authMode, setAuthMode] = useState("login");
   const [showAuthFromGuest, setShowAuthFromGuest] = useState(false);
 
-  // Ensure HTML element doesn't have dark class (force white mode)
   useEffect(() => {
     const htmlElement = document.documentElement;
     htmlElement.classList.remove('dark');
@@ -56,13 +55,11 @@ function App() {
 
   useEffect(() => {
     setCurrentUser(user);
-    // When user successfully authenticates, clear the showAuthFromGuest flag
     if (user && showAuthFromGuest) {
       setShowAuthFromGuest(false);
     }
   }, [user, showAuthFromGuest]);
 
-  // Helper function to get reported posts from localStorage
   const getReportedPosts = () => {
     try {
       const reported = localStorage.getItem("bookverse_reported_posts");
@@ -73,7 +70,6 @@ function App() {
     }
   };
 
-  // Load userPosts from localStorage on mount and when user changes
   useEffect(() => {
     if (!currentUser?.id) return;
     
@@ -82,77 +78,42 @@ function App() {
       const reportedPosts = getReportedPosts();
       if (stored) {
         const posts = JSON.parse(stored);
-        // Filter posts that belong to current user (quotes, reviews, posts)
-        // Also filter out reported posts
         const currentUserId = currentUser.id || currentUser.Id;
         const userPostsFromStorage = posts.filter(post => {
-          // Skip reported posts
           if (reportedPosts.includes(post.id)) return false;
           
-          // Check if post is from current user
           const postUserId = post.userId || post.UserId || 
                            post.user?.id || post.User?.Id ||
                            post.user?.userId || post.User?.UserId;
-          // Also include posts with isLocal flag (they're from current user)
           return post.isLocal || postUserId === currentUserId || 
-                 (post.type === 'quote' && post.quoteId) || // Quotes created by current user
-                 (post.type === 'review' && post.reviewId); // Reviews created by current user
+                 (post.type === 'quote' && post.quoteId) || 
+                 (post.type === 'review' && post.reviewId); 
         });
         setUserPosts(userPostsFromStorage);
       }
     } catch (err) {
-      // Error loading userPosts from localStorage
     }
   }, [currentUser]);
 
-        // Disabled: One-time cleanup - user requested to keep posts after page reload
-        // useEffect(() => {
-        //   try {
-        //     const storageKey = "bookverse_social_feed";
-        //     const stored = localStorage.getItem(storageKey);
-        //     if (stored) {
-        //       const posts = JSON.parse(stored);
-        //       console.log(`Clearing ${posts.length} posts from localStorage`);
-        //       localStorage.removeItem(storageKey);
-        //       console.log("All posts cleared from localStorage");
-        //     }
-        //   } catch (err) {
-        //     console.error("Error clearing localStorage:", err);
-        //     // If there's an error, try to clear anyway
-        //     try {
-        //       localStorage.removeItem("bookverse_social_feed");
-        //       console.log("Cleared localStorage data");
-        //     } catch (clearErr) {
-        //       console.error("Error clearing localStorage:", clearErr);
-        //     }
-        //   }
-        // }, []); // Run once on mount
 
 
   const handleCreatePost = (newPost) => {
-    // For new posts, keep blob URLs for immediate display (they're valid until page reload)
-    // Only clean blob URLs when saving to localStorage (they won't persist after reload anyway)
-    // For quotes, use the backend quoteId as the post id so it matches and persists
-    const postWithUser = {
+   const postWithUser = {
       ...newPost,
-      id: newPost.id || `local-${Date.now()}`, // Use existing id if provided (e.g., quoteId for quotes)
+      id: newPost.id || `local-${Date.now()}`,
       username: currentUser?.name || "You",
       likes: newPost.likes ?? 0,
       comments: [],
       timestamp: newPost.timestamp || new Date().toISOString(),
-      isLocal: !newPost.id || newPost.id.startsWith('local-'), // Only mark as local if id starts with 'local-'
+      isLocal: !newPost.id || newPost.id.startsWith('local-'),
     };
     
     setLocalPosts((prev) => {
       const updated = [postWithUser, ...prev];
-      // Save to localStorage
       try {
         const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
-        // Remove blob URLs before saving - they're invalid after page reload
-        // But keep postImageUrl if it exists (backend URL)
         const cleanPost = { ...postWithUser };
         if (cleanPost.postImage && cleanPost.postImage.startsWith('blob:')) {
-          // If we have postImageUrl (backend URL), use it instead of blob URL
           if (cleanPost.postImageUrl) {
             cleanPost.postImage = cleanPost.postImageUrl;
           } else {
@@ -165,7 +126,6 @@ function App() {
         const cleanedExisting = existing.map(post => {
           const cleaned = { ...post };
           if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
-            // If we have postImageUrl (backend URL), use it instead of blob URL
             if (cleaned.postImageUrl) {
               cleaned.postImage = cleaned.postImageUrl;
             } else {
@@ -179,7 +139,6 @@ function App() {
         });
         localStorage.setItem("bookverse_social_feed", JSON.stringify([cleanPost, ...cleanedExisting]));
       } catch (err) {
-        // Error saving post to localStorage
       }
       return updated;
     });
@@ -194,12 +153,9 @@ function App() {
         id: `book-${Date.now()}`,
         author: currentUser?.name || "You",
       };
-      // API-yə əlavə et (həm all books-a düşəcək)
       await createBook(bookWithMeta);
-      // User books-a da əlavə et
       setUserBooks((prev) => [bookWithMeta, ...prev]);
     } catch (err) {
-      // Fallback: yalnız local state-ə əlavə et
       const bookWithMeta = {
         ...newBook,
         id: `book-${Date.now()}`,
@@ -218,7 +174,6 @@ function App() {
       timestamp: new Date().toISOString(),
     };
     
-    // Update localPosts state optimistically
     setLocalPosts((prev) => {
       const updated = prev.map((post) =>
         post.id === postId
@@ -228,7 +183,6 @@ function App() {
       return updated;
     });
     
-    // Also update userPosts state (for Profile Page)
     setUserPosts((prev) => {
       return prev.map((post) =>
         post.id === postId
@@ -237,11 +191,9 @@ function App() {
       );
     });
     
-    // Save to localStorage - update the post's comments in localStorage
     try {
       const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
       
-      // Update the post in localStorage with the new comment
       const updated = existing.map(post => {
         if (post.id === postId) {
           return {
@@ -252,7 +204,6 @@ function App() {
         return post;
       });
       
-      // Also add any localPosts that aren't in existing
       setLocalPosts((prev) => {
         prev.forEach(localPost => {
           if (!updated.find(p => p.id === localPost.id)) {
@@ -262,7 +213,6 @@ function App() {
         return prev;
       });
       
-      // Remove blob URLs before saving - they're invalid after page reload
       const cleanedMerged = updated.map(post => {
         const cleaned = { ...post };
         if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
@@ -277,15 +227,13 @@ function App() {
       localStorage.setItem("bookverse_social_feed", JSON.stringify(cleanedMerged));
     } catch (err) {
       console.error("Error saving comment to localStorage:", err);
-      throw err; // Re-throw to let component handle error
+      throw err;
     }
     
-    // Return success
     return Promise.resolve();
   };
 
   const handleDeleteComment = (postId, commentId) => {
-    // Update localPosts
     setLocalPosts((prev) => {
       const updated = prev.map((post) =>
         post.id === postId
@@ -298,7 +246,6 @@ function App() {
       return updated;
     });
     
-    // Also update userPosts state (for Profile Page)
     setUserPosts((prev) => {
       return prev.map((post) =>
         post.id === postId
@@ -310,7 +257,6 @@ function App() {
       );
     });
     
-    // Save to localStorage
     try {
       const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
       const updated = existing.map((post) =>
@@ -322,7 +268,6 @@ function App() {
           : post
       );
       
-      // Remove blob URLs before saving - they're invalid after page reload
       const cleanedMerged = updated.map(post => {
         const cleaned = { ...post };
         if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
@@ -340,19 +285,16 @@ function App() {
   };
 
   const handlePostUpdate = (postId, updatedPost) => {
-    // Update local posts
     setLocalPosts((prev) => {
       const updated = prev.map((post) =>
         post.id === postId ? { ...post, ...updatedPost } : post
       );
-      // Save to localStorage
       try {
         const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
         const merged = existing.map((p) => {
           const updatedPost = updated.find((up) => up.id === p.id);
           return updatedPost || p;
         });
-        // Add new posts that aren't in existing
         updated.forEach((up) => {
           if (!merged.find((p) => p.id === up.id)) {
             merged.push(up);
@@ -365,7 +307,6 @@ function App() {
       return updated;
     });
     
-    // Also update userPosts
     setUserPosts((prev) => {
       return prev.map((post) =>
         post.id === postId ? { ...post, ...updatedPost } : post
@@ -374,7 +315,6 @@ function App() {
   };
 
   const handleLikeChange = (postId, likes, isLiked) => {
-    // Update localPosts state
     setLocalPosts((prev) => {
       const updated = prev.map((post) =>
         post.id === postId ? { ...post, likes, isLiked } : post
@@ -382,18 +322,15 @@ function App() {
       return updated;
     });
     
-    // Also update userPosts state (for Profile Page)
     setUserPosts((prev) => {
       return prev.map((post) =>
         post.id === postId ? { ...post, likes, isLiked } : post
       );
     });
     
-    // Save to localStorage - update ALL posts (including userPosts)
     try {
       const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
       
-      // Update the post in localStorage with the new like status
       const updated = existing.map(post => {
         if (post.id === postId) {
           return {
@@ -405,7 +342,6 @@ function App() {
         return post;
       });
       
-      // Also add any localPosts that aren't in existing
       setLocalPosts((prev) => {
         prev.forEach(localPost => {
           if (!updated.find(p => p.id === localPost.id)) {
@@ -415,7 +351,6 @@ function App() {
         return prev;
       });
       
-      // Remove blob URLs before saving - they're invalid after page reload
       const cleanedMerged = updated.map(post => {
         const cleaned = { ...post };
         if (cleaned.postImage && cleaned.postImage.startsWith('blob:')) {
@@ -435,13 +370,11 @@ function App() {
 
   const handleDeletePost = async (postId, post) => {
     try {
-      // Validate post and postId
       if (!post || !postId) {
         console.error("Invalid post or postId:", { post, postId });
         throw new Error("Post or post ID is missing");
       }
 
-      // Delete from backend if it's a review or quote
       if (post.type === "review" && post.reviewId) {
         try {
           const { deleteReview } = await import("./api/reviews");
@@ -453,19 +386,15 @@ function App() {
           }
         } catch (reviewErr) {
           console.error("Error deleting review from backend:", reviewErr);
-          // Continue with localStorage deletion even if backend deletion fails
-          // This allows deletion of posts that might not exist in backend
         }
       } else if (post.type === "quote" && post.quoteId) {
         try {
           const { deleteQuote } = await import("./api/quotes");
-          // Ensure quoteId is a string, not an object
           let quoteId = null;
           
           if (typeof post.quoteId === 'string') {
             quoteId = post.quoteId.trim();
           } else if (typeof post.quoteId === 'object' && post.quoteId !== null) {
-            // Try all possible ways to extract the ID from the object
             quoteId = post.quoteId.id || 
                      post.quoteId.Id || 
                      post.quoteId.quoteId ||
@@ -488,34 +417,27 @@ function App() {
           }
         } catch (quoteErr) {
           console.error("Error deleting quote from backend:", quoteErr);
-          // Continue with localStorage deletion even if backend deletion fails
         }
       }
-      // For normal posts (type: "post", "status", "goal"), undefined type, or other local posts, 
-      // just remove from localStorage (no backend deletion needed)
       
-      // Remove from local state first (optimistic update)
       setLocalPosts((prev) => {
         return prev.filter((p) => p.id !== postId);
       });
       
-      // Remove from userPosts
       setUserPosts((prev) => {
         return prev.filter((p) => p.id !== postId);
       });
       
-      // Save to localStorage after state updates
       try {
         const existing = JSON.parse(localStorage.getItem("bookverse_social_feed") || "[]");
         const filtered = existing.filter((p) => p.id !== postId);
         localStorage.setItem("bookverse_social_feed", JSON.stringify(filtered));
       } catch (err) {
         console.error("Error saving post deletion to localStorage:", err);
-        // Don't throw - we've already updated state, so deletion is successful
       }
     } catch (err) {
       console.error("Error deleting post:", err);
-      throw err; // Re-throw to let component handle error display
+      throw err;
     }
   };
 
@@ -525,24 +447,20 @@ function App() {
 
   const handleReportPost = async (postId, post) => {
     try {
-      // Save reported post to localStorage (only hides from current user's feed)
       const reportedPosts = getReportedPosts();
       if (!reportedPosts.includes(postId)) {
         reportedPosts.push(postId);
         localStorage.setItem("bookverse_reported_posts", JSON.stringify(reportedPosts));
       }
       
-      // Remove from userPosts if it exists there
       setUserPosts((prev) => prev.filter((p) => p.id !== postId));
       
-      // Note: We don't delete from backend - post is only hidden from this user's view
     } catch (err) {
       console.error("Error reporting post:", err);
       throw err;
     }
   };
 
-  // Check if user is admin
   const isAdmin = user?.role === "Admin" || user?.role === "admin";
 
   return (
@@ -565,7 +483,6 @@ function App() {
           )}
         </div>
       ) : isAdmin ? (
-        // Admin mode: Only show Admin Panel, no sidebar or navigation
         <div className="bg-white text-black min-h-screen">
           <main className="min-h-screen">
             <Routes>

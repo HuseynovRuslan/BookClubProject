@@ -4,7 +4,7 @@ import { getAllBooks, getBooksByGenre } from "../api/books";
 import { getImageUrl } from "../api/config";
 import { useTranslation } from "../hooks/useTranslation";
 
-// Category icons mapping
+
 const CATEGORY_ICONS = {
   Fiction: "📖",
   Mystery: "🔍",
@@ -48,12 +48,12 @@ export default function CategoriesPage({ onBookClick }) {
     setLoadingCategories(true);
     setError(null);
     try {
-      // Fetch all books from database
+
       const allItems = [];
       let page = 1;
       let hasMore = true;
       
-      while (hasMore && page <= 10) { // Limit to 10 pages (500 books max)
+      while (hasMore && page <= 10) {
         const response = await getAllBooks({ page, pageSize: 50 });
         const items = Array.isArray(response)
           ? response
@@ -70,13 +70,13 @@ export default function CategoriesPage({ onBookClick }) {
         page++;
       }
 
-      // Extract unique genres from books
+
       const genreMap = new Map();
       
       allItems.forEach(book => {
         let genres = [];
         
-        // Handle different genre formats
+
         if (book.genres && Array.isArray(book.genres)) {
           genres = book.genres;
         } else if (book.genre) {
@@ -101,7 +101,7 @@ export default function CategoriesPage({ onBookClick }) {
         });
       });
 
-      // Convert to array and sort by count (most books first)
+
       const categoriesList = Array.from(genreMap.values())
         .sort((a, b) => b.count - a.count);
       
@@ -122,7 +122,7 @@ export default function CategoriesPage({ onBookClick }) {
     try {
       const categoryName = category.name || category.Name;
       
-      // Fetch books by genre name
+
       const response = await getBooksByGenre(categoryName, { page: 1, pageSize: 50 });
       const items = response?.items || response?.Items || response || [];
       setCategoryBooks(items);
@@ -179,7 +179,7 @@ export default function CategoriesPage({ onBookClick }) {
   };
 
   const translateCategoryName = (categoryName) => {
-    // Map English category names to translation keys
+
     const categoryMap = {
       "Fiction": t("category.fiction"),
       "Mystery": t("category.mystery"),

@@ -1,10 +1,6 @@
 import { apiRequest } from "./config";
 
-/**
- * Admin API functions
- */
 
-// Books Management
 export async function getAllBooksForAdmin(parameters = {}) {
   const queryParams = new URLSearchParams();
   if (parameters.pageNumber) queryParams.append("pageNumber", parameters.pageNumber);
@@ -26,14 +22,11 @@ export async function deleteBookAsAdmin(bookId) {
 }
 
 export async function createBookAsAdmin(bookData) {
-  // Create FormData for file upload
   const formData = new FormData();
   
-  // Required fields
   if (bookData.title) formData.append("Title", bookData.title);
   if (bookData.description) formData.append("Description", bookData.description);
   if (bookData.isbn) formData.append("ISBN", bookData.isbn);
-  // PublicationDate is required by backend validation
   if (bookData.publicationDate) {
     formData.append("PublicationDate", bookData.publicationDate);
   }
@@ -48,12 +41,11 @@ export async function createBookAsAdmin(bookData) {
   return await apiRequest("/api/Books/create-book", {
     method: "POST",
     body: formData,
-    headers: {}, // Let browser set Content-Type with boundary for FormData
+    headers: {}, 
   });
 }
 
 export async function updateBookAsAdmin(bookId, bookData) {
-  // Create FormData for file upload
   const formData = new FormData();
   
   formData.append("Id", bookId);
@@ -72,18 +64,16 @@ export async function updateBookAsAdmin(bookId, bookData) {
   return await apiRequest("/api/Books/update-book", {
     method: "PUT",
     body: formData,
-    headers: {}, // Let browser set Content-Type with boundary for FormData
+    headers: {},
   });
 }
 
-// Content Moderation - Quotes
 export async function deleteQuoteAsAdmin(quoteId) {
   return await apiRequest(`/api/Admin/quotes/${quoteId}`, {
     method: "DELETE",
   });
 }
 
-// Content Moderation - Update Quote
 export async function updateQuoteAsAdmin(quoteId, quoteData) {
   return await apiRequest(`/api/Quotes/update-quote/${quoteId}`, {
     method: "PUT",
@@ -94,14 +84,12 @@ export async function updateQuoteAsAdmin(quoteId, quoteData) {
   });
 }
 
-// Content Moderation - Reviews
 export async function deleteReviewAsAdmin(reviewId) {
   return await apiRequest(`/api/Admin/reviews/${reviewId}`, {
     method: "DELETE",
   });
 }
 
-// Content Moderation - Update Review
 export async function updateReviewAsAdmin(reviewId, reviewData) {
   return await apiRequest(`/api/Reviews/update-review/${reviewId}`, {
     method: "PUT",
@@ -112,7 +100,6 @@ export async function updateReviewAsAdmin(reviewId, reviewData) {
   });
 }
 
-// Users Management
 export async function getAllUsersForAdmin(parameters = {}) {
   const queryParams = new URLSearchParams();
   if (parameters.pageNumber) queryParams.append("PageNumber", parameters.pageNumber);
@@ -129,12 +116,11 @@ export async function getAllUsersForAdmin(parameters = {}) {
   });
 }
 
-// Authors Management
 export async function createAuthorAsAdmin(authorData) {
   return await apiRequest("/api/Authors/action/create-author", {
     method: "POST",
     body: authorData,
-    headers: {}, // Let browser set Content-Type with boundary for FormData
+    headers: {}, 
   });
 }
 
@@ -142,7 +128,7 @@ export async function updateAuthorAsAdmin(authorId, authorData) {
   return await apiRequest("/api/Authors/action/update-author", {
     method: "PUT",
     body: authorData,
-    headers: {}, // Let browser set Content-Type with boundary for FormData
+    headers: {}, 
   });
 }
 
@@ -152,7 +138,6 @@ export async function deleteAuthorAsAdmin(authorId) {
   });
 }
 
-// Genres Management
 export async function createGenreAsAdmin(genreData) {
   return await apiRequest("/api/Genres/create-genre", {
     method: "POST",
@@ -161,7 +146,6 @@ export async function createGenreAsAdmin(genreData) {
 }
 
 export async function updateGenreAsAdmin(genreId, genreData) {
-  // UpdateGenreCommand requires Id in the body
   const updateData = {
     Id: genreId,
     Name: genreData.Name,

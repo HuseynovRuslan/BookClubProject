@@ -20,7 +20,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
     setError("");
     setSuccess("");
 
-    // Validation
+
     if (!currentPassword) {
       setError(t("auth.passwordRequired") || "Current password is required");
       return;
@@ -56,12 +56,12 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
 
       setSuccess(t("settings.passwordChanged") || "Password changed successfully");
       
-      // Clear form
+
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
 
-      // Close modal after 2 seconds
+
       setTimeout(() => {
         onClose();
         setSuccess("");

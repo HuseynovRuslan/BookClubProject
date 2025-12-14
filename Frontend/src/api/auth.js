@@ -83,13 +83,10 @@ export async function register(payload) {
   if (USE_API_MOCKS) {
     return mockRegister(payload);
   }
-  
-  // Backend may expect FirstName/LastName (PascalCase) or firstName/lastName (camelCase)
-  // Try PascalCase first (most common in .NET backends)
+
   const firstName = payload.firstName || payload.name || "";
   const lastName = payload.lastName || payload.surname || "";
   
-  // Ensure fields are not null or empty
   if (!firstName || firstName.trim() === "") {
     throw new Error("First name is required");
   }
@@ -114,7 +111,6 @@ export async function register(payload) {
       body: backendPayload,
     });
   } catch (err) {
-    // If PascalCase fails with 400, try camelCase
     if (err.status === 400) {
       console.log("PascalCase failed, trying camelCase:", err);
       const camelCasePayload = {
@@ -149,7 +145,6 @@ export async function login({ email, password }) {
 
     console.log("Login response:", response);
 
-    // Backend ApiResponse<T> wrapper ilə qaytarır: { isSuccess, message, data: { accessToken, refreshToken } }
     const authData = response.data || response;
     
     console.log("Auth data:", authData);
@@ -174,30 +169,25 @@ export async function login({ email, password }) {
       data: error.data
     });
     
-    // Enhance error message for better user experience
     if (error.status === 401) {
-      // 401 usually means invalid credentials
       const enhancedError = new Error("error.login.invalidCredentials");
       enhancedError.status = 401;
       enhancedError.translationKey = "error.login.invalidCredentials";
       enhancedError.data = error.data;
       throw enhancedError;
     } else if (error.status === 404) {
-      // 404 usually means user not found
       const enhancedError = new Error("error.login.userNotFound");
       enhancedError.status = 404;
       enhancedError.translationKey = "error.login.userNotFound";
       enhancedError.data = error.data;
       throw enhancedError;
     } else if (error.status === 400 || error.status === 422) {
-      // 400/422 usually means invalid input
       const enhancedError = new Error("error.login.invalidCredentials");
       enhancedError.status = error.status;
       enhancedError.translationKey = "error.login.invalidCredentials";
       enhancedError.data = error.data;
       throw enhancedError;
     } else if (error.message && error.message.includes("network")) {
-      // Network errors
       const enhancedError = new Error("error.login.networkError");
       enhancedError.status = error.status;
       enhancedError.translationKey = "error.login.networkError";
@@ -205,17 +195,14 @@ export async function login({ email, password }) {
       throw enhancedError;
     }
     
-    // Preserve translation key if already set
     if (error.translationKey) {
       throw error;
     }
     
-    // For other errors, try to extract meaningful message from backend
     if (error.data) {
       const data = error.data;
       let message = error.message;
       
-      // Check for backend error messages
       if (data.detail) {
         message = data.detail;
       } else if (data.message) {
@@ -224,7 +211,6 @@ export async function login({ email, password }) {
         message = data.errorMessages[0];
       }
       
-      // Check message content for specific error types
       const lowerMessage = message.toLowerCase();
       if (lowerMessage.includes("user not found") || lowerMessage.includes("does not exist")) {
         const enhancedError = new Error("error.login.userNotFound");
@@ -272,7 +258,6 @@ export async function refreshToken() {
     body: { refreshToken: refreshTokenValue },
   });
 
-  // Backend ApiResponse<T> wrapper ilə qaytarır: { isSuccess, message, data: { accessToken, refreshToken } }
   const authData = response.data || response;
 
   if (authData.accessToken || authData.refreshToken) {
@@ -306,7 +291,6 @@ export async function forgotPassword(email) {
   }
 
   try {
-    // Try common endpoint patterns
     const endpoints = [
       "/api/Auth/forgot-password",
       "/api/Auth/forgotpassword",
@@ -322,16 +306,13 @@ export async function forgotPassword(email) {
         });
         return response;
       } catch (err) {
-        // If 404, try next endpoint
         if (err.status === 404) {
           continue;
         }
-        // For other errors, throw immediately
         throw err;
       }
     }
 
-    // If all endpoints failed with 404, throw a helpful error
     throw new Error("Forgot password endpoint not found. Please contact support.");
   } catch (error) {
     console.error("Forgot password error:", error);

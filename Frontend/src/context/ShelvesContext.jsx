@@ -26,7 +26,6 @@ export function ShelvesProvider({ children }) {
   const { user, isAuthenticated, initializing } = useAuth();
 
   const fetchShelves = useCallback(async () => {
-    // Don't fetch if user is not authenticated
     const token = getAccessToken();
     if (!token || !isAuthenticated) {
       setLoading(false);
@@ -37,13 +36,11 @@ export function ShelvesProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      // getMyShelves already returns normalized array
       const shelvesArray = await getMyShelves();
       setShelves(Array.isArray(shelvesArray) ? shelvesArray : []);
     } catch (err) {
       console.error("Failed to fetch shelves:", err);
       
-      // Check if it's a network error (connection refused, failed to fetch, etc.)
       const isNetworkError = 
         err.message?.includes("Failed to fetch") ||
         err.message?.includes("ERR_CONNECTION_REFUSED") ||
@@ -51,8 +48,7 @@ export function ShelvesProvider({ children }) {
         err.name === "TypeError" ||
         !err.status;
       
-      // Error mesajları translation key'leri olarak döndürülüyor
-      // Component'lerde t() ile çevrilecek
+
       if (isNetworkError) {
         const networkError = new Error("error.network");
         networkError.translationKey = "error.network";
@@ -66,16 +62,12 @@ export function ShelvesProvider({ children }) {
         setError(error);
       }
       
-      // Don't clear shelves on error - keep previous data if available
-      // This prevents the page from showing empty state when backend is temporarily unavailable
     } finally {
       setLoading(false);
     }
   }, [isAuthenticated]);
 
-  // Fetch shelves when user logs in or when component mounts
   useEffect(() => {
-    // Wait for auth to finish initializing
     if (initializing) {
       return;
     }
@@ -83,14 +75,12 @@ export function ShelvesProvider({ children }) {
     if (isAuthenticated && user) {
       fetchShelves();
     } else if (!isAuthenticated) {
-      // Clear shelves when user logs out
       setShelves([]);
       setLoading(false);
       setError(null);
     }
   }, [fetchShelves, isAuthenticated, user, initializing]);
 
-  // Listen for shelf update events
   useEffect(() => {
     const handleShelfUpdate = () => {
       fetchShelves();
@@ -125,16 +115,13 @@ export function ShelvesProvider({ children }) {
 
   const addBookToShelf = useCallback(async (shelfId, book) => {
     await apiAddBookToShelf(shelfId, book);
-    // Backend returns 204 NoContent, so we refresh shelves to get updated data
-    // or we can optimistically update the shelf
-    await fetchShelves(); // Refresh shelves to get updated data
-    // Return success indicator
+
+    await fetchShelves();
     return { id: shelfId, bookId: book?.id || book?._id };
   }, [fetchShelves]);
 
   const removeBookFromShelf = useCallback(async (shelfId, bookId) => {
     await apiRemoveBookFromShelf(shelfId, bookId);
-    // Backend returns 204 NoContent, so we refresh shelves to get updated data
     await fetchShelves();
     return { id: shelfId, bookId };
   }, [fetchShelves]);

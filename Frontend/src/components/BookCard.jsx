@@ -20,9 +20,9 @@ function BookCard({ book, onClick, enableShelfControls = true, priority = false 
     book.image
   );
 
-  // Intersection Observer for lazy loading (skip for priority images)
+
   useEffect(() => {
-    // Priority images load immediately
+
     if (priority) {
       setIsInView(true);
       return;
@@ -40,7 +40,7 @@ function BookCard({ book, onClick, enableShelfControls = true, priority = false 
         });
       },
       {
-        rootMargin: "100px", // Start loading 100px before entering viewport
+        rootMargin: "100px",
         threshold: 0.01,
       }
     );
@@ -54,7 +54,7 @@ function BookCard({ book, onClick, enableShelfControls = true, priority = false 
     };
   }, [priority]);
 
-  // Preload image when in view
+
   useEffect(() => {
     if (!isInView || !coverImage) {
       if (!coverImage) {
@@ -67,7 +67,7 @@ function BookCard({ book, onClick, enableShelfControls = true, priority = false 
     setImageLoading(true);
     setImageError(false);
 
-    // Preload image
+
     const img = new Image();
     img.src = coverImage;
     
@@ -87,12 +87,12 @@ function BookCard({ book, onClick, enableShelfControls = true, priority = false 
       }
     };
 
-    // Timeout fallback
+
     const timeout = setTimeout(() => {
       if (isMounted) {
         setImageLoading(false);
       }
-    }, 10000); // 10 seconds timeout
+    }, 10000);
 
     return () => {
       isMounted = false;
@@ -101,7 +101,7 @@ function BookCard({ book, onClick, enableShelfControls = true, priority = false 
       img.onerror = null;
     };
   }, [isInView, coverImage]);
-  // Handle Author object from backend (BookDetailDto has Author as AuthorDto object)
+
   let authorName = "Unknown author";
   if (book.author) {
     if (typeof book.author === 'string') {
@@ -207,12 +207,12 @@ function BookCard({ book, onClick, enableShelfControls = true, priority = false 
             <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none z-20"></div>
           </>
         ) : !isInView ? (
-          // Placeholder while waiting to load
+
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-amber-100 via-orange-100 to-amber-100 dark:from-gray-700 dark:via-gray-800">
             <div className="w-12 h-12 border-2 border-amber-300 dark:border-amber-600 border-t-amber-600 dark:border-t-amber-400 rounded-full animate-spin opacity-50"></div>
           </div>
         ) : (
-          // No image placeholder with book icon
+
           <div className="flex flex-col items-center justify-center h-full text-amber-600 dark:text-amber-400 p-4">
             <svg
               className="w-20 h-20 mb-3 opacity-60"

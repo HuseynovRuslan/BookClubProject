@@ -33,7 +33,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
 
-  // Form states
+
   const [selectedBook, setSelectedBook] = useState(null);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -132,7 +132,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
           }
 
           try {
-            // Check if editing existing review
+
             if (editingReview) {
               const updated = await updateReview(editingReview.id, {
                 rating: rating,
@@ -169,7 +169,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
             if (err.isConflict || err.status === 409) {
               setError(t("error.reviewExists"));
             } else {
-              // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+
               const errorMsg = err.translationKey 
                 ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
                 : (err.message || t("error.reviewCreate"));
@@ -193,11 +193,11 @@ export default function CreatePostModal({ onClose, onCreate }) {
           }
 
           try {
-            // Get full book details to get AuthorId
+
             const bookId = selectedBook.id || selectedBook.Id;
             let authorId = selectedBook.authorId || selectedBook.AuthorId || selectedBook.author?.id || selectedBook.Author?.Id;
             
-            // If authorId is not in the book object, fetch full book details
+
             if (!authorId) {
               try {
                 const fullBook = await getBookById(bookId);
@@ -222,7 +222,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               Tags: tags,
             });
 
-            // Extract quoteId properly - ensure it's a string
+
             let quoteIdValue = null;
             if (quote) {
               if (typeof quote === 'string') {
@@ -242,10 +242,10 @@ export default function CreatePostModal({ onClose, onCreate }) {
               }
             }
 
-            // Use quoteId as the post id so it matches backend and persists
+
             newPost = {
               ...newPost,
-              id: quoteIdValue || `local-${Date.now()}`, // Use backend quoteId as post id
+              id: quoteIdValue || `local-${Date.now()}`,
               type: "quote",
               bookTitle: selectedBook.title || selectedBook.Title,
               bookCover: selectedBook.coverImageUrl || selectedBook.coverImage || selectedBook.cover,
@@ -253,7 +253,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
               quoteId: quoteIdValue,
             };
           } catch (err) {
-            // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+
             const errorMsg = err.translationKey 
               ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
               : (err.message || t("error.quoteCreate"));
@@ -302,7 +302,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
       }
 
     onCreate(newPost);
-    // Reload user reviews after creating/updating
+
     if (selectedType === "review") {
       await loadUserReviews();
     }
@@ -311,7 +311,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
       if (err.status === 401) {
         setError(t("error.authRequired"));
       } else {
-        // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+
         const errorMsg = err.translationKey 
           ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
           : (err.message || t("error.postCreate"));
@@ -357,7 +357,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
       await loadUserReviews();
       setError("");
     } catch (err) {
-      // Error mesajı artıq config.js-də kullanıcı dostu formata çevrilir
+
       const errorMsg = err.translationKey 
         ? (err.status ? t(err.translationKey).replace("{status}", err.status) : t(err.translationKey))
         : (err.message || t("error.reviewDelete"));
@@ -544,7 +544,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                       const book = books.find((b) => String(b.id || b.Id) === selectedValue);
                       if (book) {
                         setSelectedBook(book);
-                        // Check if user already reviewed this book
+
                         const existingReview = userReviews.find(
                           (r) => String(r.bookId || r.book?.id) === String(book.id || book.Id)
                         );
@@ -830,7 +830,7 @@ export default function CreatePostModal({ onClose, onCreate }) {
                       const book = books.find((b) => String(b.id || b.Id) === selectedValue);
                       if (book) {
                         setSelectedBook(book);
-                        // Check if user already reviewed this book
+
                         const existingReview = userReviews.find(
                           (r) => String(r.bookId || r.book?.id) === String(book.id || book.Id)
                         );

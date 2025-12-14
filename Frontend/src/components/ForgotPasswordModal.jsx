@@ -16,13 +16,13 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
     setError("");
     setSuccess("");
 
-    // Validation
+
     if (!email || !email.trim()) {
       setError(t("auth.emailRequired") || "Email address is required");
       return;
     }
 
-    // Basic email validation
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setError(t("auth.invalidEmail") || "Please enter a valid email address");
@@ -38,7 +38,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
       setSentEmail(emailToSend);
       setEmail("");
 
-      // Close modal after 3 seconds
+
       setTimeout(() => {
         onClose();
         setSuccess("");

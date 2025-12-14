@@ -30,7 +30,6 @@ export async function createQuote(payload) {
 }
 
 export async function updateQuote(id, payload) {
-  // Try PascalCase first (common in .NET backends)
   const pascalCasePayload = {
     Text: payload.Text || payload.text || "",
     Tags: payload.Tags || payload.tags || null,
@@ -42,7 +41,6 @@ export async function updateQuote(id, payload) {
       body: pascalCasePayload,
     });
   } catch (err) {
-    // If PascalCase fails with 400, try camelCase
     if (err.status === 400) {
       console.log("PascalCase failed, trying camelCase:", err);
       const camelCasePayload = {
