@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus, Shield } from "lucide-react";
+import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus, Shield, Newspaper, Users, Bell, MessageCircle, Tag, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
 import GuestRestrictionModal from "./GuestRestrictionModal";
@@ -15,10 +15,11 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
   
 
   const isActive = (path) => {
-    if (path === "/") {
+    const basePath = path.split("?")[0] || path;
+    if (basePath === "/") {
       return location.pathname === "/" || location.pathname === "/social";
     }
-    return location.pathname === path || location.pathname.startsWith(path + "/");
+    return location.pathname === basePath || location.pathname.startsWith(basePath + "/");
   };
 
 
@@ -26,8 +27,13 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
     { label: t("nav.readingList"), to: "/reading-list", icon: BookOpen },
   ];
 
-
   const extraMenuItems = [
+    { label: "Profile", to: "/profile", icon: User },
+    { label: "News", to: "/social", icon: Newspaper },
+    { label: "Groups", to: "/social", icon: Users },
+    { label: "Notification", to: "/social", icon: Bell },
+    { label: "Messages", to: "/social", icon: MessageCircle },
+    { label: "Topic", to: "/social", icon: Tag },
     { label: t("nav.search"), to: "/search", icon: Search },
     { label: t("nav.categories"), to: "/categories", icon: FolderOpen },
     { label: t("nav.recommendations"), to: "/recommendations", icon: Sparkles },
@@ -45,6 +51,13 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-4 overflow-y-auto">
           <ul className="space-y-2">
+            <li className="px-2 pb-2">
+              <Link to="/" onClick={onClose} className="flex items-center gap-2">
+                <span className="text-lg font-extralight" style={{ fontFamily: "'Poppins', sans-serif", letterSpacing: '0.5px' }}>
+                  📚 <span className="font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent tracking-tight">BookVerse</span>
+                </span>
+              </Link>
+            </li>
             {mainMenuItems.map(({ label, to, icon: Icon }) => (
               <li key={label}>
                 {isGuest ? (
@@ -179,6 +192,13 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-4 overflow-y-auto">
           <ul className="space-y-2">
+            <li className="px-2 pb-2">
+              <Link to="/" className="flex items-center gap-2">
+                <span className="text-lg font-extralight" style={{ fontFamily: "'Poppins', sans-serif", letterSpacing: '0.5px' }}>
+                  📚 <span className="font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent tracking-tight">BookVerse</span>
+                </span>
+              </Link>
+            </li>
             {mainMenuItems.map(({ label, to, icon: Icon }) => (
               <li key={label}>
                 {isGuest ? (
@@ -278,19 +298,6 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
                   <Shield className="w-5 h-5" />
                   {t("nav.admin") || "Admin Panel"}
                 </Link>
-              </li>
-            )}
-
-            {/* New Book düyməsi yalnız writer-lər üçün */}
-            {isWriter && (
-              <li>
-                <button
-                  onClick={onCreateBook}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm text-gray-900 hover:bg-gray-100"
-                >
-                  <BookPlus className="w-5 h-5" />
-                  {t("nav.newBook")}
-                </button>
               </li>
             )}
           </ul>
