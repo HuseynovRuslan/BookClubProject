@@ -284,7 +284,7 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
               );
             })}
 
-            {/* Admin Panel linki yalnız admin-lər üçün */}
+            {/* Admin Panel linki yalnız admin-lər üçün
             {isAdmin && (
               <li>
                 <Link
@@ -299,7 +299,7 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
                   {t("nav.admin") || "Admin Panel"}
                 </Link>
               </li>
-            )}
+            )} */}
           </ul>
         </nav>
 
