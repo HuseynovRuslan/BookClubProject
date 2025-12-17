@@ -29,11 +29,11 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
 
   const extraMenuItems = [
     { label: "Profile", to: "/profile", icon: User },
-    { label: "News", to: "/social", icon: Newspaper },
-    { label: "Groups", to: "/social", icon: Users },
-    { label: "Notification", to: "/social", icon: Bell },
-    { label: "Messages", to: "/social", icon: MessageCircle },
-    { label: "Topic", to: "/social", icon: Tag },
+    { label: "News", to: "/news", icon: Newspaper },
+    { label: "Groups", to: "/groups", icon: Users },
+    { label: "Notification", to: "/notifications", icon: Bell },
+    { label: "Messages", to: "/messages", icon: MessageCircle },
+    { label: "Topic", to: "/topic", icon: Tag },
     { label: t("nav.search"), to: "/search", icon: Search },
     { label: t("nav.categories"), to: "/categories", icon: FolderOpen },
     { label: t("nav.recommendations"), to: "/recommendations", icon: Sparkles },
