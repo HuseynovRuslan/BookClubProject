@@ -89,7 +89,6 @@ export default function ReviewForm({
     [books]
   );
 
-  // Hide book selection if bookOptions is provided (we're on a specific book page)
   const showBookSelect = !providedBooks || providedBooks.length === 0 || providedBooks.length > 1;
 
   return (

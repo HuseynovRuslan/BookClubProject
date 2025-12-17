@@ -83,7 +83,7 @@ export default function MorePage() {
     }
   ];
 
-  // Load user statistics
+
   useEffect(() => {
     const loadStatistics = async () => {
       setLoadingStats(true);
@@ -103,7 +103,7 @@ export default function MorePage() {
     }
   }, [user]);
 
-  // Load books read count from localStorage on mount
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem("bookverse_books_read_count");
@@ -118,13 +118,13 @@ export default function MorePage() {
     }
   }, []);
 
-  // Calculate reading statistics and update localStorage
+
   useEffect(() => {
     if (!shelves || shelves.length === 0) {
       return;
     }
 
-    // Find "Read" shelf - check for various translations
+
     const readShelfName = t("readingList.read") || "Read";
     const readShelfNames = [
       readShelfName.toLowerCase(),
@@ -143,8 +143,8 @@ export default function MorePage() {
     const booksInReadShelf = readShelf?.books || [];
     const currentBooksRead = booksInReadShelf.length;
 
-    // Update localStorage only if current count is greater than stored count
-    // This ensures the count never decreases even if books are removed from Read shelf
+
+
     try {
       const stored = localStorage.getItem("bookverse_books_read_count");
       const storedCount = stored ? parseInt(stored, 10) : 0;
@@ -153,24 +153,24 @@ export default function MorePage() {
         localStorage.setItem("bookverse_books_read_count", currentBooksRead.toString());
         setBooksReadCount(currentBooksRead);
       } else if (isNaN(storedCount) || storedCount === 0) {
-        // If no stored value or stored value is 0, set current count
+
         localStorage.setItem("bookverse_books_read_count", currentBooksRead.toString());
         setBooksReadCount(currentBooksRead);
       }
-      // If currentBooksRead <= storedCount, keep the stored value (don't decrease)
+
     } catch (err) {
       console.error("Error saving books read count to localStorage:", err);
     }
   }, [shelves, t]);
 
-  // Calculate reading statistics (use stored count from localStorage)
+
   const readingStats = useMemo(() => {
     return { booksRead: booksReadCount };
   }, [booksReadCount]);
 
-  // Calculate activity statistics
+
   const activityStats = useMemo(() => {
-    // Get posts from localStorage
+
     let postsCount = 0;
     let commentsCount = 0;
 
@@ -179,7 +179,7 @@ export default function MorePage() {
       if (socialFeedData) {
         const posts = JSON.parse(socialFeedData);
         if (Array.isArray(posts)) {
-          // Count posts created by current user
+
           const userId = user?.id || user?.Id;
           const userName = user?.name || user?.username || user?.Username;
           
@@ -189,7 +189,7 @@ export default function MorePage() {
             return postUserId === userId || postUsername === userName;
           }).length;
 
-          // Count comments made by current user
+
           posts.forEach(post => {
             if (post.comments && Array.isArray(post.comments)) {
               const userComments = post.comments.filter(comment => {

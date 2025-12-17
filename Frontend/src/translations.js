@@ -131,7 +131,7 @@ export const translations = {
     "categories.noBooks": "No books found",
     "categories.backToCategories": "Back to Categories",
     
-    // Category Names (for translation mapping)
+    // Category Names 
     "category.fiction": "Fiction",
     "category.mystery": "Mystery",
     "category.selfHelp": "Self-Help",

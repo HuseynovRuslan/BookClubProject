@@ -15,7 +15,7 @@ export default function AdminPanelPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("books");
 
-  // Check if user is admin
+
   const isAdmin = user?.role === "Admin" || user?.role === "admin";
 
   if (!isAdmin) {
@@ -116,7 +116,7 @@ export default function AdminPanelPage() {
   );
 }
 
-// Books Management Component
+
 function BooksManagement() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +141,7 @@ function BooksManagement() {
         searchTerm: searchTerm.trim() || undefined,
       });
       
-      // Handle PagedResult format (Items property with capital I, or items with lowercase)
+
       let booksList = [];
       let total = 0;
       
@@ -177,21 +177,21 @@ function BooksManagement() {
   }, [pageNumber]);
 
   useEffect(() => {
-    // Fetch authors and genres for dropdowns
+
     const fetchData = async () => {
       try {
         console.log("Fetching authors and genres...");
         
-        // Fetch all authors (may need multiple pages)
+
         let allAuthors = [];
         let authorsPage = 1;
         let hasMoreAuthors = true;
-        const maxAuthorsPages = 10; // Limit to prevent infinite loops
+        const maxAuthorsPages = 10;
         
         while (hasMoreAuthors && authorsPage <= maxAuthorsPages) {
           const authorsRes = await getAuthors({ page: authorsPage, pageSize: 50 });
           
-          // Parse response
+
           let authorsList = [];
           if (authorsRes?.items && Array.isArray(authorsRes.items)) {
             authorsList = authorsRes.items;
@@ -203,7 +203,7 @@ function BooksManagement() {
           
           if (authorsList.length > 0) {
             allAuthors.push(...authorsList);
-            // If we got less than 50, we've reached the end
+
             if (authorsList.length < 50) {
               hasMoreAuthors = false;
             } else {
@@ -214,16 +214,16 @@ function BooksManagement() {
           }
         }
         
-        // Fetch all genres (may need multiple pages)
+
         let allGenres = [];
         let genresPage = 1;
         let hasMoreGenres = true;
-        const maxGenresPages = 10; // Limit to prevent infinite loops
+        const maxGenresPages = 10;
         
         while (hasMoreGenres && genresPage <= maxGenresPages) {
           const genresRes = await getGenres({ page: genresPage, pageSize: 50 });
           
-          // Parse response
+
           let genresList = [];
           if (genresRes?.items && Array.isArray(genresRes.items)) {
             genresList = genresRes.items;
@@ -235,7 +235,7 @@ function BooksManagement() {
           
           if (genresList.length > 0) {
             allGenres.push(...genresList);
-            // If we got less than 50, we've reached the end
+
             if (genresList.length < 50) {
               hasMoreGenres = false;
             } else {
@@ -246,14 +246,14 @@ function BooksManagement() {
           }
         }
         
-        // Use the first page response for detailed logging (for debugging)
+
         const authorsRes = allAuthors.length > 0 ? { items: allAuthors } : null;
         const genresRes = allGenres.length > 0 ? { items: allGenres } : null;
         
         setAuthors(allAuthors);
         setGenres(allGenres);
       } catch (error) {
-        // Failed to fetch authors/genres
+
         setAuthors([]);
         setGenres([]);
       }
@@ -263,7 +263,7 @@ function BooksManagement() {
   }, []);
 
   useEffect(() => {
-    // Debounce search
+
     const timer = setTimeout(() => {
       if (pageNumber === 1) {
         fetchBooks();
@@ -283,7 +283,7 @@ function BooksManagement() {
     setDeletingId(bookId);
     try {
       await deleteBookAsAdmin(bookId);
-      await fetchBooks(); // Refresh list
+      await fetchBooks();
     } catch (error) {
       console.error("Failed to delete book:", error);
       alert("Failed to delete book. Please try again.");
@@ -309,13 +309,13 @@ function BooksManagement() {
         await updateBookAsAdmin(editingBook.id, bookData);
         bookId = editingBook.id;
       } else {
-        // Create book and get the book ID from response
+
         const response = await createBookAsAdmin(bookData);
         console.log("Create book response:", response);
         
-        // Backend returns CreatedAtAction (201) with ApiResponse
-        // The ID is in the Location header, but we can also try to extract from response
-        // Try multiple ways to get the book ID
+
+
+
         if (response?.data) {
           bookId = response.data;
         } else if (response?.id) {
@@ -324,24 +324,24 @@ function BooksManagement() {
           bookId = response;
         } else {
           console.warn("Could not extract book ID from create response, will refresh list:", response);
-          // We'll refresh the list anyway, so the book should appear
+
         }
       }
       
-      // Add genres to book if any are selected
+
       if (bookData.genreIds && bookData.genreIds.length > 0 && bookId) {
         try {
           await addGenresToBook(bookId, bookData.genreIds);
         } catch (genreError) {
           console.error("Failed to add genres to book:", genreError);
-          // Don't fail the whole operation if genre addition fails
+
         }
       }
       
       setShowBookModal(false);
       setEditingBook(null);
       
-      // Always refresh the book list after creating/updating
+
       await fetchBooks();
     } catch (error) {
       console.error("Failed to save book:", error);
@@ -527,7 +527,7 @@ function BooksManagement() {
   );
 }
 
-// Users Management Component
+
 function UsersManagement() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -573,7 +573,7 @@ function UsersManagement() {
   }, [pageNumber]);
 
   useEffect(() => {
-    // Debounce search
+
     const timer = setTimeout(() => {
       if (pageNumber === 1) {
         fetchUsers();
@@ -653,7 +653,7 @@ function UsersManagement() {
                         alt={userName}
                         className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-200 shrink-0"
                         onError={(e) => {
-                          // Hide the image and show placeholder instead
+
                           e.target.style.display = 'none';
                           const placeholder = e.target.nextElementSibling;
                           if (placeholder) {
@@ -762,9 +762,9 @@ function UsersManagement() {
   );
 }
 
-// Content Moderation Component
+
 function ContentModeration() {
-  const [activeContentType, setActiveContentType] = useState("quotes"); // "quotes" or "reviews"
+  const [activeContentType, setActiveContentType] = useState("quotes");
   const [quotes, setQuotes] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -836,7 +836,7 @@ function ContentModeration() {
     setDeletingId(quoteId);
     try {
       await deleteQuoteAsAdmin(quoteId);
-      await fetchQuotes(); // Refresh list
+      await fetchQuotes();
     } catch (error) {
       console.error("Failed to delete quote:", error);
       alert("Failed to delete quote. Please try again.");
@@ -853,7 +853,7 @@ function ContentModeration() {
     setDeletingId(reviewId);
     try {
       await deleteReviewAsAdmin(reviewId);
-      await fetchReviews(); // Refresh list
+      await fetchReviews();
     } catch (error) {
       console.error("Failed to delete review:", error);
       alert("Failed to delete review. Please try again.");
@@ -930,11 +930,11 @@ function ContentModeration() {
                 const coverUrl = book?.coverImageUrl || book?.CoverImageUrl || book?.cover;
                 const imageUrl = coverUrl ? getImageUrl(coverUrl) : null;
                 
-                // Extract book info
+
                 const bookTitle = book?.title || book?.Title || "Unknown Book";
                 const authorName = book?.authorName || book?.AuthorName || book?.author?.name || book?.author?.Name || "Unknown Author";
                 
-                // Extract user info
+
                 const userName = user?.username || user?.userName || user?.Username || user?.name || user?.Name || 
                                  (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : null) ||
                                  (user?.FirstName && user?.LastName ? `${user.FirstName} ${user.LastName}` : null) ||
@@ -1019,12 +1019,12 @@ function ContentModeration() {
               })
             ) : (
               reviews.map((review) => {
-                // BookReviewDto has BookTitle and BookCoverImageUrl directly
+
                 const bookTitle = review.bookTitle || review.BookTitle || review.book?.title || review.Book?.Title || "Unknown Book";
                 const coverUrl = review.bookCoverImageUrl || review.BookCoverImageUrl || review.book?.coverImageUrl || review.Book?.CoverImageUrl || review.book?.cover;
                 const imageUrl = coverUrl ? getImageUrl(coverUrl) : null;
                 
-                // BookReviewDto has Username directly
+
                 const userName = review.username || review.Username || review.user?.username || review.User?.Username || review.user?.userName || 
                                  review.user?.name || review.User?.Name || 
                                  (review.user?.firstName && review.user?.lastName ? `${review.user.firstName} ${review.user.lastName}` : null) ||
@@ -1151,7 +1151,7 @@ function ContentModeration() {
   );
 }
 
-// Authors Management Component
+
 function AuthorsManagement() {
   const [authors, setAuthors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1430,7 +1430,7 @@ function AuthorsManagement() {
                         alt={author.name || author.Name}
                         className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-200 shrink-0"
                         onError={(e) => {
-                          // Hide the image and show placeholder instead
+
                           e.target.style.display = 'none';
                           const placeholder = e.target.nextElementSibling;
                           if (placeholder) {
@@ -1533,7 +1533,7 @@ function AuthorsManagement() {
   );
 }
 
-// Genres Management Component
+
 function GenresManagement() {
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1850,7 +1850,7 @@ function GenresManagement() {
   );
 }
 
-// Book Form Modal Component
+
 function BookFormModal({ book, authors, genres, onClose, onSave }) {
   const isEdit = !!book;
   const [formData, setFormData] = useState({
@@ -1902,7 +1902,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
     e.preventDefault();
     setErrors({});
 
-    // Validation
+
     const newErrors = {};
     if (!formData.title?.trim()) newErrors.title = "Title is required";
     if (!formData.description?.trim()) newErrors.description = "Description is required";
@@ -1910,7 +1910,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
     if (!formData.publicationDate?.trim()) {
       newErrors.publicationDate = "Publication date is required";
     }
-    // ISBN validation: max 17 characters (backend requirement)
+
     if (formData.isbn && formData.isbn.trim().length > 17) {
       newErrors.isbn = "ISBN must be 17 characters or less";
     }
@@ -1925,14 +1925,14 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
 
     setSaving(true);
     try {
-      // Format publication date - Backend expects DateOnly format (YYYY-MM-DD)
+
       let publicationDate = formData.publicationDate?.trim();
       if (publicationDate) {
-        // Extract date part only (YYYY-MM-DD)
+
         publicationDate = publicationDate.split("T")[0];
       }
 
-      // Ensure publicationDate is provided (required by backend validation)
+
       if (!publicationDate) {
         setErrors({ publicationDate: "Publication date is required" || "Publication date is required" });
         setSaving(false);
@@ -1945,7 +1945,7 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
         pageCount: formData.pageCount ? parseInt(formData.pageCount) : undefined,
       });
     } catch (error) {
-      // Error handled in parent
+
     } finally {
       setSaving(false);
     }
