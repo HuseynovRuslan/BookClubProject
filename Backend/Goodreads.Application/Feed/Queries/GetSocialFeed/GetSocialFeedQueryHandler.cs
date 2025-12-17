@@ -1,0 +1,158 @@
+using Goodreads.Application.Common.Extensions;
+using Goodreads.Application.Feed.Queries.GetFeed;
+
+namespace Goodreads.Application.Feed.Queries.GetSocialFeed;
+
+public class GetSocialFeedQueryHandler : IRequestHandler<GetSocialFeedQuery, PagedResult<FeedItemDto>>
+{
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IUserContext _userContext;
+    private readonly UserManager<User> _userManager;
+    private readonly IMapper _mapper;
+    private readonly ILogger<GetSocialFeedQueryHandler> _logger;
+
+    public GetSocialFeedQueryHandler(
+        IUnitOfWork unitOfWork,
+        IUserContext userContext,
+        UserManager<User> userManager,
+        IMapper mapper,
+        ILogger<GetSocialFeedQueryHandler> logger)
+    {
+        _unitOfWork = unitOfWork;
+        _userContext = userContext;
+        _userManager = userManager;
+        _mapper = mapper;
+        _logger = logger;
+    }
+
+    public async Task<PagedResult<FeedItemDto>> Handle(GetSocialFeedQuery request, CancellationToken cancellationToken)
+    {
+        var userId = _userContext.UserId;
+        if (userId == null)
+            throw new UnauthorizedAccessException("User is not authenticated");
+
+        // Get quotes from all users except current user (social feed - shows everyone's posts)
+        var (quotes, _) = await _unitOfWork.Quotes
+            .GetAllAsync(filter: q => q.CreatedByUserId != userId, includes: new[] { "Likes" });
+        
+        var quotesList = quotes.ToList();
+        
+        // Get books for quotes to include book and author info
+        var quoteBookIds = quotesList.Where(q => !string.IsNullOrEmpty(q.BookId)).Select(q => q.BookId).Distinct().ToList();
+        var quoteBooks = new Dictionary<string, Book>();
+        if (quoteBookIds.Any())
+        {
+            var (books, __) = await _unitOfWork.Books.GetAllAsync(filter: b => quoteBookIds.Contains(b.Id), includes: new[] { "Author" });
+            foreach (var book in books)
+            {
+                quoteBooks[book.Id] = book;
+            }
+        }
+        
+        _logger.LogInformation("Fetched {Count} books for {QuoteCount} quotes", quoteBooks.Count, quotesList.Count);
+
+        // Get reviews from all users except current user (social feed - shows everyone's posts)
+        var (reviews, ___) = await _unitOfWork.BookReviews
+            .GetAllAsync(filter: r => r.UserId != userId, includes: new[] { "Book", "User" });
+        
+        var reviewsList = reviews.ToList();
+
+        // Get shelves from all users except current user (social feed - shows everyone's posts)
+        var (shelves, ____) = await _unitOfWork.Shelves
+            .GetAllAsync(filter: s => s.UserId != userId);
+        
+        var shelvesList = shelves.ToList();
+        var shelfIds = shelvesList.Select(s => s.Id).ToList();
+
+        // Get book additions from all users (BookShelf)
+        var (bookShelves, _____) = await _unitOfWork.BookShelves
+            .GetAllAsync(filter: bs => shelfIds.Contains(bs.ShelfId));
+        
+        var bookShelvesList = bookShelves.ToList();
+
+        // Combine all activities
+        var feedItems = new List<FeedItemDto>();
+
+        // Add quotes
+        foreach (var quote in quotesList)
+        {
+            var user = await _userManager.FindByIdAsync(quote.CreatedByUserId);
+            if (user != null)
+            {
+                var feedItem = new FeedItemDto
+                {
+                    Id = quote.Id,
+                    ActivityType = "Quote",
+                    CreatedAt = quote.CreatedAt,
+                    User = _mapper.Map<UserDto>(user),
+                    Quote = _mapper.Map<QuoteDto>(quote)
+                };
+                
+                if (!string.IsNullOrEmpty(quote.BookId) && quoteBooks.TryGetValue(quote.BookId, out var book))
+                {
+                    feedItem.Book = _mapper.Map<BookDto>(book);
+                    _logger.LogInformation("Added book to quote {QuoteId}: BookId={BookId}, Title={Title}, AuthorName={AuthorName}", 
+                        quote.Id, book.Id, book.Title, feedItem.Book?.AuthorName);
+                }
+                else
+                {
+                    _logger.LogWarning("Book not found for quote {QuoteId}, BookId={BookId}", quote.Id, quote.BookId);
+                }
+                
+                feedItems.Add(feedItem);
+            }
+        }
+
+        foreach (var review in reviewsList)
+        {
+            var user = await _userManager.FindByIdAsync(review.UserId);
+            if (user != null)
+            {
+                feedItems.Add(new FeedItemDto
+                {
+                    Id = review.Id,
+                    ActivityType = "Review",
+                    CreatedAt = review.CreatedAt,
+                    User = _mapper.Map<UserDto>(user),
+                    Review = _mapper.Map<BookReviewDto>(review)
+                });
+            }
+        }
+
+        foreach (var bookShelf in bookShelvesList)
+        {
+            var shelf = await _unitOfWork.Shelves.GetByIdAsync(bookShelf.ShelfId);
+            if (shelf != null)
+            {
+                var user = await _userManager.FindByIdAsync(shelf.UserId);
+                if (user != null)
+                {
+                    feedItems.Add(new FeedItemDto
+                    {
+                        Id = $"{bookShelf.BookId}-{bookShelf.ShelfId}",
+                        ActivityType = "BookAdded",
+                        CreatedAt = bookShelf.AddedAt,
+                        User = _mapper.Map<UserDto>(user),
+                        Book = _mapper.Map<BookDto>(bookShelf.Book),
+                        ShelfName = shelf.Name
+                    });
+                }
+            }
+        }
+
+        // Sort by CreatedAt descending
+        feedItems = feedItems.OrderByDescending(f => f.CreatedAt).ToList();
+
+        // Apply pagination
+        var pageNumber = request.PageNumber ?? 1;
+        var pageSize = request.PageSize ?? 10;
+        var totalCount = feedItems.Count;
+        var pagedItems = feedItems
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return PagedResult<FeedItemDto>.Create(pagedItems, pageNumber, pageSize, totalCount);
+    }
+}
+
