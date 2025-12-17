@@ -1,5 +1,5 @@
 ﻿namespace Goodreads.Infrastructure.Services.EmailService;
-internal class EmailSettings
+public class EmailSettings
 {
     public const string Section = "EmailSettings";
     public bool UseSmtp4Dev { get; set; }

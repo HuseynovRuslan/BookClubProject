@@ -1,7 +1,5 @@
-﻿using AutoMapper;
-using Goodreads.Application.Books.Commands.CreateBook;
+﻿using Goodreads.Application.Books.Commands.CreateBook;
 using Goodreads.Application.Books.Commands.UpdateBook;
-using Goodreads.Domain.Entities;
 
 namespace Goodreads.Application.Common.Mappings
 {
