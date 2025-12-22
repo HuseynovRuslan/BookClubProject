@@ -8,6 +8,7 @@ namespace Goodreads.Application.Common.Interfaces
         IRepository<User> Users { get; }
         IRepository<Genre> Genres { get; }
         IRepository<Book> Books { get; }
+        IRepository<Information> Informations { get; } 
         IRepository<Shelf> Shelves { get; }
         IRepository<BookShelf> BookShelves { get; }
         IRepository<BookReview> BookReviews { get; }

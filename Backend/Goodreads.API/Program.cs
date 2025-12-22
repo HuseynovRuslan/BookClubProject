@@ -8,7 +8,6 @@ using Goodreads.Infrastructure;
 using Goodreads.Infrastructure.Configurations;
 using Goodreads.Infrastructure.Persistence;
 using Goodreads.Infrastructure.Repositories;
-using Goodreads.Infrastructure.Services.EmailService;
 using Hangfire;
 using HangfireBasicAuthenticationFilter;
 
@@ -21,6 +20,7 @@ builder.Services.Configure<LocalStorageSettings>(
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection(EmailSettings.Section));
 
+builder.Services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
 builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
