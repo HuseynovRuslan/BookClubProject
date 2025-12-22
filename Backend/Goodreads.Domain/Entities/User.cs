@@ -14,6 +14,8 @@ public class User : IdentityUser
     public Social Social { get; set; } = default!;
     //public Author? ClaimedAuthorProfile { get; set; }
 
+    public bool EmailConfirmed { get; set; } = false;
+
     public ICollection<UserFollow> Followers { get; set; } = new List<UserFollow>();
     public ICollection<UserFollow> Following { get; set; } = new List<UserFollow>();
     public ICollection<QuoteLike> LikedQuotes { get; set; } = new List<QuoteLike>();

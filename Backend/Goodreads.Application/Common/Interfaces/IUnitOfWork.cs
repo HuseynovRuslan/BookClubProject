@@ -5,6 +5,7 @@ namespace Goodreads.Application.Common.Interfaces
     public interface IUnitOfWork : IDisposable
     {
         IRepository<Author> Authors { get; }
+        IRepository<User> Users { get; }
         IRepository<Genre> Genres { get; }
         IRepository<Book> Books { get; }
         IRepository<Shelf> Shelves { get; }
