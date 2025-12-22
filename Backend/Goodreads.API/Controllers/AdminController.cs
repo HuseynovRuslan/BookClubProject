@@ -55,5 +55,6 @@ public class AdminController : BaseController
             () => NoContent(),
             failure => CustomResults.Problem(failure));
     }
+
 }
 

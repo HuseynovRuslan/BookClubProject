@@ -9,6 +9,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Author>? _authorsRepository;
     private IRepository<Genre>? _genresRepository;
     private IRepository<Book>? _bookRepository;
+    private IRepository<Information>? _informationRepository;
     private IRepository<Shelf>? _shelfRepository;
     private IRepository<BookShelf>? _bookShelfRepository;
     //private IRepository<AuthorClaimRequest>? _authorClaimRequestRepository;
@@ -26,6 +27,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Author> Authors => _authorsRepository ??= new GenericRepository<Author>(_context);
     public IRepository<Genre> Genres => _genresRepository ??= new GenericRepository<Genre>(_context);
     public IRepository<Book> Books => _bookRepository ??= new GenericRepository<Book>(_context);
+    public IRepository<Information> Informations => _informationRepository ??= new GenericRepository<Information>(_context);
     public IRepository<Shelf> Shelves => _shelfRepository ??= new GenericRepository<Shelf>(_context);
     public IRepository<BookShelf> BookShelves => _bookShelfRepository ??= new GenericRepository<BookShelf>(_context);
     //public IRepository<AuthorClaimRequest> AuthorClaimRequests => _authorClaimRequestRepository ??=

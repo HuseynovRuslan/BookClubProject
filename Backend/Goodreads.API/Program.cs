@@ -1,13 +1,13 @@
 using Goodreads.API.Extensions;
 using Goodreads.Application;
+using Goodreads.Application.Common.Interfaces;
+using Goodreads.Application.Common.Mappings;
 using Goodreads.Infrastructure;
 using Goodreads.Infrastructure.Configurations;
 using Goodreads.Infrastructure.Persistence;
+using Goodreads.Infrastructure.Repositories;
 using Hangfire;
 using HangfireBasicAuthenticationFilter;
-using Goodreads.Application.Common.Interfaces;
-using Goodreads.Infrastructure.Repositories;
-using Goodreads.Application.Common.Mappings; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +16,7 @@ builder.Services.Configure<LocalStorageSettings>(
     builder.Configuration.GetSection(LocalStorageSettings.Section)
 );
 
+builder.Services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
 builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
