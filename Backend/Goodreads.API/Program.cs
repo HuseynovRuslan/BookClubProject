@@ -8,6 +8,7 @@ using Goodreads.Infrastructure;
 using Goodreads.Infrastructure.Configurations;
 using Goodreads.Infrastructure.Persistence;
 using Goodreads.Infrastructure.Repositories;
+using Goodreads.Infrastructure.Services.EmailService;
 using Hangfire;
 using HangfireBasicAuthenticationFilter;
 
@@ -61,7 +62,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goodreads-Clone API v1");
+    });
 }
 
 if (builder.Configuration.GetValue<bool>("RunMigrations"))
