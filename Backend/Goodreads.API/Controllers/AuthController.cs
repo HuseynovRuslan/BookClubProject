@@ -24,6 +24,8 @@ namespace Goodreads.API.Controllers;
 
 public class ResetPasswordRequest
 {
+    public string UserId { get; set; } = default!;
+    public string Token { get; set; } = default!;
     public string NewPassword { get; set; } = default!;
 }
 
@@ -124,6 +126,7 @@ public class AuthController : BaseController
     }
 
     [HttpPost("forgot-password")]
+    [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
     {
         var result = await Sender.Send(command);
@@ -133,15 +136,62 @@ public class AuthController : BaseController
             onFailure => CustomResults.Problem(onFailure));
     }
 
-    //[HttpPost("reset-password")]
-    //public async Task<IActionResult> ResetPassword([FromQuery] string userId, [FromQuery] string token, [FromBody] ResetPasswordRequest request)
-    //{
-    //    var command = new ResetPasswordCommand(userId, token, request.NewPassword);
-    //    var result = await Sender.Send(command);
+    [HttpGet("reset-password")]
+    public async Task<IActionResult> ValidateResetPasswordToken([FromQuery] string userId, [FromQuery] string token)
+    {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+            return BadRequest(ApiResponse.Failure("userId və token tələb olunur", "Validation error"));
 
-    //    return result.Match(
-    //        () => Ok(ApiResponse.Success("Password reset successfully.")),
-    //        onFailure => CustomResults.Problem(onFailure));
-    //}
+        // ASP.NET Core query parametrlərini avtomatik decode edir, amma bəzən iki dəfə encode oluna bilər
+        // Ona görə də yenidən decode edirik (təhlükəsiz üçün)
+        var decodedToken = System.Net.WebUtility.UrlDecode(token);
+        
+        // Əgər hələ də encoded görünürsə, yenidən decode et
+        if (decodedToken.Contains("%"))
+        {
+            decodedToken = System.Net.WebUtility.UrlDecode(decodedToken);
+        }
+
+        // Token-i yoxla
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        if (user == null)
+            return BadRequest(ApiResponse.Failure("İstifadəçi tapılmadı", "User not found"));
+
+        var isTokenValid = await _userManager.VerifyUserTokenAsync(user, 
+            _userManager.Options.Tokens.PasswordResetTokenProvider, 
+            "ResetPassword", 
+            decodedToken);
+        
+        if (!isTokenValid)
+            return BadRequest(ApiResponse.Failure("Token etibarsızdır və ya vaxtı keçib", "Invalid token"));
+
+        return Ok(ApiResponse.Success("Token etibarlıdır"));
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        if (string.IsNullOrEmpty(request.NewPassword))
+            return BadRequest(ApiResponse.Failure("Şifrə boş ola bilməz", "Validation error"));
+
+        if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.Token))
+            return BadRequest(ApiResponse.Failure("userId və token tələb olunur", "Validation error"));
+
+        // Token-i decode et (URL-encoded ola bilər)
+        var decodedToken = System.Net.WebUtility.UrlDecode(request.Token);
+        
+        // Əgər hələ də encoded görünürsə, yenidən decode et
+        if (decodedToken.Contains("%"))
+        {
+            decodedToken = System.Net.WebUtility.UrlDecode(decodedToken);
+        }
+
+        var command = new ResetPasswordCommand(request.UserId, decodedToken, request.NewPassword);
+        var result = await Sender.Send(command);
+
+        return result.Match(
+            () => Ok(ApiResponse.Success("Şifrə uğurla yeniləndi.")),
+            onFailure => CustomResults.Problem(onFailure));
+    }
 
 }
