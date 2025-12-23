@@ -14,6 +14,7 @@
     <EnableStaticWebAssetCompression>false</EnableStaticWebAssetCompression>
     <!-- Additional property to disable compression in static web assets -->
     <EnableCompressionInStaticWebAssets>false</EnableCompressionInStaticWebAssets>
+    <UserSecretsId>33c7e6a0-d7b5-4e80-8a88-0b834bcdc65c</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

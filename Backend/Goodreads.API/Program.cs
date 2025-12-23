@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Mail;
 using Goodreads.API.Extensions;
 using Goodreads.Application;
 using Goodreads.Application.Common.Interfaces;
@@ -30,26 +28,6 @@ builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<
         Goodreads.Application.Books.Commands.CreateBook.CreateBookCommandHandler>());
-
-
-var emailSettings = builder.Configuration
-    .GetSection(EmailSettings.Section)
-    .Get<EmailSettings>()!;
-
-builder.Services
-    .AddFluentEmail(emailSettings.FromEmail, emailSettings.FromName)
-    .AddSmtpSender(() => new SmtpClient
-    {
-        Host = emailSettings.Host,
-        Port = emailSettings.Port,
-        EnableSsl = true,
-        Credentials = new NetworkCredential(
-            emailSettings.Username,
-            emailSettings.Password
-        )
-    });
-
-builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services
     .AddPresentation()

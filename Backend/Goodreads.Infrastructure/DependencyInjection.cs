@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using FluentEmail.SendGrid;
 
 namespace Goodreads.Infrastructure;
 public static class DependencyInjection
@@ -112,16 +113,31 @@ public static class DependencyInjection
         var emailSettings = configuration.GetSection(EmailSettings.Section).Get<EmailSettings>()
             ?? throw new InvalidOperationException("Email settings are not configured properly.");
 
-        if (emailSettings.UseSmtp4Dev)
+        // Konfiqurasiyanı yoxla
+        var useSendGrid = configuration.GetValue<bool>("EmailSettings:UseSendGrid");
+        var sendGridApiKey = configuration["EmailSettings:SendGridApiKey"];
+        
+        if (useSendGrid && !string.IsNullOrWhiteSpace(sendGridApiKey))
         {
+            // SendGrid istifadə et
+            var fromEmail = configuration["EmailSettings:FromEmail"] ?? emailSettings.FromEmail;
+            var fromName = configuration["EmailSettings:FromName"] ?? emailSettings.FromName;
+            
+            services.AddFluentEmail(fromEmail, fromName)
+                .AddSendGridSender(sendGridApiKey);
+        }
+        else if (emailSettings.UseSmtp4Dev)
+        {
+            // SMTP4Dev development üçün
             emailSettings.Host = "localhost";
             emailSettings.Port = 25;
             emailSettings.FromEmail = "noreply@localhost";
             services.AddFluentEmail(emailSettings.FromEmail)
-            .AddSmtpSender(emailSettings.Host, emailSettings.Port);
+                .AddSmtpSender(emailSettings.Host, emailSettings.Port);
         }
         else
         {
+            // Standart SMTP
             services.AddFluentEmail(emailSettings.FromEmail, emailSettings.FromName)
                 .AddSmtpSender(emailSettings.Host, emailSettings.Port, emailSettings.Username, emailSettings.Password);
         }
