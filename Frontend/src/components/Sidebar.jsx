@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus, Shield, Newspaper, Users, Bell, MessageCircle, Tag, User } from "lucide-react";
+import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus, Shield, Newspaper, Users, Bell, MessageCircle, Tag, User, Bookmark } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
 import GuestRestrictionModal from "./GuestRestrictionModal";
@@ -28,13 +28,16 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
   ];
 
   const extraMenuItems = [
-    { label: "Profile", to: "/profile", icon: User },
+    // Search yuxarı hissədə görünsün
+    { label: t("nav.search"), to: "/search", icon: Search },
+    { label: "Saved", to: "/saved", icon: Bookmark },
     { label: "News", to: "/news", icon: Newspaper },
     { label: "Groups", to: "/groups", icon: Users },
     { label: "Notification", to: "/notifications", icon: Bell },
     { label: "Messages", to: "/messages", icon: MessageCircle },
     { label: "Topic", to: "/topic", icon: Tag },
-    { label: t("nav.search"), to: "/search", icon: Search },
+    // Profil isə əvvəl search-in olduğu yerə, yəni aşağı hissəyə keçir
+    { label: "Profile", to: "/profile", icon: User },
     { label: t("nav.categories"), to: "/categories", icon: FolderOpen },
     { label: t("nav.recommendations"), to: "/recommendations", icon: Sparkles },
     { label: t("nav.more"), to: "/more", icon: MoreHorizontal },

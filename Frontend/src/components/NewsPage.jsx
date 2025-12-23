@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Newspaper, Sparkles, Clock, Bookmark } from "lucide-react";
 
 const mockNews = [
@@ -26,18 +26,13 @@ const mockNews = [
 ];
 
 export default function NewsPage() {
-  const [filter, setFilter] = useState("latest");
-  const filteredNews = useMemo(() => {
-    if (filter === "all") return mockNews;
-    return mockNews.filter((n) => n.type === filter);
-  }, [filter]);
+  const [readNews, setReadNews] = useState([]);
 
-  const buttonBase =
-    "px-4 py-2 rounded-xl font-semibold border transition-all";
-  const buttonActive =
-    "bg-white text-amber-700 border-amber-200 shadow-sm hover:shadow-md";
-  const buttonGhost =
-    "bg-white/70 text-gray-800 border-gray-200 hover:border-amber-200 hover:text-amber-700";
+  const markAsRead = (title) => {
+    setReadNews((prev) =>
+      prev.includes(title) ? prev : [...prev, title]
+    );
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -60,40 +55,18 @@ export default function NewsPage() {
           <p className="text-gray-700 text-base sm:text-lg max-w-3xl">
             Platformadakı yeniliklər, tədbirlər və oxu icması üçün ən son elanlar.
           </p>
-          <div className="flex flex-wrap gap-3">
-            <button
-              className={`${buttonBase} ${filter === "latest" ? buttonActive : buttonGhost}`}
-              onClick={() => setFilter("latest")}
-            >
-              Ən yenilər
-            </button>
-            <button
-              className={`${buttonBase} ${filter === "events" ? buttonActive : buttonGhost}`}
-              onClick={() => setFilter("events")}
-            >
-              Tədbirlər
-            </button>
-            <button
-              className={`${buttonBase} ${filter === "product" ? buttonActive : buttonGhost}`}
-              onClick={() => setFilter("product")}
-            >
-              Məhsul yenilikləri
-            </button>
-            <button
-              className={`${buttonBase} ${filter === "all" ? buttonActive : buttonGhost}`}
-              onClick={() => setFilter("all")}
-            >
-              Hamısı
-            </button>
-          </div>
         </div>
       </div>
 
       <div className="grid gap-4">
-        {filteredNews.map((item) => (
+        {mockNews.map((item) => {
+          const isRead = readNews.includes(item.title);
+          return (
           <article
             key={item.title}
-            className="rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all p-5 sm:p-6"
+            className={`rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all p-5 sm:p-6 ${
+              isRead ? "opacity-60 grayscale" : ""
+            }`}
           >
             <div className="flex items-center gap-3 text-sm text-amber-700 font-semibold">
               <Sparkles className="w-4 h-4" />
@@ -108,13 +81,21 @@ export default function NewsPage() {
                 <Clock className="w-4 h-4" />
                 {item.time}
               </span>
-              <span className="inline-flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => markAsRead(item.title)}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                  isRead
+                    ? "border-emerald-500 text-emerald-600 bg-emerald-50 cursor-default"
+                    : "border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100"
+                }`}
+              >
                 <Bookmark className="w-4 h-4" />
-                Oxu siyahısına əlavə et
-              </span>
+                {isRead ? "Oxundu" : "Oxundu siyahısına əlavə et"}
+              </button>
             </div>
           </article>
-        ))}
+        )})}
       </div>
     </div>
   );
