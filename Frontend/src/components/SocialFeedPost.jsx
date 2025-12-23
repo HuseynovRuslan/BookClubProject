@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Trash2, MoreVertical, Edit, X, Flag, Check } from "lucide-react";
+import { Send, Trash2, MoreVertical, Edit, X, Flag, Check, Bookmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { likeQuote, updateQuote } from "../api/quotes";
 import { useTranslation } from "../hooks/useTranslation";
@@ -22,6 +22,7 @@ export default function SocialFeedPost({
   onPostUpdate,
   onShowLogin,
   onShowRegister,
+  onToggleSave,
 }) {
   const t = useTranslation();
   const navigate = useNavigate();
@@ -49,6 +50,9 @@ export default function SocialFeedPost({
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [isLiking, setIsLiking] = useState(false);
   const [likeAnimation, setLikeAnimation] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const SAVED_KEY = "bookverse_saved_posts";
   
 
   useEffect(() => {
@@ -59,6 +63,16 @@ export default function SocialFeedPost({
       setIsLiked(post.isLiked);
     }
   }, [post.likes, post.isLiked]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVED_KEY);
+      const savedIds = raw ? JSON.parse(raw) : [];
+      setIsSaved(savedIds.includes(post.id));
+    } catch {
+      setIsSaved(false);
+    }
+  }, [post.id]);
   
 
   useEffect(() => {
@@ -173,6 +187,31 @@ export default function SocialFeedPost({
       setLikes((prev) => prev + (isLiked ? -1 : 1));
     } finally {
       setIsLiking(false);
+    }
+  };
+
+  const handleToggleSave = () => {
+    if (isGuest) {
+      setShowGuestModal(true);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(SAVED_KEY);
+      const savedIds = raw ? JSON.parse(raw) : [];
+      let updated;
+      if (savedIds.includes(post.id)) {
+        updated = savedIds.filter((id) => id !== post.id);
+        setIsSaved(false);
+      } else {
+        updated = [...savedIds, post.id];
+        setIsSaved(true);
+      }
+      localStorage.setItem(SAVED_KEY, JSON.stringify(updated));
+      if (onToggleSave) {
+        onToggleSave(post.id, updated.includes(post.id));
+      }
+    } catch {
+      // ignore storage errors
     }
   };
 
@@ -875,6 +914,17 @@ export default function SocialFeedPost({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
           <span>{comments.length}</span>
+        </button>
+        <button
+          onClick={handleToggleSave}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all border ${
+            isSaved
+              ? "bg-amber-50 border-amber-300 text-amber-700"
+              : "bg-white border-gray-200 text-gray-700 hover:border-amber-300"
+          }`}
+        >
+          <Bookmark className="w-4 h-4" />
+          <span>{isSaved ? "Saved" : "Save"}</span>
         </button>
         {isReview && onViewReview && (
           <button

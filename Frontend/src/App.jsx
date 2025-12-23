@@ -21,6 +21,7 @@ import GroupsPage from "./components/GroupsPage";
 import MessagesPage from "./components/MessagesPage";
 import TopicPage from "./components/TopicPage";
 import NotificationPage from "./components/NotificationPage";
+import SavedPage from "./components/SavedPage";
 import AdminPanelPage from "./components/AdminPanelPage";
 import LoginPage from "./components/LoginPage";
 import SignUpPage from "./components/SignUp";
@@ -590,6 +591,7 @@ function App() {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/topic" element={<TopicPage />} />
             <Route path="/notifications" element={<NotificationPage />} />
+            <Route path="/saved" element={<SavedPage />} />
             <Route path="/reading-list" element={<ReadingListPage />} />
             <Route
               path="/search"
