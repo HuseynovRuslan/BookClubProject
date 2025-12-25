@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Shield, BookOpen, Users, FileText, Trash2, Search, Edit, MessageSquare, Star, Plus, X, MoreVertical, UserPen, Tag, LogOut, Newspaper } from "lucide-react";
 import { getAllBooksForAdmin, deleteBookAsAdmin, deleteQuoteAsAdmin, deleteReviewAsAdmin, createBookAsAdmin, updateBookAsAdmin, getAllUsersForAdmin, updateQuoteAsAdmin, updateReviewAsAdmin, createAuthorAsAdmin, updateAuthorAsAdmin, deleteAuthorAsAdmin, createGenreAsAdmin, updateGenreAsAdmin, deleteGenreAsAdmin, getAllNewsForAdmin, createNewsAsAdmin, updateNewsAsAdmin, deleteNewsAsAdmin } from "../api/admin";
+import { getAllFeedbacksForAdmin, deleteFeedbackAsAdmin } from "../api/feedback";
+import { useTranslation } from "../hooks/useTranslation";
 import { getQuotes } from "../api/quotes";
 import { getReviews } from "../api/reviews";
 import { getAuthors } from "../api/authors";
@@ -13,6 +15,7 @@ import { getImageUrl } from "../api/config";
 export default function AdminPanelPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const t = useTranslation();
   const [activeTab, setActiveTab] = useState("books");
 
 
@@ -43,6 +46,7 @@ export default function AdminPanelPage() {
     { id: "users", label: "Users", icon: Users },
     { id: "content", label: "Content", icon: FileText },
     { id: "news", label: "News", icon: Newspaper },
+    { id: "feedbacks", label: t("admin.feedbacks"), icon: MessageSquare },
   ];
 
   return (
@@ -112,6 +116,7 @@ export default function AdminPanelPage() {
           {activeTab === "users" && <UsersManagement />}
           {activeTab === "content" && <ContentModeration />}
           {activeTab === "news" && <NewsManagement />}
+          {activeTab === "feedbacks" && <FeedbacksManagement />}
         </div>
       </div>
     </div>
@@ -2774,6 +2779,186 @@ function NewsManagement() {
                 onClick={() => setPageNumber((p) => p + 1)}
                 disabled={pageNumber >= Math.ceil(totalCount / pageSize)}
                 className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function FeedbacksManagement() {
+  const t = useTranslation();
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [deletingId, setDeletingId] = useState(null);
+  const pageSize = 20;
+
+  const fetchFeedbacks = async () => {
+    setLoading(true);
+    try {
+      const response = await getAllFeedbacksForAdmin({
+        pageNumber,
+        pageSize,
+      });
+
+      let feedbacksList = [];
+      let total = 0;
+
+      if (response?.Items && Array.isArray(response.Items)) {
+        feedbacksList = response.Items;
+        total = response.TotalCount || response.totalCount || 0;
+      } else if (response?.items && Array.isArray(response.items)) {
+        feedbacksList = response.items;
+        total = response.totalCount || response.TotalCount || response.total || 0;
+      } else if (Array.isArray(response)) {
+        feedbacksList = response;
+        total = response.length;
+      }
+
+      setFeedbacks(feedbacksList);
+      setTotalCount(total);
+    } catch (err) {
+      console.error("Error loading feedbacks:", err);
+      setFeedbacks([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [pageNumber]);
+
+  const handleDelete = async (feedbackId) => {
+    if (!window.confirm("Are you sure you want to delete this feedback?")) {
+      return;
+    }
+
+    setDeletingId(feedbackId);
+    try {
+      await deleteFeedbackAsAdmin(feedbackId);
+      await fetchFeedbacks();
+    } catch (err) {
+      console.error("Error deleting feedback:", err);
+      alert("Failed to delete feedback");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
+            {t("admin.feedbacksTitle")}
+          </h2>
+          <p className="text-gray-700 dark:text-gray-700 font-semibold mt-1">
+            {t("admin.feedbacksDescription")}
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      ) : feedbacks.length === 0 ? (
+        <div className="text-center py-12">
+          <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-600 font-semibold text-lg">
+            {t("admin.noFeedbacks")}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-4">
+            {feedbacks.map((feedback) => {
+              const feedbackId = feedback.id || feedback.Id;
+              const message = feedback.message || feedback.Message || "";
+              const username = feedback.username || feedback.Username || feedback.userName || "Unknown";
+              const createdAt = feedback.createdAt || feedback.CreatedAt || "";
+              const userId = feedback.userId || feedback.UserId || "";
+
+              return (
+                <div
+                  key={feedbackId}
+                  className="p-6 bg-gradient-to-br from-white to-gray-50 dark:from-white dark:to-gray-50 rounded-2xl border-2 border-gray-200 dark:border-gray-200 shadow-lg hover:shadow-xl transition-all"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100">
+                          <MessageSquare className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900 dark:text-gray-900">
+                            {t("admin.feedbackFrom")}: {username}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-600">
+                            {t("admin.feedbackDate")}: {formatDate(createdAt)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-4 bg-white dark:bg-white rounded-xl border border-gray-200">
+                        <p className="text-gray-800 dark:text-gray-800 whitespace-pre-wrap">
+                          {message}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(feedbackId)}
+                      disabled={deletingId === feedbackId}
+                      className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deletingId === feedbackId ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Trash2 className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                onClick={() => setPageNumber((prev) => Math.max(1, prev - 1))}
+                disabled={pageNumber === 1}
+                className="px-4 py-2 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 hover:from-amber-600 hover:via-orange-600 hover:to-red-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2 text-gray-700 dark:text-gray-700 font-semibold">
+                Page {pageNumber} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPageNumber((prev) => Math.min(totalPages, prev + 1))}
+                disabled={pageNumber === totalPages}
+                className="px-4 py-2 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 hover:from-amber-600 hover:via-orange-600 hover:to-red-700 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 Next
               </button>
