@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Plus, Check } from "lucide-react";
 import { useShelves } from "../context/ShelvesContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
 
@@ -12,8 +12,11 @@ export default function ShelfSelectionModal({
   onSelect,
 }) {
   const t = useTranslation();
-  const { shelves, loading } = useShelves();
+  const { shelves, loading, createShelf } = useShelves();
   const [selectedShelfId, setSelectedShelfId] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newShelfName, setNewShelfName] = useState("");
+  const [creatingLoading, setCreatingLoading] = useState(false);
 
 
   const translateShelfName = (shelfName) => {
@@ -25,6 +28,31 @@ export default function ShelfSelectionModal({
       "Custom Shelves": t("readingList.customShelves"),
     };
     return shelfMap[shelfName] || shelfName;
+  };
+
+  const handleCreateShelf = async (e) => {
+    e.preventDefault();
+    if (!newShelfName.trim()) return;
+
+    setCreatingLoading(true);
+    try {
+      const newShelf = await createShelf({ name: newShelfName.trim() });
+      setNewShelfName("");
+      setIsCreating(false);
+      // Auto-select the newly created shelf
+      if (newShelf && (newShelf.id || newShelf._id)) {
+        if (onSelect) {
+          onSelect(newShelf.id || newShelf._id);
+          setSelectedShelfId(null);
+          onClose();
+        }
+      }
+    } catch (err) {
+      console.error("Failed to create shelf:", err);
+      // Optional: show error in UI
+    } finally {
+      setCreatingLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -46,10 +74,10 @@ export default function ShelfSelectionModal({
     if (mode === "add") {
       const isADefault = a.isDefault === true || a.IsDefault === true;
       const isBDefault = b.isDefault === true || b.IsDefault === true;
-      
+
       if (isADefault && !isBDefault) return -1;
       if (!isADefault && isBDefault) return 1;
-      
+
 
       if (isADefault && isBDefault) {
         const defaultOrder = ["Want to Read", "Currently Reading", "Read"];
@@ -59,7 +87,7 @@ export default function ShelfSelectionModal({
         if (aIndex !== -1) return -1;
         if (bIndex !== -1) return 1;
       }
-      
+
 
       return (a.name || "").localeCompare(b.name || "");
     }
@@ -109,6 +137,53 @@ export default function ShelfSelectionModal({
           </div>
         )}
 
+        {/* Create New Shelf Section */}
+        <div className="px-6 pt-4 pb-2">
+          {!isCreating ? (
+            <button
+              onClick={() => setIsCreating(true)}
+              className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-300 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-50 text-gray-500 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-600 font-bold transition-all flex items-center justify-center gap-2 group"
+            >
+              <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              {t("readingList.createShelf") || "Yeni Shelf Yarat"}
+            </button>
+          ) : (
+            <form onSubmit={handleCreateShelf} className="flex gap-2 animate-fadeIn">
+              <input
+                type="text"
+                value={newShelfName}
+                onChange={(e) => setNewShelfName(e.target.value)}
+                placeholder={t("readingList.enterShelfName") || "Shelf adı..."}
+                className="flex-1 px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-50 border-2 border-gray-200 dark:border-gray-200 focus:border-amber-500 focus:outline-none transition-colors font-medium text-gray-900 dark:text-gray-900"
+                autoFocus
+                disabled={creatingLoading}
+              />
+              <button
+                type="submit"
+                disabled={!newShelfName.trim() || creatingLoading}
+                className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl shadow-md transition-all disabled:opacity-50"
+              >
+                {creatingLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Check className="w-5 h-5" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreating(false);
+                  setNewShelfName("");
+                }}
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-100 hover:bg-gray-200 dark:hover:bg-gray-200 text-gray-600 dark:text-gray-600 rounded-xl transition-all"
+                disabled={creatingLoading}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </form>
+          )}
+        </div>
+
         {/* Shelf List */}
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
@@ -135,11 +210,10 @@ export default function ShelfSelectionModal({
                       onClose();
                     }
                   }}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                    selectedShelfId === shelf.id
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${selectedShelfId === shelf.id
                       ? "border-amber-500 bg-amber-50 dark:bg-amber-50 shadow-md"
                       : "border-gray-200 dark:border-gray-200 hover:border-amber-300 dark:hover:border-amber-300 hover:bg-gray-50 dark:hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>

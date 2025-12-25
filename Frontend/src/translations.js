@@ -39,7 +39,7 @@ export const translations = {
     "error.login.accountLocked": "Your account has been locked. Please contact support.",
     "error.login.networkError": "Could not connect to server. Please check your internet connection.",
     "error.login.unknownError": "An error occurred during login. Please try again.",
-    
+
     // Login & Register
     "auth.welcomeBack": "Welcome Back",
     "auth.signInContinue": "Sign in to continue your reading journey",
@@ -85,14 +85,14 @@ export const translations = {
     "auth.send": "Send",
     "auth.sending": "Sending...",
     "auth.emailRequired": "Please enter email address",
-    
+
     // Guest Mode
     "guest.restrictionTitle": "Account Required",
     "guest.restrictionMessage": "Please register or log in to perform this action.",
     "guest.login": "Login",
     "guest.register": "Register",
     "guest.reviewRestriction": "Please log in to write a review.",
-    
+
     // Navigation
     "nav.socialFeed": "Social Feed",
     "nav.readingList": "My Reading List",
@@ -101,7 +101,7 @@ export const translations = {
     "nav.recommendations": "What Should I Read?",
     "nav.more": "More",
     "nav.createPost": "Create Post",
-    
+
     // Notifications
     "notifications.title": "Notifications",
     "notifications.noNotifications": "No new notifications",
@@ -110,7 +110,7 @@ export const translations = {
     "notifications.alreadyFollowing": "Following",
     "nav.newBook": "New Book",
     "nav.admin": "Admin Panel",
-    
+
     // Social Feed
     "feed.title": "Social Feed",
     "feed.subtitle": "Discover what others are reading",
@@ -118,7 +118,7 @@ export const translations = {
     "feed.noPosts": "No posts yet",
     "feed.createPost": "Create one from the sidebar!",
     "feed.loading": "Loading feed...",
-    
+
     // Categories
     "categories.title": "Categories",
     "categories.subtitle": "Browse books by category",
@@ -130,7 +130,7 @@ export const translations = {
     "categories.book": "book",
     "categories.noBooks": "No books found",
     "categories.backToCategories": "Back to Categories",
-    
+
     // Category Names 
     "category.fiction": "Fiction",
     "category.mystery": "Mystery",
@@ -155,7 +155,7 @@ export const translations = {
     "category.classic": "Classic",
     "category.literaryFiction": "Literary Fiction",
     "category.historicalFiction": "Historical Fiction",
-    
+
     // More Page
     "more.title": "More",
     "more.subtitle": "Settings, help, and more options",
@@ -177,20 +177,37 @@ export const translations = {
     "more.aboutDescription": "Learn more about our platform",
     "more.contactDescriptionShort": "Send us feedback or suggestions",
     "more.settingsDescription": "App preferences and configuration",
-    
+    "more.feedbackToAdmin": "Feedback to Admin",
+    "more.feedbackToAdminDescription": "Share your thoughts and suggestions with administrators",
+    "feedback.title": "Send Feedback to Admin",
+    "feedback.message": "Your Message",
+    "feedback.messagePlaceholder": "Write your feedback, suggestions, or questions here...",
+    "feedback.send": "Send Feedback",
+    "feedback.sending": "Sending...",
+    "feedback.success": "Feedback sent successfully!",
+    "feedback.error": "Failed to send feedback. Please try again.",
+    "feedback.messageRequired": "Please enter your feedback message",
+    "admin.feedbacks": "Feedbacks",
+    "admin.feedbacksTitle": "User Feedbacks",
+    "admin.feedbacksDescription": "View and manage user feedbacks",
+    "admin.noFeedbacks": "No feedbacks yet",
+    "admin.feedbackFrom": "From",
+    "admin.feedbackDate": "Date",
+    "admin.feedbackMessage": "Message",
+
     // Settings
     "settings.title": "Settings",
     "settings.language": "Language",
     "settings.selectLanguage": "Select your preferred language",
     "settings.notifications": "Notifications",
     "settings.manageNotifications": "Manage your notification preferences",
-    
+
     // Languages
     "lang.english": "English",
     "lang.russian": "Russian",
     "lang.turkish": "Turkish",
     "lang.azerbaijani": "Azerbaijani",
-    
+
     // Create Post
     "post.createPost": "Create Post",
     "post.chooseType": "Choose a post type:",
@@ -268,7 +285,7 @@ export const translations = {
     "settings.newPasswordSame": "New password must be different from current password",
     "auth.passwordRequired": "Password is required",
     "auth.passwordsDoNotMatch": "Passwords do not match",
-    
+
     // Social Feed Post
     "post.user": "BookVerse User",
     "post.momentsAgo": "Moments ago",
@@ -278,7 +295,7 @@ export const translations = {
     "post.writeComment": "Write a comment...",
     "post.send": "Send",
     "post.delete": "Delete",
-    
+
     // Reading List
     "readingList.title": "My Reading List",
     "readingList.subtitle": "Organize your books by shelves",
@@ -304,6 +321,11 @@ export const translations = {
     "readingList.emptyShelf": "This shelf is empty. You can add books from Home Page or All Books.",
     "readingList.moveFailed": "Failed to move book",
     "readingList.deleteFailed": "Failed to delete book",
+    "readingList.createShelf": "Create Shelf",
+    "readingList.shelfName": "Shelf Name",
+    "readingList.enterShelfName": "Enter shelf name",
+    "readingList.shelfCreated": "Shelf created successfully",
+    "readingList.createFailed": "Failed to create shelf",
     "shelfSelection.title": "Add to Shelf",
     "shelfSelection.moveTitle": "Move to Shelf",
     "shelfSelection.by": "by",
@@ -312,7 +334,7 @@ export const translations = {
     "shelfSelection.books": "books",
     "shelfSelection.add": "Add",
     "shelfSelection.move": "Move",
-    
+
     // Book Detail
     "bookDetail.backToHome": "Back to Home",
     "bookDetail.loading": "Loading book details...",
@@ -325,7 +347,7 @@ export const translations = {
     "bookDetail.edit": "Edit",
     "bookDetail.unknownAuthor": "Unknown author",
     "bookDetail.about": "About the book",
-    
+
     // Search
     "search.title": "Search",
     "search.placeholder": "Search for books or users...",
@@ -340,7 +362,7 @@ export const translations = {
     "search.found": "Found",
     "search.user": "user",
     "search.userPlural": "users",
-    
+
     // Recommendations
     "recommendations.title": "What Should I Read?",
     "recommendations.subtitle": "Discover books by genre",
@@ -349,7 +371,7 @@ export const translations = {
     "recommendations.loading": "Loading recommendations...",
     "recommendations.noBooks": "No books available",
     "recommendations.booksCount": "books",
-    
+
     // Create Book
     "book.addNew": "Add New Book",
     "book.coverImage": "Book Cover Image",
@@ -358,7 +380,7 @@ export const translations = {
     "book.genre": "Genre *",
     "book.description": "Description *",
     "book.fillRequired": "Please fill in title, genre, and description.",
-    
+
     // More Page Items
     "more.readingStats": "Reading Stats",
     "more.activityOverview": "Activity Overview",
@@ -380,7 +402,7 @@ export const translations = {
     "more.clearCacheMessage": "This will clear all cached data including your saved social feed posts. This action cannot be undone.",
     "more.cacheCleared": "Cache cleared successfully!",
     "more.cacheFailed": "Failed to clear cache",
-    
+
     // Admin Panel
     "admin.panel": "Admin Panel",
     "admin.description": "Manage books, users, and platform content",
@@ -469,7 +491,7 @@ export const translations = {
     "admin.updateReviewError": "Failed to update review. Please try again.",
     "admin.quoteTextRequired": "Quote text is required",
     "admin.ratingRequired": "Rating must be between 1 and 5",
-    
+
     // Profile
     "profile.title": "Profile",
     "profile.subtitle": "Manage your account and preferences",
@@ -525,7 +547,7 @@ export const translations = {
     "profile.userNotFound": "User profile not found. The user may not exist.",
     "profile.loadFailed": "Failed to load user profile. The user may not exist.",
   },
-  
+
   ru: {
     // Common
     "common.close": "Закрыть",
@@ -566,7 +588,7 @@ export const translations = {
     "error.login.accountLocked": "Ваш аккаунт заблокирован. Пожалуйста, свяжитесь с поддержкой.",
     "error.login.networkError": "Не удалось подключиться к серверу. Пожалуйста, проверьте подключение к интернету.",
     "error.login.unknownError": "Произошла ошибка при входе. Пожалуйста, попробуйте снова.",
-    
+
     // Login & Register
     "auth.welcomeBack": "Добро пожаловать",
     "auth.signInContinue": "Войдите, чтобы продолжить ваше путешествие в чтении",
@@ -612,14 +634,14 @@ export const translations = {
     "auth.send": "Отправить",
     "auth.sending": "Отправка...",
     "auth.emailRequired": "Пожалуйста, введите адрес электронной почты",
-    
+
     // Guest Mode
     "guest.restrictionTitle": "Требуется аккаунт",
     "guest.restrictionMessage": "Пожалуйста, зарегистрируйтесь или войдите, чтобы выполнить это действие.",
     "guest.login": "Войти",
     "guest.register": "Зарегистрироваться",
     "guest.reviewRestriction": "Пожалуйста, войдите, чтобы написать отзыв.",
-    
+
     // Navigation
     "nav.socialFeed": "Лента",
     "nav.readingList": "Мой список чтения",
@@ -628,7 +650,7 @@ export const translations = {
     "nav.recommendations": "Что мне почитать?",
     "nav.more": "Еще",
     "nav.createPost": "Создать пост",
-    
+
     // Notifications
     "notifications.title": "Уведомления",
     "notifications.noNotifications": "Нет новых уведомлений",
@@ -637,7 +659,7 @@ export const translations = {
     "notifications.alreadyFollowing": "Подписан",
     "nav.newBook": "Новая книга",
     "nav.admin": "Панель администратора",
-    
+
     // Social Feed
     "feed.title": "Лента",
     "feed.subtitle": "Узнайте, что читают другие",
@@ -645,7 +667,7 @@ export const translations = {
     "feed.noPosts": "Пока нет постов",
     "feed.createPost": "Создайте один из боковой панели!",
     "feed.loading": "Загрузка ленты...",
-    
+
     // Categories
     "categories.title": "Категории",
     "categories.subtitle": "Просмотр книг по категориям",
@@ -657,7 +679,7 @@ export const translations = {
     "categories.book": "книга",
     "categories.noBooks": "Книги не найдены",
     "categories.backToCategories": "Вернуться к категориям",
-    
+
     // Category Names
     "category.fiction": "Художественная литература",
     "category.mystery": "Детектив",
@@ -682,7 +704,7 @@ export const translations = {
     "category.classic": "Классика",
     "category.literaryFiction": "Художественная литература",
     "category.historicalFiction": "Историческая художественная литература",
-    
+
     // More Page
     "more.title": "Еще",
     "more.subtitle": "Настройки, помощь и другие опции",
@@ -690,20 +712,20 @@ export const translations = {
     "more.information": "Информация",
     "more.legalPrivacy": "Юридическая информация и конфиденциальность",
     "more.dataManagement": "Управление данными",
-    
+
     // Settings
     "settings.title": "Настройки",
     "settings.language": "Язык",
     "settings.selectLanguage": "Выберите предпочитаемый язык",
     "settings.notifications": "Уведомления",
     "settings.manageNotifications": "Управление настройками уведомлений",
-    
+
     // Languages
     "lang.english": "Английский",
     "lang.russian": "Русский",
     "lang.turkish": "Турецкий",
     "lang.azerbaijani": "Азербайджанский",
-    
+
     // Create Post
     "post.createPost": "Создать пост",
     "post.chooseType": "Выберите тип поста:",
@@ -778,7 +800,7 @@ export const translations = {
     "settings.newPasswordSame": "Новый пароль должен отличаться от текущего",
     "auth.passwordRequired": "Пароль обязателен",
     "auth.passwordsDoNotMatch": "Пароли не совпадают",
-    
+
     // Social Feed Post
     "post.user": "Пользователь BookVerse",
     "post.momentsAgo": "Недавно",
@@ -788,7 +810,7 @@ export const translations = {
     "post.writeComment": "Написать комментарий...",
     "post.send": "Отправить",
     "post.delete": "Удалить",
-    
+
     // Reading List
     "readingList.title": "Мой список чтения",
     "readingList.subtitle": "Организуйте свои книги по полкам",
@@ -798,6 +820,11 @@ export const translations = {
     "readingList.customShelves": "Пользовательские полки",
     "readingList.noBooks": "В этой полке нет книг",
     "readingList.moveTo": "Переместить в",
+    "readingList.createShelf": "Создать полку",
+    "readingList.shelfName": "Название полки",
+    "readingList.enterShelfName": "Введите название полки",
+    "readingList.shelfCreated": "Полка успешно создана",
+    "readingList.createFailed": "Не удалось создать полку",
     "readingList.moveToEllipsis": "Переместить в...",
     "readingList.delete": "Удалить",
     "readingList.refresh": "Обновить",
@@ -822,7 +849,7 @@ export const translations = {
     "shelfSelection.books": "книг",
     "shelfSelection.add": "Добавить",
     "shelfSelection.move": "Переместить",
-    
+
     // Book Detail
     "bookDetail.backToHome": "Вернуться на главную",
     "bookDetail.loading": "Загрузка деталей книги...",
@@ -834,7 +861,7 @@ export const translations = {
     "bookDetail.noReviews": "Пока нет отзывов. Будьте первым, кто оставит отзыв!",
     "bookDetail.edit": "Редактировать",
     "bookDetail.unknownAuthor": "Неизвестный автор",
-    
+
     // Search
     "search.title": "Поиск",
     "search.placeholder": "Поиск книг или пользователей...",
@@ -849,7 +876,7 @@ export const translations = {
     "search.found": "Найдено",
     "search.user": "пользователь",
     "search.userPlural": "пользователей",
-    
+
     // Recommendations
     "recommendations.title": "Что мне почитать?",
     "recommendations.subtitle": "Откройте книги по жанру",
@@ -858,7 +885,7 @@ export const translations = {
     "recommendations.loading": "Загрузка рекомендаций...",
     "recommendations.noBooks": "Книги недоступны",
     "recommendations.booksCount": "книг",
-    
+
     // Create Book
     "book.addNew": "Добавить новую книгу",
     "book.coverImage": "Обложка книги",
@@ -867,7 +894,7 @@ export const translations = {
     "book.genre": "Жанр *",
     "book.description": "Описание *",
     "book.fillRequired": "Пожалуйста, заполните название, жанр и описание.",
-    
+
     // More Page Items
     "more.readingStats": "Статистика чтения",
     "more.activityOverview": "Обзор активности",
@@ -894,7 +921,24 @@ export const translations = {
     "more.aboutDescription": "Узнайте больше о нашей платформе",
     "more.contactDescriptionShort": "Отправьте нам отзывы, предложения или вопросы",
     "more.settingsDescription": "Настройки приложения и конфигурация",
-    
+    "more.feedbackToAdmin": "Обратная связь администратору",
+    "more.feedbackToAdminDescription": "Поделитесь своими мыслями и предложениями с администраторами",
+    "feedback.title": "Отправить обратную связь администратору",
+    "feedback.message": "Ваше сообщение",
+    "feedback.messagePlaceholder": "Напишите вашу обратную связь, предложения или вопросы здесь...",
+    "feedback.send": "Отправить",
+    "feedback.sending": "Отправка...",
+    "feedback.success": "Обратная связь успешно отправлена!",
+    "feedback.error": "Не удалось отправить обратную связь. Пожалуйста, попробуйте снова.",
+    "feedback.messageRequired": "Пожалуйста, введите ваше сообщение",
+    "admin.feedbacks": "Обратная связь",
+    "admin.feedbacksTitle": "Обратная связь пользователей",
+    "admin.feedbacksDescription": "Просмотр и управление обратной связью пользователей",
+    "admin.noFeedbacks": "Пока нет обратной связи",
+    "admin.feedbackFrom": "От",
+    "admin.feedbackDate": "Дата",
+    "admin.feedbackMessage": "Сообщение",
+
     // Profile
     "profile.title": "Профиль",
     "profile.subtitle": "Управление аккаунтом и настройками",
@@ -949,7 +993,7 @@ export const translations = {
     "profile.unknownAuthor": "Неизвестный автор",
     "profile.userNotFound": "Профиль пользователя не найден. Пользователь может не существовать.",
     "profile.loadFailed": "Не удалось загрузить профиль пользователя. Пользователь может не существовать.",
-    
+
     // Admin Panel
     "admin.panel": "Панель администратора",
     "admin.description": "Управление книгами, пользователями и контентом платформы",
@@ -989,7 +1033,7 @@ export const translations = {
     "admin.publicationDateRequired": "Дата публикации обязательна",
     "common.saving": "Сохранение...",
   },
-  
+
   tr: {
     // Common
     "common.close": "Kapat",
@@ -1029,7 +1073,7 @@ export const translations = {
     "error.login.accountLocked": "Hesabınız kilitlenmiş. Lütfen destek ile iletişime geçin.",
     "error.login.networkError": "Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.",
     "error.login.unknownError": "Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.",
-    
+
     // Login & Register
     "auth.welcomeBack": "Tekrar Hoş Geldiniz",
     "auth.signInContinue": "Okuma yolculuğunuza devam etmek için giriş yapın",
@@ -1075,14 +1119,14 @@ export const translations = {
     "auth.send": "Gönder",
     "auth.sending": "Gönderiliyor...",
     "auth.emailRequired": "Lütfen e-posta adresini girin",
-    
+
     // Guest Mode
     "guest.restrictionTitle": "Hesap Gerekli",
     "guest.restrictionMessage": "Bu işlemi gerçekleştirmek için lütfen kaydolun veya giriş yapın.",
     "guest.login": "Giriş Yap",
     "guest.register": "Kayıt Ol",
     "guest.reviewRestriction": "Yorum yazmak için lütfen giriş yapın.",
-    
+
     // Navigation
     "nav.socialFeed": "Sosyal Akış",
     "nav.readingList": "Okuma Listem",
@@ -1093,7 +1137,7 @@ export const translations = {
     "nav.createPost": "Gönderi Oluştur",
     "nav.newBook": "Yeni Kitap",
     "nav.admin": "Yönetici Paneli",
-    
+
     // Social Feed
     "feed.title": "Sosyal Akış",
     "feed.subtitle": "Diğerlerinin ne okuduğunu keşfedin",
@@ -1101,7 +1145,7 @@ export const translations = {
     "feed.noPosts": "Henüz gönderi yok",
     "feed.createPost": "Kenar çubuktan bir tane oluşturun!",
     "feed.loading": "Akış yükleniyor...",
-    
+
     // Categories
     "categories.title": "Kategoriler",
     "categories.subtitle": "Kitapları kategoriye göre göz atın",
@@ -1113,7 +1157,7 @@ export const translations = {
     "categories.book": "kitap",
     "categories.noBooks": "Kitap bulunamadı",
     "categories.backToCategories": "Kategorilere Dön",
-    
+
     // Category Names
     "category.fiction": "Kurgu",
     "category.mystery": "Gizem",
@@ -1138,7 +1182,7 @@ export const translations = {
     "category.classic": "Klasik",
     "category.literaryFiction": "Edebi Kurgu",
     "category.historicalFiction": "Tarihi Kurgu",
-    
+
     // More Page
     "more.title": "Daha Fazla",
     "more.subtitle": "Ayarlar, yardım ve daha fazla seçenek",
@@ -1160,20 +1204,37 @@ export const translations = {
     "more.aboutDescription": "Platformumuz hakkında daha fazla bilgi edinin",
     "more.contactDescriptionShort": "Geri bildirimlerinizi, önerilerinizi veya sorularınızı gönderin",
     "more.settingsDescription": "Uygulama tercihleri ve yapılandırma",
-    
+    "more.feedbackToAdmin": "Yöneticiye Geri Bildirim",
+    "more.feedbackToAdminDescription": "Düşüncelerinizi ve önerilerinizi yöneticilerle paylaşın",
+    "feedback.title": "Yöneticiye Geri Bildirim Gönder",
+    "feedback.message": "Mesajınız",
+    "feedback.messagePlaceholder": "Geri bildiriminizi, önerilerinizi veya sorularınızı buraya yazın...",
+    "feedback.send": "Geri Bildirim Gönder",
+    "feedback.sending": "Gönderiliyor...",
+    "feedback.success": "Geri bildirim başarıyla gönderildi!",
+    "feedback.error": "Geri bildirim gönderilemedi. Lütfen tekrar deneyin.",
+    "feedback.messageRequired": "Lütfen geri bildirim mesajınızı girin",
+    "admin.feedbacks": "Geri Bildirimler",
+    "admin.feedbacksTitle": "Kullanıcı Geri Bildirimleri",
+    "admin.feedbacksDescription": "Kullanıcı geri bildirimlerini görüntüleyin ve yönetin",
+    "admin.noFeedbacks": "Henüz geri bildirim yok",
+    "admin.feedbackFrom": "Gönderen",
+    "admin.feedbackDate": "Tarih",
+    "admin.feedbackMessage": "Mesaj",
+
     // Settings
     "settings.title": "Ayarlar",
     "settings.language": "Dil",
     "settings.selectLanguage": "Tercih ettiğiniz dili seçin",
     "settings.notifications": "Bildirimler",
     "settings.manageNotifications": "Bildirim tercihlerinizi yönetin",
-    
+
     // Languages
     "lang.english": "İngilizce",
     "lang.russian": "Rusça",
     "lang.turkish": "Türkçe",
     "lang.azerbaijani": "Azerbaycanca",
-    
+
     // Create Post
     "post.createPost": "Gönderi Oluştur",
     "post.chooseType": "Bir gönderi türü seçin:",
@@ -1248,7 +1309,7 @@ export const translations = {
     "settings.newPasswordSame": "Yeni şifre mevcut şifreden farklı olmalıdır",
     "auth.passwordRequired": "Şifre gereklidir",
     "auth.passwordsDoNotMatch": "Şifreler eşleşmiyor",
-    
+
     // Social Feed Post
     "post.user": "BookVerse Kullanıcısı",
     "post.momentsAgo": "Az önce",
@@ -1258,7 +1319,7 @@ export const translations = {
     "post.writeComment": "Yorum yazın...",
     "post.send": "Gönder",
     "post.delete": "Sil",
-    
+
     // Reading List
     "readingList.title": "Okuma Listem",
     "readingList.subtitle": "Kitaplarınızı raflara göre düzenleyin",
@@ -1284,6 +1345,11 @@ export const translations = {
     "readingList.emptyShelf": "Bu raf boş. Ana Sayfa veya Tüm Kitaplar'dan kitap ekleyebilirsiniz.",
     "readingList.moveFailed": "Kitap taşınamadı",
     "readingList.deleteFailed": "Kitap silinemedi",
+    "readingList.createShelf": "Raf Oluştur",
+    "readingList.shelfName": "Raf Adı",
+    "readingList.enterShelfName": "Raf adını girin",
+    "readingList.shelfCreated": "Raf başarıyla oluşturuldu",
+    "readingList.createFailed": "Raf oluşturulamadı",
     "shelfSelection.title": "Rafa Ekle",
     "shelfSelection.moveTitle": "Rafa Taşı",
     "shelfSelection.by": "yazar",
@@ -1292,7 +1358,7 @@ export const translations = {
     "shelfSelection.books": "kitap",
     "shelfSelection.add": "Ekle",
     "shelfSelection.move": "Taşı",
-    
+
     // Book Detail
     "bookDetail.backToHome": "Ana Sayfaya Dön",
     "bookDetail.loading": "Kitap detayları yükleniyor...",
@@ -1305,7 +1371,7 @@ export const translations = {
     "bookDetail.edit": "Düzenle",
     "bookDetail.unknownAuthor": "Bilinmeyen yazar",
     "bookDetail.about": "Kitap Hakkında",
-    
+
     // Search
     "search.title": "Ara",
     "search.placeholder": "Kitap veya kullanıcı ara...",
@@ -1320,7 +1386,7 @@ export const translations = {
     "search.found": "Bulundu",
     "search.user": "kullanıcı",
     "search.userPlural": "kullanıcı",
-    
+
     // Recommendations
     "recommendations.title": "Ne Okumalıyım?",
     "recommendations.subtitle": "Türe göre kitapları keşfedin",
@@ -1329,7 +1395,7 @@ export const translations = {
     "recommendations.loading": "Öneriler yükleniyor...",
     "recommendations.noBooks": "Kitap mevcut değil",
     "recommendations.booksCount": "kitap",
-    
+
     // Create Book
     "book.addNew": "Yeni Kitap Ekle",
     "book.coverImage": "Kitap Kapağı Resmi",
@@ -1338,7 +1404,7 @@ export const translations = {
     "book.genre": "Tür *",
     "book.description": "Açıklama *",
     "book.fillRequired": "Lütfen başlık, tür ve açıklamayı doldurun.",
-    
+
     // More Page Items
     "more.readingStats": "Okuma İstatistikleri",
     "more.activityOverview": "Aktivite Özeti",
@@ -1360,7 +1426,7 @@ export const translations = {
     "more.clearCacheMessage": "Bu, kaydedilmiş sosyal akış gönderileriniz dahil tüm önbelleğe alınmış verileri temizleyecektir. Bu işlem geri alınamaz.",
     "more.cacheCleared": "Önbellek başarıyla temizlendi!",
     "more.cacheFailed": "Önbellek temizlenemedi",
-    
+
     // Profile
     "profile.title": "Profil",
     "profile.subtitle": "Hesabınızı ve tercihlerinizi yönetin",
@@ -1415,7 +1481,7 @@ export const translations = {
     "profile.unknownAuthor": "Bilinmeyen yazar",
     "profile.userNotFound": "Kullanıcı profili bulunamadı. Kullanıcı mevcut olmayabilir.",
     "profile.loadFailed": "Kullanıcı profili yüklenemedi. Kullanıcı mevcut olmayabilir.",
-    
+
     // Admin Panel
     "admin.panel": "Yönetici Paneli",
     "admin.description": "Kitapları, kullanıcıları ve platform içeriğini yönetin",
@@ -1508,7 +1574,7 @@ export const translations = {
     "admin.noGenres": "Tür bulunamadı",
     "common.saving": "Kaydediliyor...",
   },
-  
+
   az: {
     // Common
     "common.close": "Bağla",
@@ -1549,7 +1615,7 @@ export const translations = {
     "error.login.accountLocked": "Hesabınız bloklanıb. Zəhmət olmasa dəstək ilə əlaqə saxlayın.",
     "error.login.networkError": "Serverə qoşula bilmədi. Zəhmət olmasa internet əlaqənizi yoxlayın.",
     "error.login.unknownError": "Giriş zamanı xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.",
-    
+
     // Login & Register
     "auth.welcomeBack": "Xoş gəlmisiniz",
     "auth.signInContinue": "Oxuma səyahətinizə davam etmək üçün daxil olun",
@@ -1595,14 +1661,14 @@ export const translations = {
     "auth.send": "Göndər",
     "auth.sending": "Göndərilir...",
     "auth.emailRequired": "Email ünvanı daxil edin",
-    
+
     // Guest Mode
     "guest.restrictionTitle": "Hesab Tələb Olunur",
     "guest.restrictionMessage": "Bu əməliyyatı yerinə yetirmək üçün zəhmət olmasa qeydiyyatdan keçin və ya daxil olun.",
     "guest.login": "Daxil Ol",
     "guest.register": "Qeydiyyat",
     "guest.reviewRestriction": "Rəy yazmaq üçün zəhmət olmasa daxil olun.",
-    
+
     // Navigation
     "nav.socialFeed": "Sosial Xəbərlər",
     "nav.readingList": "Oxuma Siyahım",
@@ -1613,14 +1679,14 @@ export const translations = {
     "nav.createPost": "Post Yarat",
     "nav.newBook": "Yeni Kitab",
     "nav.admin": "Admin Paneli",
-    
+
     // Notifications
     "notifications.title": "Bildirişlər",
     "notifications.noNotifications": "Yeni bildiriş yoxdur",
     "notifications.followedYou": "sizə takip etməyə başladı",
     "notifications.followBack": "Takip Et",
     "notifications.alreadyFollowing": "Takip edirsiniz",
-    
+
     // Social Feed
     "feed.title": "Sosial Xəbərlər",
     "feed.subtitle": "Başqalarının nə oxuduğunu kəşf edin",
@@ -1628,7 +1694,7 @@ export const translations = {
     "feed.noPosts": "Hələ post yoxdur",
     "feed.createPost": "Yan paneldən birini yaradın!",
     "feed.loading": "Xəbərlər yüklənir...",
-    
+
     // Categories
     "categories.title": "Kateqoriyalar",
     "categories.subtitle": "Kitabları kateqoriyaya görə görüntüləyin",
@@ -1640,7 +1706,7 @@ export const translations = {
     "categories.book": "kitab",
     "categories.noBooks": "Kitab tapılmadı",
     "categories.backToCategories": "Kateqoriyalara Qayıt",
-    
+
     // Category Names
     "category.fiction": "Bədii Ədəbiyyat",
     "category.mystery": "Detektiv",
@@ -1665,7 +1731,7 @@ export const translations = {
     "category.classic": "Klassik",
     "category.literaryFiction": "Bədii Ədəbiyyat",
     "category.historicalFiction": "Tarixi Bədii Ədəbiyyat",
-    
+
     // More Page
     "more.title": "Daha Çox",
     "more.subtitle": "Tənzimləmələr, kömək və daha çox seçim",
@@ -1687,20 +1753,37 @@ export const translations = {
     "more.aboutDescription": "Platformamız haqqında daha çox məlumat əldə edin",
     "more.contactDescriptionShort": "Geri bildirişlərinizi, təkliflərinizi və ya suallarınızı göndərin",
     "more.settingsDescription": "Tətbiq parametrləri və konfiqurasiya",
-    
+    "more.feedbackToAdmin": "Adminə Fikir",
+    "more.feedbackToAdminDescription": "Fikirlərinizi və təkliflərinizi adminlərlə paylaşın",
+    "feedback.title": "Adminə Fikir Göndər",
+    "feedback.message": "Mesajınız",
+    "feedback.messagePlaceholder": "Fikirlərinizi, təkliflərinizi və ya suallarınızı buraya yazın...",
+    "feedback.send": "Fikir Göndər",
+    "feedback.sending": "Göndərilir...",
+    "feedback.success": "Fikir uğurla göndərildi!",
+    "feedback.error": "Fikir göndərilmədi. Zəhmət olmasa yenidən cəhd edin.",
+    "feedback.messageRequired": "Zəhmət olmasa fikir mesajınızı daxil edin",
+    "admin.feedbacks": "Fikirlər",
+    "admin.feedbacksTitle": "İstifadəçi Fikirləri",
+    "admin.feedbacksDescription": "İstifadəçi fikirlərini görüntüləyin və idarə edin",
+    "admin.noFeedbacks": "Hələ fikir yoxdur",
+    "admin.feedbackFrom": "Kimdən",
+    "admin.feedbackDate": "Tarix",
+    "admin.feedbackMessage": "Mesaj",
+
     // Settings
     "settings.title": "Tənzimləmələr",
     "settings.language": "Dil",
     "settings.selectLanguage": "Üstünlük verdiyiniz dili seçin",
     "settings.notifications": "Bildirişlər",
     "settings.manageNotifications": "Bildiriş tənzimləmələrinizi idarə edin",
-    
+
     // Languages
     "lang.english": "İngiliscə",
     "lang.russian": "Rusca",
     "lang.turkish": "Türkcə",
     "lang.azerbaijani": "Azərbaycanca",
-    
+
     // Create Post
     "post.createPost": "Post Yarat",
     "post.chooseType": "Post növü seçin:",
@@ -1775,7 +1858,7 @@ export const translations = {
     "settings.newPasswordSame": "Yeni şifrə cari şifrədən fərqli olmalıdır",
     "auth.passwordRequired": "Şifrə tələb olunur",
     "auth.passwordsDoNotMatch": "Şifrələr uyğun gəlmir",
-    
+
     // Social Feed Post
     "post.user": "BookVerse İstifadəçisi",
     "post.momentsAgo": "Bir az əvvəl",
@@ -1785,7 +1868,7 @@ export const translations = {
     "post.writeComment": "Şərh yazın...",
     "post.send": "Göndər",
     "post.delete": "Sil",
-    
+
     // Reading List
     "readingList.title": "Oxuma Siyahım",
     "readingList.subtitle": "Kitablarınızı rəflərə görə təşkil edin",
@@ -1797,6 +1880,11 @@ export const translations = {
     "readingList.moveTo": "Köçür",
     "readingList.moveToEllipsis": "Köçür...",
     "readingList.delete": "Sil",
+    "readingList.createShelf": "Rəf Yarat",
+    "readingList.shelfName": "Rəf Adı",
+    "readingList.enterShelfName": "Rəf adını daxil edin",
+    "readingList.shelfCreated": "Rəf uğurla yaradıldı",
+    "readingList.createFailed": "Rəf yaradılmadı",
     "readingList.refresh": "Yenilə",
     "readingList.loading": "Rəflər yüklənir...",
     "readingList.shelfRenamed": "Rəf adı yeniləndi",
@@ -1819,7 +1907,7 @@ export const translations = {
     "shelfSelection.books": "kitab",
     "shelfSelection.add": "Əlavə et",
     "shelfSelection.move": "Köçür",
-    
+
     // Book Detail
     "bookDetail.backToHome": "Ana Səhifəyə Qayıt",
     "bookDetail.loading": "Kitab detalları yüklənir...",
@@ -1832,7 +1920,7 @@ export const translations = {
     "bookDetail.edit": "Redaktə et",
     "bookDetail.unknownAuthor": "Naməlum müəllif",
     "bookDetail.about": "Kitabın Haqqında",
-    
+
     // Search
     "search.title": "Axtarış",
     "search.placeholder": "Kitab və ya istifadəçi axtar...",
@@ -1847,7 +1935,7 @@ export const translations = {
     "search.found": "Tapıldı",
     "search.user": "istifadəçi",
     "search.userPlural": "istifadəçi",
-    
+
     // Recommendations
     "recommendations.title": "Nə Oxumalıyam?",
     "recommendations.subtitle": "Janra görə kitabları kəşf edin",
@@ -1856,7 +1944,7 @@ export const translations = {
     "recommendations.loading": "Tövsiyələr yüklənir...",
     "recommendations.noBooks": "Kitab mövcud deyil",
     "recommendations.booksCount": "kitab",
-    
+
     // Create Book
     "book.addNew": "Yeni Kitab Əlavə Et",
     "book.coverImage": "Kitab Örtüyü Şəkli",
@@ -1865,7 +1953,7 @@ export const translations = {
     "book.genre": "Janr *",
     "book.description": "Təsvir *",
     "book.fillRequired": "Zəhmət olmasa başlıq, janr və təsviri doldurun.",
-    
+
     // More Page Items
     "more.readingStats": "Oxuma Statistika",
     "more.activityOverview": "Fəaliyyət Baxışı",
@@ -1887,7 +1975,7 @@ export const translations = {
     "more.clearCacheMessage": "Bu, saxlanılmış sosial xəbərlər postlarınız daxil olmaqla bütün keşlənmiş məlumatları təmizləyəcək. Bu hərəkət geri qaytarıla bilməz.",
     "more.cacheCleared": "Keş uğurla təmizləndi!",
     "more.cacheFailed": "Keş təmizlənmədi",
-    
+
     // Profile
     "profile.title": "Profil",
     "profile.subtitle": "Hesabınızı və tənzimləmələrinizi idarə edin",
@@ -1942,7 +2030,7 @@ export const translations = {
     "profile.unknownAuthor": "Naməlum müəllif",
     "profile.userNotFound": "İstifadəçi profili tapılmadı. İstifadəçi mövcud olmaya bilər.",
     "profile.loadFailed": "İstifadəçi profili yüklənmədi. İstifadəçi mövcud olmaya bilər.",
-    
+
     // Admin Panel
     "admin.panel": "Admin Paneli",
     "admin.description": "Kitabları, istifadəçiləri və platforma məzmununu idarə edin",

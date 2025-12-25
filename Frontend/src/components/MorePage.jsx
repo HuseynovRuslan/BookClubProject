@@ -14,9 +14,11 @@ import {
   Heart,
   X,
   Check,
-  Lock
+  Lock,
+  MessageSquare
 } from "lucide-react";
 import ChangePasswordModal from "./ChangePasswordModal";
+import { createFeedback } from "../api/feedback";
 
 export default function MorePage() {
   const navigate = useNavigate();
@@ -29,6 +31,9 @@ export default function MorePage() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [booksReadCount, setBooksReadCount] = useState(0);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
 
   const menuSections = [
     {
@@ -66,6 +71,13 @@ export default function MorePage() {
           label: t("more.contact"),
           description: t("more.contactDescriptionShort"),
           color: "from-violet-500 to-purple-500"
+        },
+        {
+          id: "feedback",
+          icon: MessageSquare,
+          label: t("more.feedbackToAdmin"),
+          description: t("more.feedbackToAdminDescription"),
+          color: "from-blue-500 to-cyan-500"
         }
       ]
     },
@@ -210,6 +222,11 @@ export default function MorePage() {
 
   const handleItemClick = (item) => {
     setOpenModal(item.id);
+    // Reset feedback form when opening feedback modal
+    if (item.id === "feedback") {
+      setFeedbackMessage("");
+      setFeedbackSuccess(false);
+    }
   };
 
   const getModalContent = (modalId) => {
@@ -408,6 +425,70 @@ export default function MorePage() {
           </div>
         )
       },
+      "feedback": {
+        title: t("feedback.title"),
+        icon: MessageSquare,
+        color: "from-blue-500 to-cyan-500",
+        content: (
+          <div className="space-y-6">
+            <p className="text-gray-700 dark:text-gray-700">
+              {t("more.feedbackToAdminDescription")}
+            </p>
+            
+            {feedbackSuccess ? (
+              <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
+                <div className="flex items-center gap-3">
+                  <Check className="w-6 h-6 text-green-600" />
+                  <div className="font-bold text-green-700">{t("feedback.success")}</div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block font-bold text-gray-900 dark:text-gray-900 mb-2">
+                    {t("feedback.message")}
+                  </label>
+                  <textarea
+                    value={feedbackMessage}
+                    onChange={(e) => setFeedbackMessage(e.target.value)}
+                    placeholder={t("feedback.messagePlaceholder")}
+                    className="w-full p-4 rounded-xl border-2 border-gray-200 dark:border-gray-200 focus:border-blue-500 focus:outline-none resize-none min-h-[150px] text-gray-900 dark:text-gray-900"
+                    disabled={sendingFeedback}
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!feedbackMessage.trim()) {
+                      alert(t("feedback.messageRequired"));
+                      return;
+                    }
+                    
+                    setSendingFeedback(true);
+                    try {
+                      await createFeedback(feedbackMessage.trim(), user);
+                      setFeedbackMessage("");
+                      setFeedbackSuccess(true);
+                      setTimeout(() => {
+                        setFeedbackSuccess(false);
+                        setOpenModal(null);
+                      }, 2000);
+                    } catch (err) {
+                      console.error("Error sending feedback:", err);
+                      alert(t("feedback.error"));
+                    } finally {
+                      setSendingFeedback(false);
+                    }
+                  }}
+                  disabled={sendingFeedback || !feedbackMessage.trim()}
+                  className="w-full px-6 py-3 rounded-xl bg-gradient-to-br from-blue-600 via-cyan-600 to-blue-700 hover:from-blue-700 hover:via-cyan-700 hover:to-blue-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {sendingFeedback ? t("feedback.sending") : t("feedback.send")}
+                </button>
+              </div>
+            )}
+          </div>
+        )
+      },
     };
     return content[modalId] || null;
   };
@@ -493,7 +574,13 @@ export default function MorePage() {
         return (
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
-            onClick={() => setOpenModal(null)}
+            onClick={() => {
+              setOpenModal(null);
+              if (openModal === "feedback") {
+                setFeedbackMessage("");
+                setFeedbackSuccess(false);
+              }
+            }}
           >
             <div 
               className="bg-white dark:bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-gray-200 dark:border-gray-200 shadow-2xl animate-slideUp"
@@ -512,7 +599,13 @@ export default function MorePage() {
                     </h2>
                   </div>
                   <button
-                    onClick={() => setOpenModal(null)}
+                    onClick={() => {
+                      setOpenModal(null);
+                      if (openModal === "feedback") {
+                        setFeedbackMessage("");
+                        setFeedbackSuccess(false);
+                      }
+                    }}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
                   >
                     <X className="w-6 h-6 text-gray-600 dark:text-gray-600" />
@@ -528,7 +621,13 @@ export default function MorePage() {
               {/* Modal Footer */}
               <div className="p-6 border-t-2 border-gray-200 dark:border-gray-200 flex justify-end">
               <button
-                onClick={() => setOpenModal(null)}
+                onClick={() => {
+                  setOpenModal(null);
+                  if (openModal === "feedback") {
+                    setFeedbackMessage("");
+                    setFeedbackSuccess(false);
+                  }
+                }}
                 className="px-6 py-3 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 text-white font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 {t("common.close")}
