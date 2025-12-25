@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Shield, BookOpen, Users, FileText, Trash2, Search, Edit, MessageSquare, Star, Plus, X, MoreVertical, UserPen, Tag, LogOut } from "lucide-react";
-import { getAllBooksForAdmin, deleteBookAsAdmin, deleteQuoteAsAdmin, deleteReviewAsAdmin, createBookAsAdmin, updateBookAsAdmin, getAllUsersForAdmin, updateQuoteAsAdmin, updateReviewAsAdmin, createAuthorAsAdmin, updateAuthorAsAdmin, deleteAuthorAsAdmin, createGenreAsAdmin, updateGenreAsAdmin, deleteGenreAsAdmin } from "../api/admin";
+import { Shield, BookOpen, Users, FileText, Trash2, Search, Edit, MessageSquare, Star, Plus, X, MoreVertical, UserPen, Tag, LogOut, Newspaper } from "lucide-react";
+import { getAllBooksForAdmin, deleteBookAsAdmin, deleteQuoteAsAdmin, deleteReviewAsAdmin, createBookAsAdmin, updateBookAsAdmin, getAllUsersForAdmin, updateQuoteAsAdmin, updateReviewAsAdmin, createAuthorAsAdmin, updateAuthorAsAdmin, deleteAuthorAsAdmin, createGenreAsAdmin, updateGenreAsAdmin, deleteGenreAsAdmin, getAllNewsForAdmin, createNewsAsAdmin, updateNewsAsAdmin, deleteNewsAsAdmin } from "../api/admin";
 import { getQuotes } from "../api/quotes";
 import { getReviews } from "../api/reviews";
 import { getAuthors } from "../api/authors";
@@ -42,6 +42,7 @@ export default function AdminPanelPage() {
     { id: "genres", label: "Genres", icon: Tag },
     { id: "users", label: "Users", icon: Users },
     { id: "content", label: "Content", icon: FileText },
+    { id: "news", label: "News", icon: Newspaper },
   ];
 
   return (
@@ -110,6 +111,7 @@ export default function AdminPanelPage() {
           {activeTab === "genres" && <GenresManagement />}
           {activeTab === "users" && <UsersManagement />}
           {activeTab === "content" && <ContentModeration />}
+          {activeTab === "news" && <NewsManagement />}
         </div>
       </div>
     </div>
@@ -2207,6 +2209,578 @@ function BookFormModal({ book, authors, genres, onClose, onSave }) {
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+function NewsManagement() {
+  const [news, setNews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [pageNumber, setPageNumber] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [showNewsForm, setShowNewsForm] = useState(false);
+  const [editingNews, setEditingNews] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const pageSize = 20;
+
+  const [formData, setFormData] = useState({
+    title: "",
+    tag: "General",
+    summary: "",
+    description: "",
+    content: "",
+    type: "latest",
+    imageUrl: "",
+    isPublished: false,
+    publishedAt: "",
+    authorId: "",
+    slug: "",
+  });
+
+  const fetchNews = async () => {
+    setLoading(true);
+    try {
+      const response = await getAllNewsForAdmin({
+        pageNumber,
+        pageSize,
+        searchTerm: searchTerm.trim() || undefined,
+      });
+      
+      let newsList = [];
+      let total = 0;
+      
+      if (response?.Items && Array.isArray(response.Items)) {
+        newsList = response.Items;
+        total = response.TotalCount || response.totalCount || 0;
+      } else if (response?.items && Array.isArray(response.items)) {
+        newsList = response.items;
+        total = response.totalCount || response.TotalCount || response.total || 0;
+      } else if (response?.data?.Items && Array.isArray(response.data.Items)) {
+        newsList = response.data.Items;
+        total = response.data.TotalCount || response.data.totalCount || 0;
+      } else if (response?.data?.items && Array.isArray(response.data.items)) {
+        newsList = response.data.items;
+        total = response.data.totalCount || response.data.TotalCount || 0;
+      } else if (Array.isArray(response)) {
+        newsList = response;
+        total = response.length;
+      }
+      
+      setNews(newsList);
+      setTotalCount(total);
+    } catch (error) {
+      console.error("Failed to fetch news:", error);
+      setNews([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNews();
+  }, [pageNumber]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (pageNumber === 1) {
+        fetchNews();
+      } else {
+        setPageNumber(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const handleCreateNews = () => {
+    setEditingNews(null);
+    setFormData({
+      title: "",
+      tag: "General",
+      summary: "",
+      description: "",
+      content: "",
+      type: "latest",
+      imageUrl: "",
+      isPublished: false,
+      publishedAt: "",
+      authorId: "",
+      slug: "",
+    });
+    setShowNewsForm(true);
+  };
+
+  const handleEditNews = (newsItem) => {
+    setEditingNews(newsItem);
+    setFormData({
+      title: newsItem.title || newsItem.Title || "",
+      tag: newsItem.tag || newsItem.Tag || "General",
+      summary: newsItem.summary || newsItem.Summary || "",
+      description: newsItem.description || newsItem.Description || "",
+      content: newsItem.content || newsItem.Content || "",
+      type: newsItem.type || newsItem.Type || "latest",
+      imageUrl: newsItem.imageUrl || newsItem.ImageUrl || newsItem.image || newsItem.Image || "",
+      isPublished: newsItem.isPublished !== undefined ? newsItem.isPublished : (newsItem.IsPublished !== undefined ? newsItem.IsPublished : false),
+      publishedAt: newsItem.publishedAt || newsItem.PublishedAt ? String(newsItem.publishedAt || newsItem.PublishedAt).split("T")[0] : "",
+      authorId: newsItem.authorId || newsItem.AuthorId || newsItem.author?.id || newsItem.author?.Id || newsItem.Author?.id || newsItem.Author?.Id || "",
+      slug: newsItem.slug || newsItem.Slug || "",
+    });
+    setShowNewsForm(true);
+  };
+
+  const handleDeleteNews = async (newsId) => {
+    if (!confirm("Are you sure you want to delete this news?")) {
+      return;
+    }
+
+    setDeletingId(newsId);
+    try {
+      await deleteNewsAsAdmin(newsId);
+      await fetchNews();
+    } catch (error) {
+      console.error("Failed to delete news:", error);
+      alert("Failed to delete news. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleSaveNews = async () => {
+    if (!formData.title.trim()) {
+      alert("News title is required");
+      return;
+    }
+
+    try {
+      const newsData = {
+        title: formData.title,
+        tag: formData.tag,
+        summary: formData.summary,
+        description: formData.description,
+        content: formData.content,
+        type: formData.type,
+        imageUrl: formData.imageUrl,
+        isPublished: formData.isPublished,
+        publishedAt: formData.publishedAt || undefined,
+        authorId: formData.authorId || undefined,
+        slug: formData.slug,
+      };
+
+      if (editingNews) {
+        await updateNewsAsAdmin(editingNews.id || editingNews.Id, newsData);
+      } else {
+        await createNewsAsAdmin(newsData);
+      }
+
+      setShowNewsForm(false);
+      setEditingNews(null);
+      setFormData({
+        title: "",
+        tag: "General",
+        summary: "",
+        description: "",
+        content: "",
+        type: "latest",
+        imageUrl: "",
+        isPublished: false,
+        publishedAt: "",
+        authorId: "",
+        slug: "",
+      });
+      // Reset to page 1 to show the newly added/edited news
+      // The useEffect will automatically fetch when pageNumber changes
+      if (pageNumber !== 1) {
+        setPageNumber(1);
+      } else {
+        // If already on page 1, manually fetch to refresh the list
+        await fetchNews();
+      }
+    } catch (error) {
+      console.error("Failed to save news:", error);
+      alert("Failed to save news. Please try again.");
+    }
+  };
+
+  const filteredNews = news.filter((item) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      (item.title || item.Title || "").toLowerCase().includes(term) ||
+      (item.tag || item.Tag || "").toLowerCase().includes(term) ||
+      (item.summary || item.Summary || item.description || item.Description || "").toLowerCase().includes(term)
+    );
+  });
+
+  return (
+    <div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <h2 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
+          News Management
+        </h2>
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-600 dark:text-amber-600" />
+            <input
+              type="text"
+              placeholder="Search news..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+            />
+          </div>
+          <button
+            onClick={handleCreateNews}
+            className="relative w-10 h-10 flex items-center justify-center bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 hover:from-amber-600 hover:via-orange-600 hover:to-red-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group"
+            title="Add News"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="sr-only">Add News</span>
+          </button>
+        </div>
+      </div>
+
+      {showNewsForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-white rounded-3xl shadow-2xl max-w-2xl w-full border-2 border-gray-100 dark:border-gray-200 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 bg-clip-text text-transparent">
+                  {editingNews ? "Edit News" : "Add News"}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowNewsForm(false);
+                    setEditingNews(null);
+                    setFormData({
+                      title: "",
+                      tag: "General",
+                      summary: "",
+                      type: "latest",
+                    });
+                  }}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-100 transition-all"
+                >
+                  <X className="w-5 h-5 text-gray-600 dark:text-gray-600" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                    Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                    Tag
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tag}
+                    onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
+                    placeholder="e.g., Community, Event, Product"
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                    Summary
+                  </label>
+                  <textarea
+                    value={formData.summary}
+                    onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold resize-none"
+                    placeholder="Enter news summary (short description)..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={4}
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold resize-none"
+                    placeholder="Enter news description..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                    Content
+                  </label>
+                  <textarea
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    rows={6}
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold resize-none"
+                    placeholder="Enter full news content (optional)..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                    Type
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold"
+                  >
+                    <option value="latest">Latest</option>
+                    <option value="events">Events</option>
+                    <option value="product">Product</option>
+                    <option value="community">Community</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                    Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                    Slug (URL-friendly)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="news-article-title"
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Leave empty to auto-generate from title</p>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isPublished"
+                      checked={formData.isPublished}
+                      onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
+                      className="w-5 h-5 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                    />
+                    <label htmlFor="isPublished" className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-700">
+                      Published
+                    </label>
+                  </div>
+                </div>
+
+                {formData.isPublished && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                      Published Date
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.publishedAt}
+                      onChange={(e) => setFormData({ ...formData, publishedAt: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-700 mb-2">
+                    Author (Optional)
+                  </label>
+                  <select
+                    value={formData.authorId}
+                    onChange={(e) => setFormData({ ...formData, authorId: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-200 rounded-2xl bg-white dark:bg-white text-gray-900 dark:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:focus:border-amber-500 font-semibold"
+                  >
+                    <option value="">No Author</option>
+                    {authors && authors.length > 0 ? (
+                      authors.map((author) => (
+                        <option key={author.id || author.Id} value={author.id || author.Id}>
+                          {author.name || author.Name || "Unknown Author"}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No authors found</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleSaveNews}
+                  className="flex-1 px-6 py-3 bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 hover:from-amber-600 hover:via-orange-600 hover:to-red-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNewsForm(false);
+                    setEditingNews(null);
+                    setFormData({
+                      title: "",
+                      tag: "General",
+                      summary: "",
+                      description: "",
+                      content: "",
+                      type: "latest",
+                      imageUrl: "",
+                      isPublished: false,
+                      publishedAt: "",
+                      authorId: "",
+                      slug: "",
+                    });
+                  }}
+                  className="flex-1 px-6 py-3 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-700">
+            <div className="w-5 h-5 border-3 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-semibold">Loading...</p>
+          </div>
+        </div>
+      ) : filteredNews.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-100 dark:to-orange-100 rounded-2xl shadow-lg mb-4">
+            <Newspaper className="w-10 h-10 text-amber-600 dark:text-amber-600 opacity-70" />
+          </div>
+          <p className="text-gray-700 dark:text-gray-700 font-semibold">No news found</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 overflow-visible">
+            {filteredNews.map((newsItem) => {
+              const newsId = newsItem.id || newsItem.Id;
+              const isMenuOpen = openMenuId === newsId;
+              
+              return (
+                <div
+                  key={newsId}
+                  className="bg-white dark:bg-white rounded-2xl shadow-lg p-4 border-2 border-gray-100 dark:border-gray-200 hover:shadow-xl hover:border-amber-300 dark:hover:border-amber-300 transition-all duration-300 transform hover:-translate-y-1 relative overflow-visible"
+                >
+                  <div className="pr-8">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 text-xs font-semibold bg-amber-100 dark:bg-amber-100 text-amber-700 dark:text-amber-700 rounded-lg">
+                        {newsItem.tag || newsItem.Tag || "General"}
+                      </span>
+                      <span className="px-2 py-1 text-xs font-semibold bg-orange-100 dark:bg-orange-100 text-orange-700 dark:text-orange-700 rounded-lg">
+                        {newsItem.type || newsItem.Type || "latest"}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-black dark:text-black text-base mb-2 line-clamp-2">
+                      {newsItem.title || newsItem.Title || "Untitled"}
+                    </h3>
+                    {(newsItem.summary || newsItem.Summary || newsItem.description || newsItem.Description) && (
+                      <p className="text-sm text-gray-600 dark:text-gray-600 line-clamp-2">
+                        {newsItem.summary || newsItem.Summary || newsItem.description || newsItem.Description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="absolute top-3 right-3 z-10">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(isMenuOpen ? null : newsId);
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-100 transition-all"
+                    >
+                      <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-600" />
+                    </button>
+                    
+                    {isMenuOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setOpenMenuId(null)}
+                        />
+                        <div className="absolute right-0 bottom-full mb-1 z-30 bg-white dark:bg-white rounded-lg shadow-xl border-2 border-gray-100 dark:border-gray-200 min-w-[100px] overflow-hidden">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditNews(newsItem);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-1.5 px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-700 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-50 dark:hover:to-orange-50 transition-all font-semibold"
+                          >
+                            <Edit className="w-3.5 h-3.5 text-amber-600 dark:text-amber-600" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteNews(newsId);
+                              setOpenMenuId(null);
+                            }}
+                            disabled={deletingId === newsId}
+                            className="w-full flex items-center gap-1.5 px-3 py-2 text-left text-xs text-red-600 dark:text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-50 dark:hover:from-red-50 dark:hover:to-red-50 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-600" />
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {totalCount > pageSize && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                disabled={pageNumber === 1}
+                className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+              >
+                Previous
+              </button>
+              <span className="px-5 py-2.5 text-gray-700 dark:text-gray-700 font-bold bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-50 dark:to-orange-50 rounded-xl border-2 border-amber-200 dark:border-amber-200">
+                Page {pageNumber} / {Math.ceil(totalCount / pageSize)}
+              </span>
+              <button
+                onClick={() => setPageNumber((p) => p + 1)}
+                disabled={pageNumber >= Math.ceil(totalCount / pageSize)}
+                className="px-5 py-2.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-100 dark:to-gray-200 text-gray-700 dark:text-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-200 dark:hover:to-gray-300 font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
