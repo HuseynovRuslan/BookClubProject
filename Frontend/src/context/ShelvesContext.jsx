@@ -40,14 +40,14 @@ export function ShelvesProvider({ children }) {
       setShelves(Array.isArray(shelvesArray) ? shelvesArray : []);
     } catch (err) {
       console.error("Failed to fetch shelves:", err);
-      
-      const isNetworkError = 
+
+      const isNetworkError =
         err.message?.includes("Failed to fetch") ||
         err.message?.includes("ERR_CONNECTION_REFUSED") ||
         err.message?.includes("NetworkError") ||
         err.name === "TypeError" ||
         !err.status;
-      
+
 
       if (isNetworkError) {
         const networkError = new Error("error.network");
@@ -61,7 +61,7 @@ export function ShelvesProvider({ children }) {
         }
         setError(error);
       }
-      
+
     } finally {
       setLoading(false);
     }
@@ -91,9 +91,28 @@ export function ShelvesProvider({ children }) {
     };
   }, [fetchShelves]);
 
+  const normalizeShelf = (shelf) => {
+    if (!shelf) return null;
+    const isDefault = shelf.isDefault !== undefined ? shelf.isDefault : (shelf.IsDefault !== undefined ? shelf.IsDefault : false);
+    return {
+      ...shelf,
+      id: shelf.id || shelf.Id,
+      name: shelf.name || shelf.Name,
+      isDefault: isDefault,
+      type: isDefault ? 'default' : (shelf.type || shelf.Type || 'custom'),
+      books: (shelf.books || shelf.Books || []).map(b => ({
+        ...b,
+        id: b.id || b.Id || b._id,
+        title: b.title || b.Title
+      })),
+      bookCount: shelf.bookCount || shelf.BookCount || (shelf.books || shelf.Books || []).length
+    };
+  };
+
   const createShelf = useCallback(
     async (payload) => {
-      const shelf = await apiCreateShelf(payload);
+      const rawShelf = await apiCreateShelf(payload);
+      const shelf = normalizeShelf(rawShelf);
       setShelves((prev) => [...prev, shelf]);
       return shelf;
     },
@@ -101,7 +120,8 @@ export function ShelvesProvider({ children }) {
   );
 
   const updateShelf = useCallback(async (id, payload) => {
-    const updated = await apiUpdateShelf(id, payload);
+    const rawUpdated = await apiUpdateShelf(id, payload);
+    const updated = normalizeShelf(rawUpdated);
     setShelves((prev) =>
       prev.map((shelf) => (shelf.id === id ? updated : shelf))
     );
