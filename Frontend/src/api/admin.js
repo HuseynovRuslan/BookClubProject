@@ -162,3 +162,79 @@ export async function deleteGenreAsAdmin(genreId) {
   });
 }
 
+// News Management Functions
+export async function getAllNewsForAdmin(parameters = {}) {
+  const queryParams = new URLSearchParams();
+  if (parameters.pageNumber) queryParams.append("pageNumber", parameters.pageNumber);
+  if (parameters.pageSize) queryParams.append("pageSize", parameters.pageSize);
+  if (parameters.searchTerm) queryParams.append("searchTerm", parameters.searchTerm);
+  
+  const queryString = queryParams.toString();
+  const path = `/api/News${queryString ? `?${queryString}` : ""}`;
+  
+  return await apiRequest(path, {
+    method: "GET",
+  });
+}
+
+export async function createNewsAsAdmin(newsData) {
+  const payload = {
+    Title: newsData.title || newsData.Title,
+    Tag: newsData.tag || newsData.Tag || "General",
+    Summary: newsData.summary || newsData.Summary || "",
+    Description: newsData.description || newsData.Description || "",
+    Content: newsData.content || newsData.Content || "",
+    Type: newsData.type || newsData.Type || "latest",
+    ImageUrl: newsData.imageUrl || newsData.ImageUrl || newsData.image || newsData.Image || "",
+    IsPublished: newsData.isPublished !== undefined ? newsData.isPublished : (newsData.IsPublished !== undefined ? newsData.IsPublished : false),
+    Slug: newsData.slug || newsData.Slug || "",
+  };
+
+  if (newsData.publishedAt || newsData.PublishedAt) {
+    payload.PublishedAt = newsData.publishedAt || newsData.PublishedAt;
+  }
+
+  if (newsData.authorId || newsData.AuthorId) {
+    payload.AuthorId = newsData.authorId || newsData.AuthorId;
+  }
+
+  return await apiRequest("/api/News", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function updateNewsAsAdmin(newsId, newsData) {
+  const payload = {
+    Id: newsId,
+    Title: newsData.title || newsData.Title,
+    Tag: newsData.tag || newsData.Tag || "General",
+    Summary: newsData.summary || newsData.Summary || "",
+    Description: newsData.description || newsData.Description || "",
+    Content: newsData.content || newsData.Content || "",
+    Type: newsData.type || newsData.Type || "latest",
+    ImageUrl: newsData.imageUrl || newsData.ImageUrl || newsData.image || newsData.Image || "",
+    IsPublished: newsData.isPublished !== undefined ? newsData.isPublished : (newsData.IsPublished !== undefined ? newsData.IsPublished : false),
+    Slug: newsData.slug || newsData.Slug || "",
+  };
+
+  if (newsData.publishedAt || newsData.PublishedAt) {
+    payload.PublishedAt = newsData.publishedAt || newsData.PublishedAt;
+  }
+
+  if (newsData.authorId || newsData.AuthorId) {
+    payload.AuthorId = newsData.authorId || newsData.AuthorId;
+  }
+
+  return await apiRequest(`/api/News/${newsId}`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
+export async function deleteNewsAsAdmin(newsId) {
+  return await apiRequest(`/api/News/${newsId}`, {
+    method: "DELETE",
+  });
+}
+
