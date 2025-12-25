@@ -10,4 +10,7 @@ public class BookReview : BaseEntity
 
     public int Rating { get; set; }
     public string? ReviewText { get; set; }
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }

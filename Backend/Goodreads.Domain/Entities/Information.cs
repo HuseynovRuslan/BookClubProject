@@ -8,4 +8,7 @@ public class Information : BaseEntity
     public string Details { get; set; }
     public string? CoverImageUrl { get; set; }
     public bool IsRead { get; set; } = false;
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }  

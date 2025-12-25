@@ -16,7 +16,8 @@ internal class DeleteQuoteCommandHandler : IRequestHandler<DeleteQuoteCommand, R
             _logger.LogWarning("Quote with ID {QuoteId} not found for deletion.", request.QuoteId);
             return Result.Fail(QuoteErrors.NotFound(request.QuoteId));
         }
-        _unitOfWork.Quotes.Delete(quote);
+        quote.IsDeleted = true;
+        quote.DeletedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
         return Result.Ok();
     }

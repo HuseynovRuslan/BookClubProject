@@ -13,5 +13,8 @@ public class Quote : BaseEntity
 
     [NotMapped]
     public int LikesCount => Likes?.Count ?? 0;
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
 

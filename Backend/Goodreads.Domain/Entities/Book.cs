@@ -14,6 +14,9 @@ public class Book
     public double AverageRating { get; set; }
     public int RatingCount { get; set; }
 
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+
     public string AuthorId { get; set; }
     public Author Author { get; set; }
 

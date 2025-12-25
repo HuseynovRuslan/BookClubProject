@@ -6,5 +6,8 @@ public class BookGenre
 
     public string GenreId { get; set; }
     public Genre Genre { get; set; }
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
 

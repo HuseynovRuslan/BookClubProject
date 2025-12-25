@@ -33,6 +33,23 @@ public class ApplicationDbContext
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         modelBuilder.Entity<User>().OwnsOne(u => u.Social);
+
+        // Apply Global Query Filter for Soft Delete
+        modelBuilder.Entity<Author>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Book>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<BookGenre>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<BookReview>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<BookShelf>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Genre>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Information>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Quote>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<QuoteLike>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<ReadingProgress>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<RefreshToken>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Shelf>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<UserFollow>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<UserYearChallenge>().HasQueryFilter(e => !e.IsDeleted);
     }
 
     public override int SaveChanges()

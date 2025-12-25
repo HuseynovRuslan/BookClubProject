@@ -27,7 +27,10 @@ internal class DeleteAccountCommandHandler : IRequestHandler<DeleteAccountComman
             return Result.Fail(UserErrors.NotFound(userId));
         }
 
-        var result = await _userManager.DeleteAsync(user);
+        user.IsDeleted = true;
+        user.DeletedAt = DateTime.UtcNow;
+
+        var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
             _logger.LogError("Failed to delete user: {UserId}", userId);

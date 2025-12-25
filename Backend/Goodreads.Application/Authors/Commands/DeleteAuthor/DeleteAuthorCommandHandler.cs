@@ -35,7 +35,8 @@ internal class DeleteAuthorCommandHandler : IRequestHandler<DeleteAuthorCommand,
             }
         }
 
-        _unitOfWork.Authors.Delete(author);
+        author.IsDeleted = true;
+        author.DeletedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
 
         return Result.Ok();

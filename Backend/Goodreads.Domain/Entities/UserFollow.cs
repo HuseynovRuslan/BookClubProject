@@ -8,5 +8,8 @@ public class UserFollow
     public User Following { get; set; } = default!;
 
     public DateTime FollowedAt { get; set; } = DateTime.UtcNow;
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
 

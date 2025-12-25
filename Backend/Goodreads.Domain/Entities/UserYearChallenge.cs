@@ -8,5 +8,8 @@ public class UserYearChallenge
     public int CompletedBooksCount { get; set; } = 0;
 
     public User User { get; set; }
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
 

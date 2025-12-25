@@ -6,4 +6,7 @@ public class Shelf : BaseEntity
     public string Name { get; set; } = default!;
     public bool IsDefault { get; set; } = false;
     public ICollection<BookShelf> BookShelves { get; set; } = new List<BookShelf>();
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }

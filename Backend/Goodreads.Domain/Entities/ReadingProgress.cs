@@ -6,5 +6,8 @@ public class ReadingProgress
     public int CurrentPage { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public Book Book { get; set; } = default!;
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
 

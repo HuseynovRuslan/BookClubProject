@@ -14,5 +14,8 @@ public class Author
 
     public bool IsClaimed => UserId != null;
 
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+
     public ICollection<Book> Books { get; set; } = new List<Book>();
 }

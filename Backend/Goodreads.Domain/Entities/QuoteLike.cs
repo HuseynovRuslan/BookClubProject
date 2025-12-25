@@ -8,5 +8,8 @@ public class QuoteLike
     public User User { get; set; } = null!;
 
     public DateTime LikedAt { get; set; } = DateTime.UtcNow;
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
 
