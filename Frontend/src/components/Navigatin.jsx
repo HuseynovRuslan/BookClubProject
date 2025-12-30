@@ -14,6 +14,9 @@ export default function Navigation({
   const [isScrolled, setIsScrolled] = useState(false);
   const [feedType, setFeedType] = useState("for-you");
 
+  // Check if we're on Social Feed page (routes "/" or "/social")
+  const isSocialFeedPage = location.pathname === "/" || location.pathname === "/social";
+
   useEffect(() => {
     let lastScrollY = window.scrollY;
     let ticking = false;
@@ -42,6 +45,17 @@ export default function Navigation({
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Update feedType based on current route
+  useEffect(() => {
+    if (isSocialFeedPage) {
+      if (location.pathname === "/followers") {
+        setFeedType("followers");
+      } else {
+        setFeedType("for-you");
+      }
+    }
+  }, [location.pathname, isSocialFeedPage]);
 
   const handleFeedChange = (type) => {
     setFeedType(type);
@@ -74,8 +88,8 @@ export default function Navigation({
           </button>
         </div>
 
-        {/* CENTER – For You / Followers */}
-        {!isGuest && (
+        {/* CENTER – For You / Followers - Only show on Social Feed page */}
+        {!isGuest && isSocialFeedPage && (
           <div className="hidden md:flex items-center bg-gray-100 rounded-full p-1">
             <button
               onClick={() => handleFeedChange("for-you")}
