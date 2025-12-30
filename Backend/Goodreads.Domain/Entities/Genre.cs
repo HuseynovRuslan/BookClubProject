@@ -6,5 +6,8 @@ public class Genre
     public int BookCount { get; set; }
 
     public ICollection<BookGenre> BookGenres { get; set; } = new List<BookGenre>();
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
 

@@ -33,7 +33,8 @@ public class DeleteReviewCommandHandler : IRequestHandler<DeleteReviewCommand, R
        
         var book = await _unitOfWork.Books.GetByIdAsync(review.BookId);
         
-        _unitOfWork.BookReviews.Delete(review);
+        review.IsDeleted = true;
+        review.DeletedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
 
       

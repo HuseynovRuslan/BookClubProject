@@ -35,7 +35,8 @@ internal class DeleteBookCommandHandler : IRequestHandler<DeleteBookCommand, Res
             await _localStorageService.DeleteAsync(LocalContainer.Books, book.CoverImageBlobName);
         }
 
-        _unitOfWork.Books.Delete(book);
+        book.IsDeleted = true;
+        book.DeletedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation("Successfully deleted book with ID: {BookId}", request.Id);

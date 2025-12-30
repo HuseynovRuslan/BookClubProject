@@ -22,7 +22,8 @@ internal class DeleteGenreCommandHandler : IRequestHandler<DeleteGenreCommand, R
             return Result.Fail(GenreErrors.NotFound(genreId));
         }
 
-        _unitOfWork.Genres.Delete(genre);
+        genre.IsDeleted = true;
+        genre.DeletedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
 
         return Result.Ok();

@@ -8,4 +8,7 @@ public class BookShelf
 
     public Book Book { get; set; } = null!;
     public Shelf Shelf { get; set; } = null!;
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }

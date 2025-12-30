@@ -44,7 +44,8 @@ internal class DeleteShelfCommandHandler : IRequestHandler<DeleteShelfCommand, R
             return Result.Fail(Error.Failure("Shelves.DefaultShelfDeleteDenied", $"Cannot delete default shelf '{shelf.Name}'."));
         }
 
-        _unitOfWork.Shelves.Delete(shelf);
+        shelf.IsDeleted = true;
+        shelf.DeletedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
 
         return Result.Ok();

@@ -22,6 +22,9 @@ public class User : IdentityUser
     public ICollection<BookReview> BookReviews { get; set; } = new List<BookReview>();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }
 
 public class Social
