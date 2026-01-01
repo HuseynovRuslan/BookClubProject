@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel;
 using Goodreads.Application.News.Commands.MarkAsRead;
+using Goodreads.Application.News.Commands.DeleteInformation;
 
 [ApiController]
 [Route("api/informations/[controller]")]
@@ -62,4 +63,13 @@ public class InformationController : BaseController
             failure => CustomResults.Problem(failure));
     }
 
+    [HttpDelete("delete-information/{id}")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> DeleteInformation(string id)
+    {
+        var result = await Sender.Send(new DeleteInformationCommand(id));
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
 }

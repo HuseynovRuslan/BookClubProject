@@ -19,6 +19,8 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<UserYearChallenge>? _userYearChallengeRepository;
     private IRepository<BookReview>? _bookReviewRepository;
     private IRepository<User>? _usersRepository;
+    private IRepository<FeedBack>? _feedbackRepository;
+    private IRepository<Comment>? _commentRepository;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -39,6 +41,8 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<UserYearChallenge> UserYearChallenges => _userYearChallengeRepository ??= new GenericRepository<UserYearChallenge>(_context);
     public IRepository<BookReview> BookReviews => _bookReviewRepository ??= new GenericRepository<BookReview>(_context);
     public IRepository<User> Users => _usersRepository ??= new GenericRepository<User>(_context);
+    public IRepository<FeedBack> FeedBacks => _feedbackRepository ??= new GenericRepository<FeedBack>(_context);
+    public IRepository<Comment> Comments => _commentRepository ??= new GenericRepository<Comment>(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
     public void Dispose() => _context.Dispose();
