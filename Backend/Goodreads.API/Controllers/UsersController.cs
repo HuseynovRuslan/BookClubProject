@@ -11,6 +11,7 @@ using Goodreads.Application.Users.Commands.DeleteProfilePicture;
 using Goodreads.Application.Users.Commands.UpdateProfilePicture;
 using Goodreads.Application.Users.Commands.UpdateSocials;
 using Goodreads.Application.Users.Commands.UpdateUserProfile;
+using Goodreads.Application.FeedBacks.Commands.SendFeedBack;
 using Goodreads.Application.Users.Queries.GetAllUsers;
 using Goodreads.Application.Users.Queries.GetProfileByUsername;
 using Goodreads.Application.Users.Queries.GetUserProfile;
@@ -207,4 +208,13 @@ public class UsersController(IUserContext userContext) : BaseController
     }
 
 
+    [HttpPost("send-feedback")]
+    [Authorize]
+    public async Task<IActionResult> SendFeedback([FromBody] SendFeedBackCommand command)
+    {
+        var result = await Sender.Send(command);
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
 }

@@ -22,6 +22,8 @@ public class ApplicationDbContext
     public DbSet<ReadingProgress> ReadingProgresses { get; set; }
     public DbSet<UserYearChallenge> UserYearChallenges { get; set; }
     public DbSet<BookReview> BookReviews { get; set; }
+    public DbSet<FeedBack> FeedBacks { get; set; }
+    public DbSet<Comment> Comments { get; set; }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -50,6 +52,8 @@ public class ApplicationDbContext
         modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<UserFollow>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<UserYearChallenge>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<FeedBack>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Comment>().HasQueryFilter(e => !e.IsDeleted);
     }
 
     public override int SaveChanges()
