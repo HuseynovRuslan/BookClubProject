@@ -70,6 +70,17 @@ public class GetSocialFeedQueryHandler : IRequestHandler<GetSocialFeedQuery, Pag
         
         var bookShelvesList = bookShelves.ToList();
 
+        // Get current user's likes for all quotes
+        var quoteIds = quotesList.Select(q => q.Id).ToList();
+        var userLikes = new HashSet<string>();
+        
+        if (quoteIds.Any())
+        {
+            var (likes, _) = await _unitOfWork.QuoteLikes.GetAllAsync(
+                filter: l => l.UserId == userId && quoteIds.Contains(l.QuoteId));
+            userLikes = likes.Select(l => l.QuoteId).ToHashSet();
+        }
+
         // Combine all activities
         var feedItems = new List<FeedItemDto>();
 
@@ -79,13 +90,17 @@ public class GetSocialFeedQueryHandler : IRequestHandler<GetSocialFeedQuery, Pag
             var user = await _userManager.FindByIdAsync(quote.CreatedByUserId);
             if (user != null)
             {
+                var quoteDto = _mapper.Map<QuoteDto>(quote);
+                // Set IsLiked based on current user's likes
+                quoteDto.IsLiked = userLikes.Contains(quote.Id);
+
                 var feedItem = new FeedItemDto
                 {
                     Id = quote.Id,
                     ActivityType = "Quote",
                     CreatedAt = quote.CreatedAt,
                     User = _mapper.Map<UserDto>(user),
-                    Quote = _mapper.Map<QuoteDto>(quote)
+                    Quote = quoteDto
                 };
                 
                 if (!string.IsNullOrEmpty(quote.BookId) && quoteBooks.TryGetValue(quote.BookId, out var book))

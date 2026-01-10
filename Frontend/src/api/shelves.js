@@ -53,10 +53,12 @@ export async function createShelf(payload) {
     saveMockShelves(next);
     return newShelf;
   }
-  return apiRequest("/api/Shelves/create-shelf", {
+  const response = await apiRequest("/api/Shelves/create-shelf", {
     method: "POST",
     body: payload,
   });
+  // API cavabı ApiResponse<ShelfDto> formatındadır
+  return response?.data || response;
 }
 
 export async function updateShelf(id, payload) {

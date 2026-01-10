@@ -8,6 +8,7 @@ public class QuoteDto
     public string CreatedByUserId { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
     public int LikesCount { get; set; }
+    public bool IsLiked { get; set; }
     public List<string> Tags { get; set; } = new();
     
     // Navigation properties

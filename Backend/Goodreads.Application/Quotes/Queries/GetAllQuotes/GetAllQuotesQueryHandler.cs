@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.AspNetCore.Identity;
 using Goodreads.Domain.Entities;
+using Goodreads.Application.Common.Interfaces;
 
 namespace Goodreads.Application.Quotes.Queries.GetAllQuotes;
 public class GetAllQuotesQueryHandler : IRequestHandler<GetAllQuotesQuery, PagedResult<QuoteDto>>
@@ -9,17 +10,20 @@ public class GetAllQuotesQueryHandler : IRequestHandler<GetAllQuotesQuery, Paged
     private readonly IMapper _mapper;
     private readonly ILogger<GetAllQuotesQueryHandler> _logger;
     private readonly UserManager<User> _userManager;
+    private readonly IUserContext _userContext;
 
     public GetAllQuotesQueryHandler(
         IUnitOfWork unitOfWork,
         IMapper mapper,
         ILogger<GetAllQuotesQueryHandler> logger,
-        UserManager<User> userManager)
+        UserManager<User> userManager,
+        IUserContext userContext)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
         _userManager = userManager;
+        _userContext = userContext;
     }
 
     public async Task<PagedResult<QuoteDto>> Handle(GetAllQuotesQuery request, CancellationToken cancellationToken)
@@ -73,11 +77,28 @@ public class GetAllQuotesQueryHandler : IRequestHandler<GetAllQuotesQuery, Paged
             }
         }
 
+        // Get current user ID for like checking
+        var currentUserId = _userContext.UserId;
+
+        // Get all quote IDs for like checking
+        var quoteIds = quotesList.Select(q => q.Id).ToList();
+        var userLikes = new HashSet<string>();
+        
+        if (!string.IsNullOrEmpty(currentUserId) && quoteIds.Any())
+        {
+            var (likes, _) = await _unitOfWork.QuoteLikes.GetAllAsync(
+                filter: l => l.UserId == currentUserId && quoteIds.Contains(l.QuoteId));
+            userLikes = likes.Select(l => l.QuoteId).ToHashSet();
+        }
+
         // Map quotes to DTOs with book and user info
         var dtoList = new List<QuoteDto>();
         foreach (var quote in quotesList)
         {
             var quoteDto = _mapper.Map<QuoteDto>(quote);
+            
+            // Set IsLiked based on current user's likes
+            quoteDto.IsLiked = userLikes.Contains(quote.Id);
             
             if (!string.IsNullOrEmpty(quote.BookId) && books.TryGetValue(quote.BookId, out var book))
             {

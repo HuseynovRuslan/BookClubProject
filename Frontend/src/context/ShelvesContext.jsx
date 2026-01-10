@@ -111,12 +111,18 @@ export function ShelvesProvider({ children }) {
 
   const createShelf = useCallback(
     async (payload) => {
-      const rawShelf = await apiCreateShelf(payload);
+      const response = await apiCreateShelf(payload);
+      // API cavabı ApiResponse<ShelfDto> formatındadır
+      const rawShelf = response?.data || response;
       const shelf = normalizeShelf(rawShelf);
-      setShelves((prev) => [...prev, shelf]);
+      if (shelf) {
+        setShelves((prev) => [...prev, shelf]);
+      }
+      // Siyahını yenilə ki, tam məlumat gəlsin
+      await fetchShelves();
       return shelf;
     },
-    []
+    [fetchShelves]
   );
 
   const updateShelf = useCallback(async (id, payload) => {

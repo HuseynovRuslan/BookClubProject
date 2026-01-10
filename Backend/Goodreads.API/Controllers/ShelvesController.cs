@@ -38,7 +38,7 @@ public class ShelvesController : BaseController
     {
         var result = await Sender.Send(command);
         return result.Match(
-            id => CreatedAtAction(nameof(GetShelfById), new { id }, ApiResponse.Success("Shelf created successfully")),
+            shelf => CreatedAtAction(nameof(GetShelfById), new { id = shelf.Id }, ApiResponse<ShelfDto>.Success(shelf, "Shelf created successfully")),
             failure => CustomResults.Problem(failure));
     }
 
@@ -50,7 +50,7 @@ public class ShelvesController : BaseController
     {
         var result = await Sender.Send(command);
         return result.Match(
-            () => NoContent(),
+            shelf => Ok(ApiResponse<ShelfDto>.Success(shelf, "Shelf updated successfully")),
             failure => CustomResults.Problem(failure));
     }
 
