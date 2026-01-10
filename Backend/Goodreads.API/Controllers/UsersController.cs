@@ -14,6 +14,7 @@ using Goodreads.Application.Users.Commands.UpdateUserProfile;
 using Goodreads.Application.FeedBacks.Commands.SendFeedBack;
 using Goodreads.Application.Users.Queries.GetAllUsers;
 using Goodreads.Application.Users.Queries.GetProfileByUsername;
+using Goodreads.Application.Users.Queries.GetProfileById;
 using Goodreads.Application.Users.Queries.GetUserProfile;
 using Goodreads.Application.Users.Queries.GetUserSocials;
 using Goodreads.Application.UserYearChallenges.Queries.GetAllUserYearChallenges;
@@ -121,6 +122,17 @@ public class UsersController(IUserContext userContext) : BaseController
     public async Task<IActionResult> GetUserProfileByUsername(string username)
     {
         var result = await Sender.Send(new GetProfileByUsernameQuery(username));
+
+        return result.Match(
+           profile => Ok(ApiResponse<UserProfileDto>.Success(profile)),
+           failure => CustomResults.Problem(failure));
+    }
+
+    [HttpGet("get-user-profile-by-id/{userId}")]
+
+    public async Task<IActionResult> GetUserProfileById(string userId)
+    {
+        var result = await Sender.Send(new GetProfileByIdQuery(userId));
 
         return result.Match(
            profile => Ok(ApiResponse<UserProfileDto>.Success(profile)),
