@@ -1,4 +1,5 @@
 using Goodreads.API.Extensions;
+using Goodreads.API.Hubs;
 using Goodreads.Application;
 using Goodreads.Application.Common.Interfaces;
 using Goodreads.Application.Common.Mappings;
@@ -54,15 +55,18 @@ if (builder.Configuration.GetValue<bool>("RunMigrations"))
 
 app.UseExceptionHandler();
 
-app.UseHttpsRedirection();
-
+// CORS must be before UseHttpsRedirection for SignalR
 app.UseCors("AllowFrontend");
+
+// HTTPS redirection
+app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<MessagesHub>("/hubs/messages");
 
 
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
