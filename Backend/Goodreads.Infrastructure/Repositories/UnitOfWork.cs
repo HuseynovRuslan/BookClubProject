@@ -21,6 +21,8 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<User>? _usersRepository;
     private IRepository<FeedBack>? _feedbackRepository;
     private IRepository<Comment>? _commentRepository;
+    private IRepository<Message>? _messageRepository;
+    private IRepository<Conversation>? _conversationRepository;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -43,6 +45,8 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<User> Users => _usersRepository ??= new GenericRepository<User>(_context);
     public IRepository<FeedBack> FeedBacks => _feedbackRepository ??= new GenericRepository<FeedBack>(_context);
     public IRepository<Comment> Comments => _commentRepository ??= new GenericRepository<Comment>(_context);
+    public IRepository<Message> Messages => _messageRepository ??= new GenericRepository<Message>(_context);
+    public IRepository<Conversation> Conversations => _conversationRepository ??= new GenericRepository<Conversation>(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
     public void Dispose() => _context.Dispose();

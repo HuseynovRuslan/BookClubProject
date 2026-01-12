@@ -1,4 +1,8 @@
-﻿using Goodreads.API.Middlewares;
+﻿using Goodreads.API.Hubs;
+using Goodreads.API.Middlewares;
+using Goodreads.API.Services;
+using Goodreads.Application.Common.Interfaces;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Goodreads.API.Extensions;
 
@@ -38,6 +42,16 @@ public static class DependencyInjection
                       .AllowCredentials();
             });
         });
+
+        // SignalR configuration
+        services.AddSignalR(options =>
+        {
+            options.EnableDetailedErrors = true; 
+        });
+        services.AddSingleton<IUserIdProvider, UserIdProvider>();
+        
+        // Message notification service
+        services.AddScoped<IMessageNotificationService, MessageNotificationService>();
 
         return services;
     }

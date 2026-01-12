@@ -20,6 +20,14 @@ public class User : IdentityUser
     public ICollection<UserFollow> Following { get; set; } = new List<UserFollow>();
     public ICollection<QuoteLike> LikedQuotes { get; set; } = new List<QuoteLike>();
     public ICollection<BookReview> BookReviews { get; set; } = new List<BookReview>();
+    
+    // Messages
+    public ICollection<Message> SentMessages { get; set; } = new List<Message>();
+    public ICollection<Message> ReceivedMessages { get; set; } = new List<Message>();
+    
+    // Conversations
+    public ICollection<Conversation> ConversationsAsUser1 { get; set; } = new List<Conversation>();
+    public ICollection<Conversation> ConversationsAsUser2 { get; set; } = new List<Conversation>();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

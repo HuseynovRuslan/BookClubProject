@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalR Test - Messages Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.connecting {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+        }
+        .log-entry.error {
+            border-left-color: #dc3545;
+            color: #dc3545;
+        }
+        .log-entry.success {
+            border-left-color: #28a745;
+            color: #28a745;
+        }
+        .log-entry.info {
+            border-left-color: #17a2b8;
+            color: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 SignalR Messages Hub Test</h1>
+        
+        <div class="section">
+            <h2>Connection Settings</h2>
+            <input type="text" id="hubUrl" placeholder="Hub URL" value="https://localhost:7050/hubs/messages">
+            <input type="text" id="token" placeholder="JWT Token (Bearer prefix-i lazım deyil)">
+            <button id="connectBtn" onclick="connect()">Connect</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+            <div id="status" class="status disconnected">Disconnected</div>
+        </div>
+
+        <div class="section">
+            <h2>Test Actions</h2>
+            <input type="text" id="otherUserId" placeholder="Other User ID (for JoinConversation)">
+            <button onclick="joinConversation()">Join Conversation</button>
+            <button onclick="leaveConversation()">Leave Conversation</button>
+        </div>
+
+        <div class="section">
+            <h2>Event Log</h2>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let connection = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function updateStatus(status, text) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${status}`;
+            statusDiv.textContent = text;
+        }
+
+        async function connect() {
+            const hubUrl = document.getElementById('hubUrl').value;
+            let token = document.getElementById('token').value.trim();
+
+            if (!token) {
+                alert('Please enter JWT token!');
+                return;
+            }
+
+            // Əgər "Bearer " prefix-i varsa, onu sil
+            if (token.startsWith('Bearer ')) {
+                token = token.substring(7).trim();
+            }
+
+            try {
+                updateStatus('connecting', 'Connecting...');
+                log('Starting connection...', 'info');
+
+                // Token-i query string kimi göndərmək üçün URL-ə əlavə et
+                const urlWithToken = `${hubUrl}?access_token=${encodeURIComponent(token)}`;
+                
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl(urlWithToken, {
+                        skipNegotiation: false,
+                        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
+                    })
+                    .withAutomaticReconnect()
+                    .configureLogging(signalR.LogLevel.Information)
+                    .build();
+
+                // Event handlers
+                connection.on("ReceiveMessage", (message) => {
+                    log(`📨 ReceiveMessage: ${JSON.stringify(message, null, 2)}`, 'success');
+                });
+
+                connection.on("NewMessage", (message) => {
+                    log(`💬 NewMessage (Group): ${JSON.stringify(message, null, 2)}`, 'success');
+                });
+
+                connection.on("MessageRead", (data) => {
+                    log(`✅ MessageRead: ${JSON.stringify(data, null, 2)}`, 'success');
+                });
+
+                connection.on("UserOnline", (userId) => {
+                    log(`🟢 UserOnline: ${userId}`, 'info');
+                });
+
+                connection.on("UserOffline", (userId) => {
+                    log(`🔴 UserOffline: ${userId}`, 'info');
+                });
+
+                connection.onreconnecting((error) => {
+                    log(`🔄 Reconnecting... ${error}`, 'info');
+                    updateStatus('connecting', 'Reconnecting...');
+                });
+
+                connection.onreconnected((connectionId) => {
+                    log(`✅ Reconnected. Connection ID: ${connectionId}`, 'success');
+                    updateStatus('connected', 'Connected');
+                });
+
+                connection.onclose((error) => {
+                    log(`❌ Connection closed. ${error ? error : ''}`, 'error');
+                    updateStatus('disconnected', 'Disconnected');
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                });
+
+                await connection.start();
+                log(`✅ Connected! Connection ID: ${connection.connectionId}`, 'success');
+                updateStatus('connected', 'Connected');
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+
+            } catch (error) {
+                log(`❌ Connection error: ${error}`, 'error');
+                updateStatus('disconnected', 'Connection Failed');
+                console.error(error);
+            }
+        }
+
+        async function disconnect() {
+            if (connection) {
+                try {
+                    await connection.stop();
+                    log('Disconnected', 'info');
+                    updateStatus('disconnected', 'Disconnected');
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                } catch (error) {
+                    log(`Error disconnecting: ${error}`, 'error');
+                }
+            }
+        }
+
+        async function joinConversation() {
+            const otherUserId = document.getElementById('otherUserId').value.trim();
+            if (!otherUserId) {
+                alert('Please enter Other User ID!');
+                return;
+            }
+            if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                alert('Not connected!');
+                return;
+            }
+            try {
+                await connection.invoke("JoinConversation", otherUserId);
+                log(`✅ Joined conversation with user: ${otherUserId}`, 'success');
+            } catch (error) {
+                log(`❌ Error joining conversation: ${error}`, 'error');
+            }
+        }
+
+        async function leaveConversation() {
+            const otherUserId = document.getElementById('otherUserId').value.trim();
+            if (!otherUserId) {
+                alert('Please enter Other User ID!');
+                return;
+            }
+            if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                alert('Not connected!');
+                return;
+            }
+            try {
+                await connection.invoke("LeaveConversation", otherUserId);
+                log(`✅ Left conversation with user: ${otherUserId}`, 'success');
+            } catch (error) {
+                log(`❌ Error leaving conversation: ${error}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
