@@ -67,6 +67,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<MessagesHub>("/hubs/messages");
+app.MapHub<NotificationsHub>("/hubs/notifications");
 
 
 app.UseHangfireDashboard("/hangfire", new DashboardOptions

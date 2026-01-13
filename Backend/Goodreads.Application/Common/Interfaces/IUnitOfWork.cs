@@ -20,6 +20,7 @@ namespace Goodreads.Application.Common.Interfaces
         IRepository<Comment> Comments { get; }
         IRepository<Message> Messages { get; }
         IRepository<Conversation> Conversations { get; }
+        IRepository<Notification> Notifications { get; }
 
         Task<int> SaveChangesAsync();
     }

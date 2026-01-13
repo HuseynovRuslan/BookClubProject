@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+        }
+        .log-entry.success {
+            border-left-color: #28a745;
+        }
+        .log-entry.error {
+            border-left-color: #dc3545;
+        }
+        .log-entry.notification {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔔 Notifications Test Page</h1>
+    
+    <div class="container">
+        <!-- Connection Section -->
+        <div class="section">
+            <h2>Connection</h2>
+            <input type="text" id="hubUrl" placeholder="Hub URL" value="https://localhost:7050/hubs/notifications">
+            <input type="text" id="token" placeholder="JWT Token (Bearer prefix-i lazım deyil)">
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+            <div id="status" class="status disconnected">❌ Disconnected</div>
+        </div>
+
+        <!-- API Test Section -->
+        <div class="section">
+            <h2>API Test</h2>
+            <input type="text" id="apiBaseUrl" placeholder="API Base URL" value="https://localhost:7050">
+            <input type="text" id="apiToken" placeholder="JWT Token for API">
+            <button onclick="getNotifications()">Get Notifications</button>
+            <button onclick="getUnreadCount()">Get Unread Count</button>
+            <button onclick="markAllAsRead()">Mark All As Read</button>
+        </div>
+
+        <!-- Trigger Notifications Section -->
+        <div class="section">
+            <h2>Trigger Notifications</h2>
+            <input type="text" id="quoteId" placeholder="Quote ID (for Like)">
+            <button onclick="likeQuote()">Like Quote</button>
+            <input type="text" id="userIdToFollow" placeholder="User ID (to Follow)">
+            <button onclick="followUser()">Follow User</button>
+        </div>
+
+        <!-- Event Log -->
+        <div class="section" style="grid-column: 1 / -1;">
+            <h2>Event Log</h2>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let connection = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function connect() {
+            const hubUrl = document.getElementById('hubUrl').value.trim();
+            const token = document.getElementById('token').value.trim();
+            const cleanedToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+            const urlWithToken = `${hubUrl}?access_token=${encodeURIComponent(cleanedToken)}`;
+
+            try {
+                log('Starting connection...', 'info');
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl(urlWithToken)
+                    .withAutomaticReconnect()
+                    .build();
+
+                connection.on("ReceiveNotification", (notification) => {
+                    log(`📨 ReceiveNotification: ${JSON.stringify(notification, null, 2)}`, 'notification');
+                });
+
+                connection.on("UnreadCountUpdated", (count) => {
+                    log(`🔢 UnreadCountUpdated: ${count}`, 'success');
+                });
+
+                connection.onreconnecting(() => {
+                    log('🔄 Reconnecting...', 'info');
+                    document.getElementById('status').textContent = '🔄 Reconnecting...';
+                    document.getElementById('status').className = 'status disconnected';
+                });
+
+                connection.onreconnected(() => {
+                    log('✅ Reconnected!', 'success');
+                    document.getElementById('status').textContent = '✅ Connected!';
+                    document.getElementById('status').className = 'status connected';
+                });
+
+                await connection.start();
+                log('✅ Connected!', 'success');
+                document.getElementById('status').textContent = '✅ Connected!';
+                document.getElementById('status').className = 'status connected';
+            } catch (error) {
+                log(`❌ Connection error: ${error}`, 'error');
+                document.getElementById('status').textContent = '❌ Connection Failed';
+                document.getElementById('status').className = 'status disconnected';
+            }
+        }
+
+        async function disconnect() {
+            if (connection) {
+                await connection.stop();
+                log('Disconnected', 'info');
+                document.getElementById('status').textContent = '❌ Disconnected';
+                document.getElementById('status').className = 'status disconnected';
+            }
+        }
+
+        async function getNotifications() {
+            const apiBaseUrl = document.getElementById('apiBaseUrl').value.trim();
+            const token = document.getElementById('apiToken').value.trim();
+            const cleanedToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/Notifications?pageNumber=1&pageSize=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${cleanedToken}`
+                    }
+                });
+                const data = await response.json();
+                log(`📋 Notifications: ${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log(`❌ Error getting notifications: ${error}`, 'error');
+            }
+        }
+
+        async function getUnreadCount() {
+            const apiBaseUrl = document.getElementById('apiBaseUrl').value.trim();
+            const token = document.getElementById('apiToken').value.trim();
+            const cleanedToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/Notifications/unread-count`, {
+                    headers: {
+                        'Authorization': `Bearer ${cleanedToken}`
+                    }
+                });
+                const data = await response.json();
+                log(`🔢 Unread Count: ${data.data}`, 'success');
+            } catch (error) {
+                log(`❌ Error getting unread count: ${error}`, 'error');
+            }
+        }
+
+        async function markAllAsRead() {
+            const apiBaseUrl = document.getElementById('apiBaseUrl').value.trim();
+            const token = document.getElementById('apiToken').value.trim();
+            const cleanedToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/Notifications/mark-all-as-read`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${cleanedToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                log(`✅ Marked ${data.data} notifications as read`, 'success');
+            } catch (error) {
+                log(`❌ Error marking as read: ${error}`, 'error');
+            }
+        }
+
+        async function likeQuote() {
+            const apiBaseUrl = document.getElementById('apiBaseUrl').value.trim();
+            const token = document.getElementById('apiToken').value.trim();
+            const quoteId = document.getElementById('quoteId').value.trim();
+            const cleanedToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+
+            if (!quoteId) {
+                log('❌ Please enter Quote ID', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/Quotes/toggle-like`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${cleanedToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ quoteId })
+                });
+                const data = await response.json();
+                log(`👍 Like result: ${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log(`❌ Error liking quote: ${error}`, 'error');
+            }
+        }
+
+        async function followUser() {
+            const apiBaseUrl = document.getElementById('apiBaseUrl').value.trim();
+            const token = document.getElementById('apiToken').value.trim();
+            const userIdToFollow = document.getElementById('userIdToFollow').value.trim();
+            const cleanedToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+
+            if (!userIdToFollow) {
+                log('❌ Please enter User ID', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/UserFollows/follow`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${cleanedToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ followingId: userIdToFollow })
+                });
+                const data = await response.json();
+                log(`👥 Follow result: ${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log(`❌ Error following user: ${error}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

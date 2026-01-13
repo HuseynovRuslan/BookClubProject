@@ -1,6 +1,7 @@
 using AutoMapper;
 using Goodreads.Application.Common.Interfaces;
 using Goodreads.Application.DTOs;
+using Goodreads.Application.Notifications.Commands.CreateNotification;
 using Goodreads.Domain.Entities;
 using Goodreads.Domain.Errors;
 using MediatR;
@@ -16,6 +17,8 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Res
     private readonly ILogger<SendMessageCommandHandler> _logger;
     private readonly UserManager<User> _userManager;
     private readonly IMessageNotificationService _notificationService;
+    private readonly IMediator _mediator;
+    private readonly INotificationService _notificationService2;
 
     public SendMessageCommandHandler(
         IUnitOfWork unitOfWork,
@@ -23,7 +26,9 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Res
         IMapper mapper,
         ILogger<SendMessageCommandHandler> logger,
         UserManager<User> userManager,
-        IMessageNotificationService notificationService)
+        IMessageNotificationService notificationService,
+        IMediator mediator,
+        INotificationService notificationService2)
     {
         _unitOfWork = unitOfWork;
         _userContext = userContext;
@@ -31,6 +36,8 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Res
         _logger = logger;
         _userManager = userManager;
         _notificationService = notificationService;
+        _mediator = mediator;
+        _notificationService2 = notificationService2;
     }
 
     public async Task<Result<MessageDto>> Handle(SendMessageCommand request, CancellationToken cancellationToken)
@@ -89,18 +96,35 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Res
 
         await _unitOfWork.SaveChangesAsync();
 
+        // Get sender for DTO and notification
+        var sender = await _userManager.FindByIdAsync(senderId);
+        if (sender == null)
+            return Result<MessageDto>.Fail(UserErrors.NotFound(senderId));
+
         // Map to DTO with sender and receiver
         var messageDto = _mapper.Map<MessageDto>(message);
-        var sender = await _userManager.FindByIdAsync(senderId);
-        if (sender != null)
-        {
-            messageDto.Sender = _mapper.Map<UserDto>(sender);
-        }
+        messageDto.Sender = _mapper.Map<UserDto>(sender);
         messageDto.Receiver = _mapper.Map<UserDto>(receiver);
 
         _logger.LogInformation("User {SenderId} sent message to {ReceiverId}", senderId, request.ReceiverId);
 
-        // Send real-time notification to receiver via SignalR
+        // Create database notification for receiver
+
+        var senderName = $"{sender.FirstName} {sender.LastName}".Trim();
+        if (string.IsNullOrWhiteSpace(senderName))
+            senderName = sender.UserName ?? "Someone";
+
+        var createNotificationResult = await _mediator.Send(new CreateNotificationCommand(
+            UserId: request.ReceiverId,
+            ActorId: senderId,
+            Type: NotificationType.MessageReceived,
+            Title: $"New message from {senderName}",
+            Message: request.Text.Trim().Length > 100 ? request.Text.Trim().Substring(0, 100) + "..." : request.Text.Trim(),
+            RelatedEntityId: message.Id,
+            RelatedEntityType: "Message"
+        ));
+
+        // Send real-time notification to receiver via SignalR (for messages)
         await _notificationService.SendMessageToUserAsync(request.ReceiverId, messageDto);
         
         // Also send to conversation group for both users
@@ -108,6 +132,18 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Res
             ? $"conversation_{senderId}_{request.ReceiverId}"
             : $"conversation_{request.ReceiverId}_{senderId}";
         await _notificationService.SendMessageToGroupAsync(groupName, messageDto);
+
+        // Send notification via notifications hub (for notification system)
+        if (createNotificationResult.IsSuccess && !string.IsNullOrEmpty(createNotificationResult.Data))
+        {
+            var notification = await _unitOfWork.Notifications.GetByIdAsync(createNotificationResult.Data);
+            if (notification != null)
+            {
+                var notificationDto = _mapper.Map<NotificationDto>(notification);
+                notificationDto.Actor = _mapper.Map<UserDto>(sender);
+                await _notificationService2.SendNotificationToUserAsync(request.ReceiverId, notificationDto);
+            }
+        }
 
         return Result<MessageDto>.Ok(messageDto);
     }

@@ -52,6 +52,9 @@ public static class DependencyInjection
         
         // Message notification service
         services.AddScoped<IMessageNotificationService, MessageNotificationService>();
+        
+        // Notification service
+        services.AddScoped<INotificationService, NotificationService>();
 
         return services;
     }
