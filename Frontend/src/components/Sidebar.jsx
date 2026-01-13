@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus, Shield, Newspaper, Users, Bell, MessageCircle, Tag, User, Bookmark } from "lucide-react";
+import { BookOpen, Plus, Search, FolderOpen, Sparkles, MoreHorizontal, BookPlus, Shield, Newspaper, Users, Bell, MessageCircle, Tag, User, Bookmark, Trophy } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useTranslation } from "../hooks/useTranslation";
 import GuestRestrictionModal from "./GuestRestrictionModal";
@@ -25,6 +25,8 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
 
   const mainMenuItems = [
     { label: t("nav.readingList"), to: "/reading-list", icon: BookOpen },
+    { label: "Reading Challenge", to: "/reading-challenge", icon: Trophy },
+    { label: t("nav.recommendations"), to: "/recommendations", icon: Sparkles },
   ];
 
   const extraMenuItems = [
@@ -39,7 +41,6 @@ export default function Sidebar({ onCreatePost, onCreateBook, isOpen = false, on
     // Profil isə əvvəl search-in olduğu yerə, yəni aşağı hissəyə keçir
     { label: "Profile", to: "/profile", icon: User },
     { label: t("nav.categories"), to: "/categories", icon: FolderOpen },
-    { label: t("nav.recommendations"), to: "/recommendations", icon: Sparkles },
     { label: t("nav.more"), to: "/more", icon: MoreHorizontal },
   ];
 

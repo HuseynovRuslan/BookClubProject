@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useShelves } from "../context/ShelvesContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getBookById, updateBookStatus } from "../api/books";
@@ -7,6 +7,7 @@ import { getImageUrl } from "../api/config";
 import ReviewForm from "./reviews/ReviewForm";
 import ShelfSelectionModal from "./ShelfSelectionModal";
 import GuestRestrictionModal from "./GuestRestrictionModal";
+import ReadingProgressModal from "./ReadingProgressModal";
 import { useTranslation } from "../hooks/useTranslation";
 
 function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
@@ -21,6 +22,42 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
   const [editingReview, setEditingReview] = useState(null);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [showShelfModal, setShowShelfModal] = useState(false);
+  const [showReadingProgressModal, setShowReadingProgressModal] = useState(false);
+  
+  // Find which default shelf the book is in (only for default shelves)
+  const [bookShelfName, setBookShelfName] = useState(null);
+  
+  // Update bookShelfName when shelves or bookDetails change (only for default shelves)
+  useEffect(() => {
+    if (!bookDetails || !shelves || shelves.length === 0) {
+      setBookShelfName(null);
+      return;
+    }
+    
+    const bookId = bookDetails.id || bookDetails._id;
+    if (!bookId) {
+      setBookShelfName(null);
+      return;
+    }
+    
+    // Default shelf names
+    const defaultShelfNames = ["Currently Reading", "Read", "Want to Read"];
+    
+    // Check only default shelves
+    for (const shelf of shelves) {
+      const isDefault = shelf.isDefault === true || shelf.IsDefault === true;
+      if (isDefault && defaultShelfNames.includes(shelf.name)) {
+        if (shelf.books && shelf.books.some(b => (b.id || b._id) === bookId)) {
+          setBookShelfName(shelf.name);
+          return;
+        }
+      }
+    }
+    
+    setBookShelfName(null);
+  }, [bookDetails?.id, bookDetails?._id, shelves]);
+  
+  const isCurrentlyReading = bookShelfName === "Currently Reading";
 
   const loadBookDetails = useCallback(async () => {
     if (!book?.id && !book?._id) {
@@ -166,19 +203,41 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
 
     const isDefaultShelf = targetShelf.isDefault === true || targetShelf.IsDefault === true || targetShelf.type === 'default';
     
+    // Check if book is already in this shelf
+    const isAlreadyInShelf = targetShelf.books && targetShelf.books.some(
+      b => (b.id || b._id) === bookId
+    );
+    
+    if (isAlreadyInShelf) {
+      // Book is already in this shelf - this is fine, just update the UI
+      if (typeof refreshShelves === "function") {
+        await refreshShelves();
+      }
+      setStatus({
+        type: "success",
+        message: `"${bookDetails.title || 'Kitab'}" artıq ${targetShelf.name} siyahısındadır`,
+      });
+      setTimeout(() => setStatus(null), 2500);
+      return;
+    }
+    
     try {
       if (isDefaultShelf) {
-
         const shelfName = targetShelf.name;
         await updateBookStatus(bookId, shelfName);
       } else {
-
         await addBookToShelf(shelfId, bookDetails);
       }
       
       if (typeof refreshShelves === "function") {
         await refreshShelves();
+        // Wait a bit for shelves state to update
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
+      
+      // Force re-render to update button state
+      // Use a new object reference to trigger useMemo recalculation
+      setBookDetails(prev => ({ ...prev, _updated: Date.now() }));
       
       setStatus({
         type: "success",
@@ -195,20 +254,32 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
 
       let errorMessage = "Shelf-ə əlavə etmək alınmadı";
       if (err.status === 409) {
-
-        if (err.detail && err.detail.includes("default shelf")) {
-          errorMessage = "Default shelf-lərə kitab əlavə etmək mümkün deyil. Xahiş edirik öz shelf-inizi yaradın.";
-        } else {
-          errorMessage = err.detail || err.message || "Bu kitab artıq bu shelf-də mövcuddur.";
+        // Book already in shelf - treat as success
+        if (typeof refreshShelves === "function") {
+          await refreshShelves();
         }
+        setStatus({
+          type: "success",
+          message: `"${bookDetails.title || 'Kitab'}" artıq ${targetShelf.name} siyahısındadır`,
+        });
+      } else if (err.detail && err.detail.includes("default shelf")) {
+        errorMessage = "Default shelf-lərə kitab əlavə etmək mümkün deyil. Xahiş edirik öz shelf-inizi yaradın.";
+        setStatus({
+          type: "error",
+          message: errorMessage,
+        });
       } else if (err.message) {
         errorMessage = err.message;
+        setStatus({
+          type: "error",
+          message: errorMessage,
+        });
+      } else {
+        setStatus({
+          type: "error",
+          message: errorMessage,
+        });
       }
-      
-      setStatus({
-        type: "error",
-        message: errorMessage,
-      });
     } finally {
       setTimeout(() => setStatus(null), 2500);
     }
@@ -406,17 +477,40 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
                 </div>
               )}
 
-              <button
-                onClick={handleAddToReadingList}
-                className="group relative flex items-center justify-center gap-3 px-8 py-4 text-white rounded-2xl transition-all duration-300 shadow-lg hover:shadow-2xl font-bold text-lg bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800 transform hover:scale-105 active:scale-95 overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <svg className="w-6 h-6 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="relative z-10">{t("bookDetail.addToReadingList")}</span>
-                <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleAddToReadingList}
+                  className={`group relative flex items-center justify-center gap-3 px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-2xl font-bold text-lg transform hover:scale-105 active:scale-95 overflow-hidden flex-1 ${
+                    bookShelfName
+                      ? "bg-white text-gray-900 border-2 border-gray-300 hover:border-gray-400"
+                      : "text-white bg-gradient-to-r from-amber-600 via-orange-600 to-red-700 hover:from-amber-700 hover:via-orange-700 hover:to-red-800"
+                  }`}
+                >
+                  {!bookShelfName && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <svg className="w-6 h-6 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                    </>
+                  )}
+                  <span className="relative z-10">
+                    {bookShelfName || t("bookDetail.addToReadingList")}
+                  </span>
+                </button>
+                {!isGuest && isCurrentlyReading && bookDetails && (bookDetails.pageCount || bookDetails.PageCount) && (
+                  <button
+                    onClick={() => setShowReadingProgressModal(true)}
+                    className="group relative flex items-center justify-center gap-3 px-6 py-4 text-gray-900 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-2xl font-bold text-lg bg-white border-2 border-amber-300 hover:border-amber-400 transform hover:scale-105 active:scale-95 overflow-hidden"
+                  >
+                    <svg className="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span className="relative z-10">Reading Progress</span>
+                  </button>
+                )}
+              </div>
 
               {status && (
                 <div className="mt-4">
@@ -535,6 +629,24 @@ function BookDetailModal({ book, onClose, onShowLogin, onShowRegister }) {
         onLogin={onShowLogin}
         onRegister={onShowRegister}
       />
+
+      {/* Reading Progress Modal */}
+      {bookDetails && (
+        <ReadingProgressModal
+          book={bookDetails}
+          isOpen={showReadingProgressModal}
+          onClose={() => setShowReadingProgressModal(false)}
+          onProgressUpdate={(currentPage, totalPages) => {
+            if (totalPages > 0 && currentPage >= totalPages) {
+              setStatus({
+                type: "success",
+                message: "Congratulations! You've finished this book!",
+              });
+              setTimeout(() => setStatus(null), 3000);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
