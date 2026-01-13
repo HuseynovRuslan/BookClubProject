@@ -28,6 +28,10 @@ public class User : IdentityUser
     // Conversations
     public ICollection<Conversation> ConversationsAsUser1 { get; set; } = new List<Conversation>();
     public ICollection<Conversation> ConversationsAsUser2 { get; set; } = new List<Conversation>();
+    
+    // Notifications
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public ICollection<Notification> ActorNotifications { get; set; } = new List<Notification>();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
