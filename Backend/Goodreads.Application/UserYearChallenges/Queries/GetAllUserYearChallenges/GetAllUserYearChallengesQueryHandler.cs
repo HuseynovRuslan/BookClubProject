@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Goodreads.Domain.Constants;
 
 namespace Goodreads.Application.UserYearChallenges.Queries.GetAllUserYearChallenges;
 public class GetAllUserYearChallengesQueryHandler
@@ -36,6 +37,17 @@ public class GetAllUserYearChallengesQueryHandler
         );
 
         var dtoList = _mapper.Map<List<UserYearChallengeDto>>(items);
+
+        // Update CompletedBooksCount with real-time count for each challenge
+        foreach (var dto in dtoList)
+        {
+            var completedCount = await _unitOfWork.BookShelves.CountAsync(
+                bs => bs.Shelf.UserId == userId &&
+                      bs.Shelf.IsDefault &&
+                      bs.Shelf.Name == DefaultShelves.Read &&
+                      bs.AddedAt.Year == dto.Year);
+            dto.CompletedBooksCount = completedCount;
+        }
 
         _logger.LogInformation("Retrieved {Count} challenges for user {UserId}", count, userId);
 

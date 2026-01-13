@@ -23,6 +23,7 @@ import TopicPage from "./components/TopicPage";
 import NotificationPage from "./components/NotificationPage";
 import SavedPage from "./components/SavedPage";
 import AdminPanelPage from "./components/AdminPanelPage";
+import ReadingChallengePage from "./components/ReadingChallengePage";
 import LoginPage from "./components/LoginPage";
 import SignUpPage from "./components/SignUp";
 import CreatePostModal from "./components/CreatePostModal";
@@ -593,6 +594,7 @@ function App() {
             <Route path="/notifications" element={<NotificationPage />} />
             <Route path="/saved" element={<SavedPage />} />
             <Route path="/reading-list" element={<ReadingListPage />} />
+            <Route path="/reading-challenge" element={<ReadingChallengePage />} />
             <Route
               path="/search"
               element={<SearchPage onBookClick={handleBookClick} />}

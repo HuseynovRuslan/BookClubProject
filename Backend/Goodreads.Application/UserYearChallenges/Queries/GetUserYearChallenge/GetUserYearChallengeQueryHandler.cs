@@ -1,3 +1,5 @@
+using Goodreads.Domain.Constants;
+
 namespace Goodreads.Application.UserYearChallenges.Queries.GetUserYearChallenge;
 public class GetUserYearChallengeQueryHandler : IRequestHandler<GetUserYearChallengeQuery, Result<UserYearChallengeDetailsDto>>
 {
@@ -30,8 +32,8 @@ public class GetUserYearChallengeQueryHandler : IRequestHandler<GetUserYearChall
             includes: new[] { "Book.Author" }
         );
 
-
         var challengeDto = _mapper.Map<UserYearChallengeDetailsDto>(challenge);
+        challengeDto.CompletedBooksCount = count; // Update with real-time count from Read shelf
         challengeDto.Books = _mapper.Map<List<ChallengeBookDto>>(books);
 
         return Result<UserYearChallengeDetailsDto>.Ok(challengeDto);
