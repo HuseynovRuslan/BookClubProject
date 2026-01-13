@@ -7,7 +7,8 @@ public class QuoteMappingProfile : Profile
     {
         CreateMap<CreateQuoteCommand, Quote>();
         CreateMap<Quote, QuoteDto>()
-            .ForMember(dest => dest.LikesCount, opt => opt.MapFrom(src => src.LikesCount));
+            .ForMember(dest => dest.LikesCount, opt => opt.MapFrom(src => src.LikesCount))
+            .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.CreatedBy));
 
     }
 }

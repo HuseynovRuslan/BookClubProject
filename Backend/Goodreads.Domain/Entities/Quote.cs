@@ -7,7 +7,9 @@ public class Quote : BaseEntity
     public string Text { get; set; } = default!;
     public string? AuthorId { get; set; }
     public string? BookId { get; set; }
+    public Book? Book { get; set; }
     public string CreatedByUserId { get; set; } = default!;
+    public User CreatedBy { get; set; } = default!;
     public List<string> Tags { get; set; } = new List<string>();
     public ICollection<QuoteLike> Likes { get; set; } = new List<QuoteLike>();
 

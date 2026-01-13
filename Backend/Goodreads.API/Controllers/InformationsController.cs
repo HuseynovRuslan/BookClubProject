@@ -11,9 +11,10 @@ using Microsoft.AspNetCore.Mvc;
 using SharedKernel;
 using Goodreads.Application.News.Commands.MarkAsRead;
 using Goodreads.Application.News.Commands.DeleteInformation;
+using Goodreads.Application.DTOs;
 
 [ApiController]
-[Route("api/informations/[controller]")]
+[Route("api/informations")]
 public class InformationController : BaseController
 {
     [HttpPost("create-information")]
@@ -28,9 +29,9 @@ public class InformationController : BaseController
 
     [HttpGet("get-all-information")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] QueryParameters parameters)
     {
-        var result = await Sender.Send(new GetAllInformationsQuery());
+        var result = await Sender.Send(new GetAllInformationsQuery(parameters));
         return Ok(result);
     }
 
@@ -39,7 +40,9 @@ public class InformationController : BaseController
     public async Task<IActionResult> GetInformationById(string id)
     {
         var result = await Sender.Send(new GetInformationByIdQuery(id));
-        return Ok(result);
+        return result.Match(
+            info => Ok(ApiResponse<InformationDto>.Success(info)),
+            failure => CustomResults.Problem(failure));
     }
 
     [HttpPut("update-information")]

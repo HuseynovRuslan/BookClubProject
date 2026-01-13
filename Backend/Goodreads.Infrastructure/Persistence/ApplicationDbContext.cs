@@ -27,6 +27,7 @@ public class ApplicationDbContext
     public DbSet<Message> Messages { get; set; }
     public DbSet<Conversation> Conversations { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<SavedPost> SavedPosts { get; set; }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -60,6 +61,7 @@ public class ApplicationDbContext
         modelBuilder.Entity<Message>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Conversation>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Notification>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<SavedPost>().HasQueryFilter(e => !e.IsDeleted);
     }
 
     public override int SaveChanges()

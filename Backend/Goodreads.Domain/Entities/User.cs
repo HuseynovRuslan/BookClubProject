@@ -33,6 +33,8 @@ public class User : IdentityUser
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public ICollection<Notification> ActorNotifications { get; set; } = new List<Notification>();
 
+    public ICollection<SavedPost> SavedPosts { get; set; } = new List<SavedPost>();
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public bool IsDeleted { get; set; }

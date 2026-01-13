@@ -24,6 +24,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Message>? _messageRepository;
     private IRepository<Conversation>? _conversationRepository;
     private IRepository<Notification>? _notificationRepository;
+    private IRepository<SavedPost>? _savedPostRepository;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -49,6 +50,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Message> Messages => _messageRepository ??= new GenericRepository<Message>(_context);
     public IRepository<Conversation> Conversations => _conversationRepository ??= new GenericRepository<Conversation>(_context);
     public IRepository<Notification> Notifications => _notificationRepository ??= new GenericRepository<Notification>(_context);
+    public IRepository<SavedPost> SavedPosts => _savedPostRepository ??= new GenericRepository<SavedPost>(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
     public void Dispose() => _context.Dispose();

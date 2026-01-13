@@ -1,8 +1,8 @@
-﻿using Goodreads.Application.DTOs;
+﻿using Goodreads.Application.Common.Responses;
+using Goodreads.Application.DTOs;
 using MediatR;
-using System.Collections.Generic;
 
 namespace Goodreads.Application.News.Queries.GetAllInformations
 {
-    public record GetAllInformationsQuery() : IRequest<List<InformationDto>>;
+    public record GetAllInformationsQuery(QueryParameters Parameters) : IRequest<PagedResult<InformationDto>>;
 }
