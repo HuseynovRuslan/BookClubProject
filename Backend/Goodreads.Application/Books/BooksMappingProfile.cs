@@ -8,10 +8,12 @@ public class BooksMappingProfile : Profile
     {
         CreateMap<Book, BookDto>()
             .ForMember(dest => dest.AuthorName, opt => opt.MapFrom(src => src.Author.Name))
-            .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.BookGenres.Select(bg => bg.Genre)));
+            .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.BookGenres.Select(bg => bg.Genre)))
+            .ForMember(dest => dest.CoverImageUrl, opt => opt.Ignore()); // Query handler-da təyin edilir
 
         CreateMap<Book, BookDetailDto>()
-            .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.BookGenres.Select(bg => bg.Genre)));
+            .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.BookGenres.Select(bg => bg.Genre)))
+            .ForMember(dest => dest.CoverImageUrl, opt => opt.Ignore()); // Query handler-da təyin edilir
 
         CreateMap<CreateBookCommand, Book>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())

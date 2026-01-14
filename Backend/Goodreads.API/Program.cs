@@ -7,6 +7,7 @@ using Goodreads.Infrastructure;
 using Goodreads.Infrastructure.Configurations;
 using Goodreads.Infrastructure.Persistence;
 using Goodreads.Infrastructure.Repositories;
+using Goodreads.Infrastructure.Services;
 using Goodreads.Infrastructure.Services.EmailService;
 using Hangfire;
 using HangfireBasicAuthenticationFilter;
@@ -22,13 +23,8 @@ builder.Services.Configure<EmailSettings>(
 
 builder.Services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
 builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
+builder.Services.AddScoped<IBookImageService, BookImageService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
-
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssemblyContaining<
-        Goodreads.Application.Books.Commands.CreateBook.CreateBookCommandHandler>());
 
 builder.Services
     .AddPresentation()
@@ -37,20 +33,24 @@ builder.Services
 
 var app = builder.Build();
 
-
-if (app.Environment.IsDevelopment())
+// Enable Swagger in all environments for Docker testing
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goodreads-Clone API v1");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Goodreads-Clone API v1");
+});
 
+// Run migrations if enabled (with retry logic for Docker)
 if (builder.Configuration.GetValue<bool>("RunMigrations"))
 {
+    app.Logger.LogInformation("RunMigrations is enabled. Starting migration process...");
     await app.ApplyMigrationsAsync<ApplicationDbContext>();
     await app.SeedDataAsync();
+    app.Logger.LogInformation("Migration process completed. Continuing with app startup...");
+}
+else
+{
+    app.Logger.LogInformation("RunMigrations is disabled. Skipping migrations.");
 }
 
 app.UseExceptionHandler();
@@ -84,5 +84,7 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 
 HangfireJobsConfigurator.ConfigureRecurringJobs();
 
+app.Logger.LogInformation("Application startup complete. Starting web server on {Urls}", 
+    builder.Configuration["ASPNETCORE_URLS"] ?? "default ports");
 
 app.Run();

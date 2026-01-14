@@ -14,6 +14,7 @@ public class GetAllReviewsQueryHandler : IRequestHandler<GetAllReviewsQuery, Pag
 
     public async Task<PagedResult<BookReviewDto>> Handle(GetAllReviewsQuery request, CancellationToken cancellationToken)
     {
+        // Global Query Filter already excludes soft-deleted reviews
         Expression<Func<BookReview, bool>> filter = r =>
             (string.IsNullOrEmpty(request.UserId) || r.UserId == request.UserId) &&
             (string.IsNullOrEmpty(request.Bookid) || r.BookId == request.Bookid);

@@ -23,5 +23,6 @@ namespace Goodreads.Application.Common.Interfaces
         IRepository<Notification> Notifications { get; }
 
         Task<int> SaveChangesAsync();
+        void ClearChangeTracker();
     }
 }

@@ -32,8 +32,9 @@ internal class JwtTokeProvider : ITokenProvider
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim("email_verified", user.EmailConfirmed.ToString().ToLower()),
+            new Claim("username", user.UserName ?? "")
         };
 
         var roles = await _userManager.GetRolesAsync(user);

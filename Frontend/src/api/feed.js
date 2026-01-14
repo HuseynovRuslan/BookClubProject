@@ -1,176 +1,128 @@
-import { apiRequest, USE_API_MOCKS, delay } from "./config";
-import mockBooks from "../components/mockBooks";
-import {
-  loadMockReviews,
-  ensureReviewHasBook,
-} from "./mockData";
-import { formatTimestamp } from "../utils/formatTimestamp";
+import axiosClient from './axiosClient';
 
-function buildMockFeed({ page, pageSize }) {
-  const bookPosts = mockBooks.map((book, index) => ({
-    id: `mock-post-${index + 1}`,
-    type: "post",
-    username: index % 2 === 0 ? "Demo Reader" : "BookVerse Writer",
-    bookTitle: book.title,
-    bookCover: book.coverImage,
-    review:
-      book.description?.slice(0, 120) ||
-      "Really enjoying this book in the mock social feed!",
-    likes: 5 + index,
-    comments: [],
-    timestamp: "Just now",
-  }));
-
-  const reviewPosts = loadMockReviews().map(ensureReviewHasBook).map((review) => ({
-    id: review.id,
-    type: "review",
-    username: "Community Reviewer",
-    bookTitle: review.book?.title,
-    bookCover: review.book?.coverImage,
-    review: review.text,
-    rating: review.rating,
-    reviewId: review.id,
-    likes: 12,
-    comments: [],
-    timestamp: "Today",
-  }));
-
-  const combined = [...reviewPosts, ...bookPosts];
-  combined.sort(() => Math.random() - 0.5);
-
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  const items = combined.slice(start, end);
-
-  return {
-    items,
-    total: combined.length,
-    page,
-    pageSize,
-  };
-}
-
-export async function getFeed({ page = 1, pageSize = 20 } = {}) {
-  if (USE_API_MOCKS) {
-    await delay(300);
-    return buildMockFeed({ page, pageSize });
-  }
-
-  const validPageSize = Math.min(Math.max(1, pageSize), 50);
-
-  const params = new URLSearchParams();
-  params.append("pageNumber", page.toString());
-  params.append("pageSize", validPageSize.toString());
-
-  const response = await apiRequest(`/api/Feed/get-feed?${params.toString()}`, { method: "GET" });
-
-
-  let items = [];
-  if (response) {
-    const rawItems = response.items || response.Items || [];
-    items = rawItems.map(item => {
-      const rawUserAvatar = item.user?.avatarUrl || item.User?.AvatarUrl || item.user?.profilePictureUrl || item.User?.ProfilePictureUrl || item.user?.avatar || item.User?.Avatar || null;
-      
-      const normalized = {
-        id: item.id || item.Id,
-        type: item.activityType?.toLowerCase() || item.ActivityType?.toLowerCase() || 'review',
-        username: item.user?.username || item.User?.Username || item.user?.userName || item.User?.UserName || 'Anonymous',
-        userAvatar: rawUserAvatar,
-        timestamp: formatTimestamp(item.createdAt || item.CreatedAt),
-        likes: 0,
-        comments: [], 
-      };
-
-      if (item.review || item.Review) {
-        const review = item.review || item.Review;
-        normalized.type = 'review';
-        normalized.bookTitle = review.bookTitle || review.BookTitle || '';
-        normalized.bookCover = review.bookCoverImageUrl || review.BookCoverImageUrl || review.book?.coverImageUrl || review.Book?.CoverImageUrl || review.bookCover || review.BookCover || '';
-        normalized.review = review.reviewText || review.ReviewText || review.text || review.Text || '';
-        normalized.rating = review.rating || review.Rating || 0;
-        normalized.reviewId = review.id || review.Id || normalized.id;
-        if (review.username || review.Username) {
-          normalized.username = review.username || review.Username;
-        }
-        if (review.userAvatar || review.UserAvatar || review.user?.avatarUrl || review.User?.AvatarUrl) {
-          normalized.userAvatar = review.userAvatar || review.UserAvatar || review.user?.avatarUrl || review.User?.AvatarUrl;
-        }
-        console.log("Normalized review:", normalized);
-      }
-      else if (item.quote || item.Quote) {
-        const quote = item.quote || item.Quote;
-        const book = item.book || item.Book; 
-        normalized.type = 'quote';
-        normalized.bookTitle = book?.title || book?.Title || quote.bookTitle || quote.BookTitle || quote.book?.title || quote.Book?.Title || '';
-        normalized.bookCover = book?.coverImageUrl || book?.CoverImageUrl || quote.book?.coverImageUrl || quote.Book?.CoverImageUrl || quote.bookCover || quote.BookCover || '';
-        normalized.review = quote.text || quote.Text || quote.content || quote.Content || '';
-        normalized.likes = quote.likesCount || quote.LikesCount || 0;
-        
-        normalized.bookAuthor = book?.authorName || 
-                                book?.AuthorName ||
-                                book?.author?.name ||
-                                book?.Author?.Name ||
-                                quote.book?.author?.name || 
-                                quote.Book?.Author?.Name ||
-                                quote.book?.authorName || 
-                                quote.Book?.AuthorName ||
-                                quote.author?.name ||
-                                quote.Author?.Name ||
-                                quote.bookAuthor ||
-                                quote.BookAuthor ||
-                                '';
-        
-        let quoteIdValue = quote.Id || quote.id || quote.quoteId || quote.QuoteId || normalized.id;
-        
-        if (quoteIdValue && typeof quoteIdValue !== 'string') {
-          quoteIdValue = quoteIdValue.Id || quoteIdValue.id || quoteIdValue.quoteId || quoteIdValue.QuoteId || String(quoteIdValue);
-        }
-        
-        normalized.quoteId = quoteIdValue ? String(quoteIdValue).trim() : null;
-        if (quote.userAvatar || quote.UserAvatar || quote.user?.avatarUrl || quote.User?.AvatarUrl) {
-          normalized.userAvatar = quote.userAvatar || quote.UserAvatar || quote.user?.avatarUrl || quote.User?.AvatarUrl;
-        }
-      }
-      else if (item.book || item.Book) {
-        const book = item.book || item.Book;
-        normalized.type = 'post';
-        normalized.bookTitle = book.title || book.Title || '';
-        normalized.bookCover = book.coverImageUrl || book.CoverImageUrl || book.coverImage || book.CoverImage || '';
-        normalized.review = `Added to ${item.shelfName || item.ShelfName || 'shelf'}`;
-      }
-
-      return normalized;
-    });
-  }
-
-  return {
-    items,
-    total: response?.totalCount || response?.TotalCount || items.length,
-    page: response?.pageNumber || response?.PageNumber || page,
-    pageSize: response?.pageSize || response?.PageSize || validPageSize,
-  };
-}
-
-export async function uploadPostImage(file) {
-  if (USE_API_MOCKS) {
-    await delay(500);
-    return "/images/posts/mock-post-image.jpg";
-  }
-
+/**
+ * Get personal feed (from followed users)
+ * @param {number} pageNumber
+ * @param {number} pageSize
+ * @returns {Promise} - PagedResult with feed items
+ */
+export const getPersonalFeed = async (pageNumber = 1, pageSize = 10) => {
   try {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await apiRequest("/api/Feed/upload-post-image", {
-      method: "POST",
-      body: formData,
-      headers: {},
+    const response = await axiosClient.get('/feed/get-feed', {
+      params: { pageNumber, pageSize },
     });
-
-    return response?.data || response || null;
+    return response.data;
   } catch (error) {
-    console.error("Error uploading post image:", error);
+    console.error('Error fetching personal feed:', error);
     throw error;
   }
-}
+};
 
+/**
+ * Get social feed (from all users except current)
+ * @param {number} pageNumber
+ * @param {number} pageSize
+ * @returns {Promise} - PagedResult with feed items
+ */
+export const getSocialFeed = async (pageNumber = 1, pageSize = 10) => {
+  try {
+    const response = await axiosClient.get('/feed/get-social-feed', {
+      params: { pageNumber, pageSize },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching social feed:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get suggested users to follow
+ * @param {number} limit
+ * @returns {Promise} - Array of users
+ */
+export const getSuggestedUsers = async (limit = 5) => {
+  try {
+    const response = await axiosClient.get('/users/get-suggested-users', {
+      params: { limit },
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error('Error fetching suggested users:', error);
+    return [];
+  }
+};
+
+/**
+ * Get trending books
+ * @param {number} limit
+ * @returns {Promise} - Array of books
+ */
+export const getTrendingBooks = async (limit = 5) => {
+  try {
+    const response = await axiosClient.get('/books/get-all-books', {
+      params: { pageNumber: 1, pageSize: limit },
+    });
+    // Response is PagedResult with data array
+    return response.data?.data || response.data?.items || [];
+  } catch (error) {
+    console.error('Error fetching trending books:', error);
+    return [];
+  }
+};
+
+/**
+ * Follow a user
+ * @param {string} userId
+ * @returns {Promise}
+ */
+export const followUser = async (userId) => {
+  try {
+    await axiosClient.post(`/users/follow/${userId}`);
+  } catch (error) {
+    console.error('Error following user:', error);
+    throw error;
+  }
+};
+
+/**
+ * Unfollow a user
+ * @param {string} userId
+ * @returns {Promise}
+ */
+export const unfollowUser = async (userId) => {
+  try {
+    await axiosClient.delete(`/users/unfollow/${userId}`);
+  } catch (error) {
+    console.error('Error unfollowing user:', error);
+    throw error;
+  }
+};
+
+/**
+ * Like a quote
+ * @param {string} quoteId
+ * @returns {Promise}
+ */
+export const likeQuote = async (quoteId) => {
+  try {
+    await axiosClient.post(`/quotes/${quoteId}/like`);
+  } catch (error) {
+    console.error('Error liking quote:', error);
+    throw error;
+  }
+};
+
+/**
+ * Unlike a quote
+ * @param {string} quoteId
+ * @returns {Promise}
+ */
+export const unlikeQuote = async (quoteId) => {
+  try {
+    await axiosClient.delete(`/quotes/${quoteId}/unlike`);
+  } catch (error) {
+    console.error('Error unliking quote:', error);
+    throw error;
+  }
+};

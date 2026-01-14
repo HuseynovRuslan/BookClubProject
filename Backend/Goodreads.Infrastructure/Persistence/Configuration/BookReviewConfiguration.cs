@@ -9,8 +9,12 @@ public class BookReviewConfiguration : IEntityTypeConfiguration<BookReview>
     {
         builder.HasKey(br => br.Id);
 
+        // Filtered unique index - only applies to non-deleted reviews
+        // This allows a user to have one active review per book,
+        // while keeping soft-deleted reviews in the database
         builder.HasIndex(br => new { br.UserId, br.BookId })
-               .IsUnique();
+               .IsUnique()
+               .HasFilter("[IsDeleted] = 0");
 
         builder.Property(br => br.ReviewText)
                .HasMaxLength(2500);

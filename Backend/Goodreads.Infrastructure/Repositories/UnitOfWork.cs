@@ -51,6 +51,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Notification> Notifications => _notificationRepository ??= new GenericRepository<Notification>(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
+    public void ClearChangeTracker() => _context.ChangeTracker.Clear();
     public void Dispose() => _context.Dispose();
 
 }

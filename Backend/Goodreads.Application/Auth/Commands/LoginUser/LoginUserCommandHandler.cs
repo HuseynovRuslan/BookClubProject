@@ -36,9 +36,8 @@ internal class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Resul
         if (!passwordValid)
             return Result<AuthResultDto>.Fail(AuthErrors.InvalidCredentials);
 
-        // 🔹 Email təsdiqlənib yoxlanılır
-        if (!user.EmailConfirmed)
-            return Result<AuthResultDto>.Fail(Error.Failure("2", "Accound isn't confirmed. check your Email"));
+        // Note: Email confirmation is handled client-side (soft verification)
+        // Users can login, but some features are restricted until email is verified
 
         // Rol yoxlanılır və əlavə edilir
         var userRoles = await _userManager.GetRolesAsync(user);

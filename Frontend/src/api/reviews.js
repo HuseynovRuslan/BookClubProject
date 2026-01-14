@@ -1,130 +1,110 @@
-import { apiRequest, USE_API_MOCKS, delay } from "./config";
-import {
-  loadMockReviews,
-  saveMockReviews,
-  generateId,
-  ensureReviewHasBook,
-} from "./mockData";
+import axiosClient from './axiosClient';
 
-function paginate(items, page, pageSize) {
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
-  return {
-    items: items.slice(start, end),
-    total: items.length,
-    page,
-    pageSize,
-  };
-}
-
-export async function getReviews({ page = 1, pageSize = 20, bookId = null, userId = null } = {}) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const reviews = loadMockReviews().map(ensureReviewHasBook);
-    return paginate(reviews, page, pageSize);
-  }
-
-  const validPageSize = Math.min(Math.max(1, pageSize), 50);
-
-  const params = new URLSearchParams();
-  params.append("pageNumber", page.toString());
-  params.append("pageSize", validPageSize.toString());
-  if (bookId) params.append("bookId", bookId);
-  if (userId) params.append("userId", userId);
-
-  const response = await apiRequest(`/api/Reviews/get-all-reviews?${params.toString()}`, { method: "GET" });
-  return response;
-}
-
-export async function getReviewById(id) {
-  if (USE_API_MOCKS) {
-    await delay(150);
-    const review = loadMockReviews().find((item) => item.id === id);
-    if (!review) {
-      throw new Error("Review not found");
-    }
-    return ensureReviewHasBook(review);
-  }
-  return apiRequest(`/api/Reviews/get-review-by-id/${encodeURIComponent(id)}`, { method: "GET" });
-}
-
-export async function createReview(payload) {
-  if (USE_API_MOCKS) {
-    await delay(250);
-    const newReview = {
-      id: generateId("review"),
-      bookId: payload.bookId,
-      rating: payload.rating,
-      text: payload.text || "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const next = [newReview, ...loadMockReviews()];
-    saveMockReviews(next);
-    return ensureReviewHasBook(newReview);
-  }
-  const backendPayload = {
-    BookId: payload.bookId || payload.BookId,
-    Rating: payload.rating || payload.Rating,
-    ReviewText: payload.text || payload.ReviewText || payload.reviewText || "",
-  };
+/**
+ * Get all reviews for a specific book
+ * @param {string} bookId - The book ID
+ * @param {number} pageNumber - Page number (default: 1)
+ * @param {number} pageSize - Page size (default: 20)
+ * @returns {Promise<PagedResult<BookReviewDto>>}
+ */
+export const getReviewsByBookId = async (bookId, pageNumber = 1, pageSize = 20) => {
   try {
-    return await apiRequest("/api/Reviews/create-book-review", {
-      method: "POST",
-      body: backendPayload,
+    const response = await axiosClient.get('/reviews/get-all-reviews', {
+      params: { bookId, pageNumber, pageSize },
     });
-  } catch (err) {
-    if (err.status === 409) {
-      const errorMessage = err.data?.errorMessages?.[0] || 
-                          err.data?.message || 
-                          err.message || 
-                          "You have already reviewed this book. You can update your existing review instead.";
-      const conflictError = new Error(errorMessage);
-      conflictError.status = 409;
-      conflictError.isConflict = true;
-      throw conflictError;
-    }
-    throw err;
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    throw error;
   }
-}
+};
 
-export async function updateReview(id, payload) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const next = loadMockReviews().map((review) =>
-      review.id === id
-        ? {
-          ...review,
-          rating: payload.rating ?? review.rating,
-          text: payload.text ?? review.text,
-          updatedAt: new Date().toISOString(),
-        }
-        : review
-    );
-    saveMockReviews(next);
-    const updated = next.find((review) => review.id === id);
-    return ensureReviewHasBook(updated);
+/**
+ * Get a single review by ID
+ * @param {string} reviewId - The review ID
+ * @returns {Promise<BookReviewDto>}
+ */
+export const getReviewById = async (reviewId) => {
+  try {
+    const response = await axiosClient.get(`/reviews/get-review-by-id/${reviewId}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching review:', error);
+    throw error;
   }
-  const backendPayload = {
-    Rating: payload.rating || payload.Rating,
-    ReviewText: payload.text || payload.ReviewText || payload.reviewText || "",
-  };
-  return apiRequest(`/api/Reviews/update-review/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    body: backendPayload,
-  });
-}
+};
 
-export async function deleteReview(id) {
-  if (USE_API_MOCKS) {
-    await delay(150);
-    const remaining = loadMockReviews().filter((review) => review.id !== id);
-    saveMockReviews(remaining);
-    return { id };
+/**
+ * Create a new review for a book
+ * @param {Object} data - Review data
+ * @param {string} data.bookId - The book ID
+ * @param {number} data.rating - Rating (1-5)
+ * @param {string} data.reviewText - Review comment/text
+ * @returns {Promise<string>} - The created review ID
+ */
+export const createReview = async (data) => {
+  try {
+    const response = await axiosClient.post('/reviews/create-book-review', {
+      bookId: data.bookId,
+      rating: data.rating,
+      reviewText: data.reviewText,
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error creating review:', error);
+    throw error;
   }
-  return apiRequest(`/api/Reviews/delete-review/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-}
+};
 
+/**
+ * Update an existing review
+ * @param {string} reviewId - The review ID
+ * @param {Object} data - Update data
+ * @param {number} [data.rating] - New rating (1-5)
+ * @param {string} [data.reviewText] - New review text
+ * @returns {Promise<void>}
+ */
+export const updateReview = async (reviewId, data) => {
+  try {
+    await axiosClient.put(`/reviews/update-review/${reviewId}`, {
+      rating: data.rating,
+      reviewText: data.reviewText,
+    });
+  } catch (error) {
+    console.error('Error updating review:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a review
+ * @param {string} reviewId - The review ID
+ * @returns {Promise<void>}
+ */
+export const deleteReview = async (reviewId) => {
+  try {
+    await axiosClient.delete(`/reviews/delete-review/${reviewId}`);
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all reviews by a specific user
+ * @param {string} userId - The user ID
+ * @param {number} pageNumber - Page number (default: 1)
+ * @param {number} pageSize - Page size (default: 20)
+ * @returns {Promise<PagedResult<BookReviewDto>>}
+ */
+export const getReviewsByUserId = async (userId, pageNumber = 1, pageSize = 20) => {
+  try {
+    const response = await axiosClient.get('/reviews/get-all-reviews', {
+      params: { userId, pageNumber, pageSize },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user reviews:', error);
+    throw error;
+  }
+};

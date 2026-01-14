@@ -12,12 +12,18 @@ internal class GetBookByIdQueryHandler : IRequestHandler<GetBookByIdQuery, Resul
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<GetBookByIdQueryHandler> _logger;
     private readonly IMapper _mapper;
+    private readonly IBookImageService _bookImageService;
 
-    public GetBookByIdQueryHandler(IUnitOfWork unitOfWork, ILogger<GetBookByIdQueryHandler> logger, IMapper mapper)
+    public GetBookByIdQueryHandler(
+        IUnitOfWork unitOfWork, 
+        ILogger<GetBookByIdQueryHandler> logger, 
+        IMapper mapper,
+        IBookImageService bookImageService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
         _mapper = mapper;
+        _bookImageService = bookImageService;
     }
 
     public async Task<Result<BookDetailDto>> Handle(GetBookByIdQuery request, CancellationToken cancellationToken)
@@ -33,6 +39,13 @@ internal class GetBookByIdQueryHandler : IRequestHandler<GetBookByIdQuery, Resul
         }
 
         var bookDetailDto = _mapper.Map<BookDetailDto>(book);
+        
+        // Şəkil URL-ini təyin et
+        bookDetailDto.CoverImageUrl = _bookImageService.GetCoverImageUrl(
+            book.CoverImageUrl,
+            book.ISBN,
+            book.CoverImageBlobName
+        );
 
         return Result<BookDetailDto>.Ok(bookDetailDto);
     }

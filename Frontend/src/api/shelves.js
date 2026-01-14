@@ -1,168 +1,147 @@
-import { apiRequest, USE_API_MOCKS, delay } from "./config";
-import {
-  loadMockShelves,
-  saveMockShelves,
-  generateId,
-  getBookSummaryById,
-} from "./mockData";
+import axiosClient from './axiosClient';
 
-function normalizeBookInput(bookOrId) {
-  if (!bookOrId) {
-    return null;
+/**
+ * Get current user's shelves
+ * Endpoint: GET /api/users/get-current-user-shelves
+ * @param {number} pageNumber - Page number (default: 1)
+ * @param {number} pageSize - Page size (default: 50 to get all shelves)
+ * @returns {Promise} - PagedResult with user's shelves
+ */
+export const getUserShelves = async (pageNumber = 1, pageSize = 50) => {
+  try {
+    const response = await axiosClient.get('/users/get-current-user-shelves', {
+      params: {
+        pageNumber,
+        pageSize,
+      },
+    });
+    // Returns PagedResult<ShelfDto>
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user shelves:', error);
+    throw error;
   }
-  if (typeof bookOrId === "object") {
-    return {
-      id: bookOrId.id || bookOrId._id,
-      title: bookOrId.title,
-      author: bookOrId.author || "Unknown",
-      coverImage:
-        bookOrId.coverImage ||
-        bookOrId.cover ||
-        bookOrId.coverUrl ||
-        "/default-book-cover.png",
-      description: bookOrId.description || "",
+};
+
+/**
+ * Get shelf by ID
+ * @param {string} shelfId - Shelf ID
+ * @returns {Promise} - Shelf details with books
+ */
+export const getShelfById = async (shelfId) => {
+  try {
+    const response = await axiosClient.get(`/shelves/get-shelf-by-id/${shelfId}`);
+    // Response structure: { data: ShelfDto, message: string }
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching shelf:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new shelf
+ * @param {Object} shelfData - { name: string }
+ * @returns {Promise} - Created shelf
+ */
+export const createShelf = async (shelfData) => {
+  try {
+    const response = await axiosClient.post('/shelves/create-shelf', shelfData);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error creating shelf:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update shelf
+ * @param {Object} shelfData - { id: string, name: string }
+ * @returns {Promise} - Updated shelf
+ */
+export const updateShelf = async (shelfData) => {
+  try {
+    // Backend expects { shelfId, name } not { id, name }
+    const payload = {
+      shelfId: shelfData.id,
+      name: shelfData.name,
     };
+    const response = await axiosClient.put('/shelves/update-shelf', payload);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error updating shelf:', error);
+    throw error;
   }
-  return getBookSummaryById(bookOrId);
-}
+};
 
-export async function getShelfById(id) {
-  if (USE_API_MOCKS) {
-    await delay(150);
-    const shelf = loadMockShelves().find((s) => s.id === id);
-    if (!shelf) {
-      throw new Error("Shelf not found");
-    }
-    return shelf;
+/**
+ * Delete shelf
+ * @param {string} shelfId - Shelf ID
+ * @returns {Promise}
+ */
+export const deleteShelf = async (shelfId) => {
+  try {
+    await axiosClient.delete(`/shelves/delete-shelf/${shelfId}`);
+  } catch (error) {
+    console.error('Error deleting shelf:', error);
+    throw error;
   }
-  return apiRequest(`/api/Shelves/get-shelf-by-id/${encodeURIComponent(id)}`, { method: "GET" });
-}
+};
 
-export async function createShelf(payload) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const shelves = loadMockShelves();
-    const newShelf = {
-      id: generateId("shelf"),
-      name: payload.name?.trim() || "New Shelf",
-      description: payload.description || "",
-      type: "custom",
-      books: [],
-    };
-    const next = [...shelves, newShelf];
-    saveMockShelves(next);
-    return newShelf;
-  }
-  const response = await apiRequest("/api/Shelves/create-shelf", {
-    method: "POST",
-    body: payload,
-  });
-  // API cavabı ApiResponse<ShelfDto> formatındadır
-  return response?.data || response;
-}
-
-export async function updateShelf(id, payload) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const shelves = loadMockShelves();
-    const next = shelves.map((shelf) =>
-      shelf.id === id
-        ? {
-          ...shelf,
-          name: payload.name ?? shelf.name,
-          description: payload.description ?? shelf.description,
-        }
-        : shelf
+/**
+ * Add book to shelf
+ * Based on ShelvesController: POST /api/shelves/add-book-to-shelf/{shelfId}/books/{bookId}
+ * @param {string} shelfId - Shelf ID
+ * @param {string} bookId - Book ID
+ * @returns {Promise}
+ */
+export const addBookToShelf = async (shelfId, bookId) => {
+  try {
+    const response = await axiosClient.post(
+      `/shelves/add-book-to-shelf/${shelfId}/books/${bookId}`
     );
-    saveMockShelves(next);
-    return next.find((shelf) => shelf.id === id);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding book to shelf:', error);
+    throw error;
   }
-  return apiRequest("/api/Shelves/update-shelf", {
-    method: "PUT",
-    body: payload,
-  });
-}
+};
 
-export async function deleteShelf(id) {
-  if (USE_API_MOCKS) {
-    await delay(150);
-    const shelves = loadMockShelves();
-    const target = shelves.find((shelf) => shelf.id === id);
-    if (!target) {
-      throw new Error("Shelf not found");
-    }
-    if (target.type === "default") {
-      throw new Error("Default shelves cannot be deleted");
-    }
-    const next = shelves.filter((shelf) => shelf.id !== id);
-    saveMockShelves(next);
-    return { id };
-  }
-  return apiRequest(`/api/Shelves/delete-shelf/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-}
-
-export async function addBookToShelf(shelfId, bookOrId) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const shelves = loadMockShelves();
-    const idx = shelves.findIndex((shelf) => shelf.id === shelfId);
-    if (idx === -1) {
-      throw new Error("Shelf not found");
-    }
-    const book = normalizeBookInput(bookOrId);
-    if (!book) {
-      throw new Error("Book not found");
-    }
-    const alreadyExists = shelves[idx].books.some(
-      (b) => String(b.id) === String(book.id)
+/**
+ * Remove book from shelf
+ * @param {string} shelfId - Shelf ID
+ * @param {string} bookId - Book ID
+ * @returns {Promise}
+ */
+export const removeBookFromShelf = async (shelfId, bookId) => {
+  try {
+    await axiosClient.delete(
+      `/shelves/remove-book-from-shelf/${shelfId}/books/${bookId}`
     );
-    if (!alreadyExists) {
-      shelves[idx].books.unshift({
-        ...book,
-        addedAt: new Date().toISOString(),
-      });
-    }
-    saveMockShelves([...shelves]);
-    return shelves[idx];
+  } catch (error) {
+    console.error('Error removing book from shelf:', error);
+    throw error;
   }
-  const bookId = typeof bookOrId === "object" ? (bookOrId?.id || bookOrId?._id) : bookOrId;
-  if (!bookId) {
-    throw new Error("Book ID is required");
-  }
-  if (!shelfId) {
-    throw new Error("Shelf ID is required");
-  }
-  await apiRequest(`/api/Shelves/add-book-to-shelf/${encodeURIComponent(shelfId)}/books/${encodeURIComponent(bookId)}`, {
-    method: "POST",
-  });
-  return { id: shelfId, bookId };
-}
+};
 
-export async function removeBookFromShelf(shelfId, bookId) {
-  if (USE_API_MOCKS) {
-    await delay(150);
-    const shelves = loadMockShelves();
-    const idx = shelves.findIndex((shelf) => shelf.id === shelfId);
-    if (idx === -1) {
-      throw new Error("Shelf not found");
-    }
-    shelves[idx].books = shelves[idx].books.filter(
-      (book) => String(book.id) !== String(bookId)
-    );
-    saveMockShelves([...shelves]);
-    return shelves[idx];
+/**
+ * Get shelves for a specific user by ID
+ * @param {string} userId - User ID
+ * @param {number} pageNumber - Page number (default: 1)
+ * @param {number} pageSize - Page size (default: 50)
+ * @returns {Promise} - PagedResult with user's shelves
+ */
+export const getUserShelvesById = async (userId, pageNumber = 1, pageSize = 50) => {
+  try {
+    const response = await axiosClient.get(`/users/${userId}/shelves`, {
+      params: {
+        pageNumber,
+        pageSize,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user shelves:', error);
+    throw error;
   }
-  if (!shelfId || !bookId) {
-    throw new Error("Shelf ID and Book ID are required");
-  }
-  await apiRequest(
-    `/api/Shelves/remove-book-from-shelf/${encodeURIComponent(shelfId)}/books/${encodeURIComponent(bookId)}`,
-    {
-      method: "DELETE",
-    }
-  );
-  return { id: shelfId, bookId };
-}
-
+};
