@@ -36,12 +36,21 @@ internal class ResetEmailConfirmationCommandHandler : IRequestHandler<ResetEmail
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = WebUtility.UrlEncode(token);
-
         var confirmationLink = $"https://localhost:7050/api/auth/confirm-email?userId={user.Id}&token={encodedToken}";
 
-        _logger.LogInformation("Email confirmation link generated for user: {Email}", request.email);
+        // Send verification email using clean email service
+        try
+        {
+            await _emailService.SendVerificationEmailAsync(user.Email!, user.UserName ?? "Reader", confirmationLink);
+            _logger.LogInformation("Confirmation email sent successfully to: {Email}", request.email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send confirmation email to: {Email}", request.email);
+            return Result<string>.Fail(Error.Failure("EmailError", "Failed to send confirmation email. Please try again."));
+        }
 
-        return Result<string>.Ok(confirmationLink);
+        return Result<string>.Ok("Confirmation email sent successfully!");
     }
 }
 

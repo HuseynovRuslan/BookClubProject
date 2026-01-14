@@ -18,7 +18,7 @@ public static class AuthErrors
 
     public static Error InvalidToken => Error.Failure(
         "Auth.InvalidToken",
-        "The token is invalid.");
+        "The link has expired or is invalid. Please request a new one.");
 
 
 }

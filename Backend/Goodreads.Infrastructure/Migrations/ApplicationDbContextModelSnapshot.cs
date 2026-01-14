@@ -188,7 +188,8 @@ namespace Goodreads.Infrastructure.Migrations
                     b.HasIndex("BookId");
 
                     b.HasIndex("UserId", "BookId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("BookReviews");
                 });

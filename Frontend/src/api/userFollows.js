@@ -1,157 +1,109 @@
-import { apiRequest, USE_API_MOCKS, delay } from "./config";
+import axiosClient from './axiosClient';
 
-export async function followUser(userId) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return { success: true };
-  }
-  
-
+/**
+ * Follow a user
+ * @param {string} userId - The ID of the user to follow
+ * @returns {Promise}
+ */
+export const followUser = async (userId) => {
   try {
-    const result = await apiRequest("/api/UserFollows/follow", {
-      method: "POST",
-      body: { FollowingId: userId },
+    const response = await axiosClient.post('/userfollows/follow', {
+      followingId: userId,
     });
-    console.log("Follow success with FollowingId:", result);
-    return result;
-  } catch (err) {
-    console.error("Follow error:", err);
-    throw err;
-  }
-}
-
-export async function unfollowUser(userId) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return { success: true };
-  }
-  
-
-  try {
-    const result = await apiRequest("/api/UserFollows/unfollow", {
-      method: "POST",
-      body: { FollowingId: userId },
-    });
-    console.log("Unfollow success with FollowingId:", result);
-    return result;
-  } catch (err) {
-    console.error("Unfollow error:", err);
-    throw err;
-  }
-}
-
-export async function getFollowers() {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return [];
-  }
-  try {
-    const response = await apiRequest("/api/UserFollows/followers", {
-      method: "GET",
-    });
-    if (Array.isArray(response)) {
-      return response;
-    }
-    const items = response?.items || response?.Items || [];
-    return Array.isArray(items) ? items : [];
+    return response.data;
   } catch (error) {
-    console.warn("Failed to load followers list:", error);
-    return [];
+    console.error('Error following user:', error);
+    throw error;
   }
-}
+};
 
-export async function getFollowing() {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return [];
-  }
+/**
+ * Unfollow a user
+ * @param {string} userId - The ID of the user to unfollow
+ * @returns {Promise}
+ */
+export const unfollowUser = async (userId) => {
   try {
-    const response = await apiRequest("/api/UserFollows/following", {
-      method: "GET",
+    const response = await axiosClient.post('/userfollows/unfollow', {
+      followingId: userId,
     });
-    if (Array.isArray(response)) {
-      return response;
-    }
-    const items = response?.items || response?.Items || [];
-    return Array.isArray(items) ? items : [];
+    return response.data;
   } catch (error) {
-    console.warn("Failed to load following list:", error);
-    return [];
+    console.error('Error unfollowing user:', error);
+    throw error;
   }
-}
+};
 
-export async function getUserFollowers(userId) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return [];
-  }
-  
+/**
+ * Get current user's followers
+ * @param {number} pageNumber
+ * @param {number} pageSize
+ * @returns {Promise} - PagedResult with followers
+ */
+export const getMyFollowers = async (pageNumber = 1, pageSize = 20) => {
   try {
-    const response = await apiRequest(`/api/UserFollows/followers/${encodeURIComponent(userId)}`, {
-      method: "GET",
+    const response = await axiosClient.get('/userfollows/followers', {
+      params: { pageNumber, pageSize },
     });
-    if (Array.isArray(response)) {
-      return response;
-    }
-    const items = response?.items || response?.Items || response?.data || [];
-    return Array.isArray(items) ? items : [];
+    return response.data;
   } catch (error) {
-    console.warn(`Failed to load followers for user ${userId}:`, error);
-    return [];
+    console.error('Error fetching followers:', error);
+    throw error;
   }
-}
+};
 
-export async function getUserFollowing(userId) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return [];
-  }
-  
+/**
+ * Get current user's following list
+ * @param {number} pageNumber
+ * @param {number} pageSize
+ * @returns {Promise} - PagedResult with following users
+ */
+export const getMyFollowing = async (pageNumber = 1, pageSize = 100) => {
   try {
-    const response = await apiRequest(`/api/UserFollows/following/${encodeURIComponent(userId)}`, {
-      method: "GET",
+    const response = await axiosClient.get('/userfollows/following', {
+      params: { pageNumber, pageSize },
     });
-    if (Array.isArray(response)) {
-      return response;
-    }
-    const items = response?.items || response?.Items || response?.data || [];
-    return Array.isArray(items) ? items : [];
+    return response.data;
   } catch (error) {
-    console.warn(`Failed to load following for user ${userId}:`, error);
-    return [];
+    console.error('Error fetching following:', error);
+    throw error;
   }
-}
+};
 
-export async function isFollowing(userId) {
-  if (USE_API_MOCKS) {
-    await delay(150);
-    return false;
-  }
+/**
+ * Get followers of a specific user
+ * @param {string} userId
+ * @param {number} pageNumber
+ * @param {number} pageSize
+ * @returns {Promise} - PagedResult with followers
+ */
+export const getUserFollowers = async (userId, pageNumber = 1, pageSize = 20) => {
   try {
-    const following = await getFollowing();
-    console.log("isFollowing - checking userId:", userId, "against following list:", following);
-    
-    const normalizedUserId = userId?.toString();
-    
-    const isFollowingUser = following.some((user) => {
-      const userIds = [
-        user.id?.toString(),
-        user.Id?.toString(),
-        user.userId?.toString(),
-        user.UserId?.toString(),
-        user.followingId?.toString(),
-        user.FollowingId?.toString(),
-      ].filter(Boolean);
-      
-      return userIds.includes(normalizedUserId);
+    const response = await axiosClient.get(`/userfollows/followers/${userId}`, {
+      params: { pageNumber, pageSize },
     });
-    
-    console.log("isFollowing - result:", isFollowingUser);
-    return isFollowingUser;
+    return response.data;
   } catch (error) {
-    console.error("Error checking follow status:", error);
-    return false;
+    console.error('Error fetching user followers:', error);
+    throw error;
   }
-}
+};
 
-
+/**
+ * Get following list of a specific user
+ * @param {string} userId
+ * @param {number} pageNumber
+ * @param {number} pageSize
+ * @returns {Promise} - PagedResult with following users
+ */
+export const getUserFollowing = async (userId, pageNumber = 1, pageSize = 20) => {
+  try {
+    const response = await axiosClient.get(`/userfollows/following/${userId}`, {
+      params: { pageNumber, pageSize },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user following:', error);
+    throw error;
+  }
+};

@@ -1,0 +1,89 @@
+# =============================================================================
+# Docker Compose - BookClub Project
+# =============================================================================
+# Usage:
+#   Development:  docker-compose up --build
+#   Production:   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   Stop:         docker-compose down
+#   With logs:    docker-compose up --build -d && docker-compose logs -f
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend API Service (ASP.NET Core 8)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: bookclub-backend
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      # Database connection - override in docker-compose.override.yml for local dev
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING:-Server=host.docker.internal;Database=GoodReads;Trusted_Connection=False;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True}
+      # JWT Settings
+      - JwtSettings__Secret=${JWT_SECRET:-BookClub2025SecretKeyForJWTTokenGeneration!@#$%^&*()}
+      - JwtSettings__TokenExpirationInMinutes=60
+      - JwtSettings__Issuer=GoodreadsAPI
+      - JwtSettings__Audience=GoodreadsClient
+      # Disable auto migrations in production (run manually)
+      - RunMigrations=false
+      # Email Settings (override via .env file)
+      - EmailSettings__UseSendGrid=${USE_SENDGRID:-false}
+      - EmailSettings__SendGridApiKey=${SENDGRID_API_KEY:-}
+      - EmailSettings__FromEmail=${FROM_EMAIL:-noreply@bookclub.local}
+      - EmailSettings__FromName=BookClub
+    volumes:
+      # Persist uploaded files
+      - backend-uploads:/app/wwwroot/uploads
+    networks:
+      - bookclub-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Frontend Service (React + Nginx)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        # API URL that will be baked into the frontend build
+        VITE_API_URL: ${API_URL:-http://localhost:5000}
+    container_name: bookclub-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - bookclub-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  bookclub-network:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  backend-uploads:
+    driver: local

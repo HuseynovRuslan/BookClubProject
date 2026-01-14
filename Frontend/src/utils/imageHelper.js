@@ -1,0 +1,29 @@
+// API Base URL - environment variable ilə konfiqurasiya olunur
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+
+/**
+ * Helper function to get the correct image URL
+ * @param {string|null} imagePath - Image path from API (could be relative or absolute)
+ * @param {string} baseURL - Base URL for the API
+ * @returns {string|null} - Full image URL or null
+ */
+export const getImageUrl = (imagePath, baseURL = API_BASE_URL) => {
+  if (!imagePath) {
+    return null;
+  }
+
+  // If it's already a full URL (starts with http:// or https://)
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+
+  // If it's a relative path, prepend the base URL
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `${baseURL}${cleanPath}`;
+};
+
+/**
+ * Placeholder image URL for books without covers
+ */
+export const BOOK_PLACEHOLDER = null; // Will trigger placeholder UI in components

@@ -1,0 +1,36 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+
+# NuGet packages
+packages/
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+LICENSE
+
+# Test results
+TestResults/
+coverage/
+
+# Debug files
+*.pdb
+
+# User secrets (should never be in container)
+secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db

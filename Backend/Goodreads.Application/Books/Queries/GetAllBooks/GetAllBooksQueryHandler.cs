@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using Goodreads.Application.Common.Interfaces;
 
 namespace Goodreads.Application.Books.Queries.GetAllBooks;
 internal class GetAllBooksQueryHandler : IRequestHandler<GetAllBooksQuery, PagedResult<BookDto>>
@@ -6,12 +7,20 @@ internal class GetAllBooksQueryHandler : IRequestHandler<GetAllBooksQuery, Paged
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<GetAllBooksQueryHandler> _logger;
     private readonly IMapper _mapper;
-    public GetAllBooksQueryHandler(IUnitOfWork unitOfWork, ILogger<GetAllBooksQueryHandler> logger, IMapper mapper)
+    private readonly IBookImageService _bookImageService;
+    
+    public GetAllBooksQueryHandler(
+        IUnitOfWork unitOfWork, 
+        ILogger<GetAllBooksQueryHandler> logger, 
+        IMapper mapper,
+        IBookImageService bookImageService)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
         _mapper = mapper;
+        _bookImageService = bookImageService;
     }
+    
     public async Task<PagedResult<BookDto>> Handle(GetAllBooksQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Handling GetAllBooksQuery with parameters: {@Parameters}", request.Parameters);
@@ -33,6 +42,20 @@ internal class GetAllBooksQueryHandler : IRequestHandler<GetAllBooksQuery, Paged
         );
 
         var bookDtos = _mapper.Map<List<BookDto>>(books);
+        
+        // Şəkil URL-lərini təyin et
+        var booksDict = books.ToDictionary(b => b.Id);
+        foreach (var bookDto in bookDtos)
+        {
+            if (booksDict.TryGetValue(bookDto.Id, out var book))
+            {
+                bookDto.CoverImageUrl = _bookImageService.GetCoverImageUrl(
+                    book.CoverImageUrl,
+                    book.ISBN,
+                    book.CoverImageBlobName
+                );
+            }
+        }
 
         return PagedResult<BookDto>.Create(bookDtos, p.PageNumber, p.PageSize, totalCount);
     }

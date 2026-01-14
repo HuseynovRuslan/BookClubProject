@@ -1,162 +1,101 @@
-import { apiRequest, USE_API_MOCKS, delay } from "./config";
-import mockBooks from "../components/mockBooks";
-import { loadCreatedBooks, saveCreatedBook } from "./mockStorage";
+import axiosClient from './axiosClient';
 
-export async function getAllBooks({ page = 1, pageSize = 20, query } = {}) {
-  if (USE_API_MOCKS) {
-    await delay(300);
-    const createdBooks = loadCreatedBooks();
-    let allBooks = [...mockBooks, ...createdBooks];
-    
-    if (query && query.trim()) {
-      const searchTerm = query.toLowerCase().trim();
-      allBooks = allBooks.filter((book) => {
-        const titleMatch = book.title?.toLowerCase().includes(searchTerm);
-        const authorMatch = book.author?.toLowerCase().includes(searchTerm) || 
-                           book.authorName?.toLowerCase().includes(searchTerm);
-        const genreMatch = Array.isArray(book.genre)
-          ? book.genre.some((g) => (g.name || g).toLowerCase().includes(searchTerm))
-          : (book.genre?.name || book.genre || "").toLowerCase().includes(searchTerm);
-        return titleMatch || authorMatch || genreMatch;
-      });
-    }
-    
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const items = allBooks.slice(start, end);
-    return {
-      items,
-      total: allBooks.length,
-      page,
-      pageSize,
-    };
-  }
-  const params = new URLSearchParams();
-  if (page) params.append("PageNumber", page);
-  if (pageSize) params.append("PageSize", pageSize);
-  if (query && query.trim()) params.append("Query", query.trim());
-  return apiRequest(`/api/Books/get-all-books?${params.toString()}`, { method: "GET" });
-}
-
-export async function getBookById(id) {
-  if (USE_API_MOCKS) {
-    await delay(150);
-    const createdBooks = loadCreatedBooks();
-    const allBooks = [...mockBooks, ...createdBooks];
-    const book =
-      allBooks.find(
-        (b) => String(b.id) === String(id) || String(b._id) === String(id)
-      ) || null;
-    if (!book) {
-      throw new Error("Book not found (mock)");
-    }
-    return book;
-  }
-  const response = await apiRequest(`/api/Books/get-book-by-id/${encodeURIComponent(id)}`, { method: "GET" });
-  const bookData = response?.data || response?.Data || response;
-  
-  if (bookData && bookData.author && typeof bookData.author === 'object') {
-    bookData.authorName = bookData.author.name || bookData.author.Name || bookData.authorName;
-  } else if (bookData && bookData.Author && typeof bookData.Author === 'object') {
-    bookData.authorName = bookData.Author.name || bookData.Author.Name || bookData.authorName;
-  }
-  
-  return bookData;
-}
-
-export async function updateBookStatus(bookId, targetShelfName) {
-  if (USE_API_MOCKS) {
-    await delay(150);
-    return { id: bookId, status: targetShelfName, updatedAt: new Date().toISOString() };
-  }
-  const params = new URLSearchParams();
-  if (targetShelfName) {
-    params.append("targetShelfName", targetShelfName);
-  }
-  return apiRequest(`/api/Books/${encodeURIComponent(bookId)}/status?${params.toString()}`, {
-    method: "POST",
-  });
-}
-
-export async function createBook(bookData) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const newBook = {
-      ...bookData,
-      id: bookData.id || `book-${Date.now()}`,
-      rating: bookData.rating || 0,
-      reviews: bookData.reviews || [],
-      createdAt: new Date().toISOString(),
-    };
-    saveCreatedBook(newBook);
-    return newBook;
-  }
-  return apiRequest("/api/Books/create-book", {
-    method: "POST",
-    body: bookData,
-  });
-}
-
-export async function addGenresToBook(bookId, genreIds) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return { bookId, genreIds, message: "Genres added (mock)" };
-  }
-  const genreIdsArray = Array.isArray(genreIds) ? genreIds : [genreIds];
-  return apiRequest(`/api/Books/${encodeURIComponent(bookId)}/genres`, {
-    method: "POST",
-    body: JSON.stringify(genreIdsArray),
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-}
-
-export async function removeGenreFromBook(bookId, genreId) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return { bookId, genreId, message: "Genre removed (mock)" };
-  }
-  return apiRequest(
-    `/api/Books/${encodeURIComponent(bookId)}/genres/${encodeURIComponent(genreId)}`,
-    {
-      method: "DELETE",
-    }
-  );
-}
-
-export async function getBooksByGenre(genreName, { page = 1, pageSize = 20 } = {}) {
-  if (USE_API_MOCKS) {
-    await delay(300);
-    const createdBooks = loadCreatedBooks();
-    const allBooks = [...mockBooks, ...createdBooks];
-    const filteredBooks = allBooks.filter((book) => {
-      const genres = book.genre
-        ? Array.isArray(book.genre)
-          ? book.genre
-          : [book.genre]
-        : [];
-      return genres.some((g) => {
-        const genreNameToMatch = (g.name || g || "").toLowerCase();
-        const searchName = (genreName || "").toLowerCase();
-        return genreNameToMatch === searchName || genreNameToMatch.includes(searchName);
-      });
+/**
+ * Get all books with pagination
+ * @param {number} pageNumber - Current page number (default: 1)
+ * @param {number} pageSize - Number of items per page (default: 12)
+ * @returns {Promise} - PagedResult with books data
+ */
+export const getAllBooks = async (pageNumber = 1, pageSize = 12) => {
+  try {
+    const response = await axiosClient.get('/books/get-all-books', {
+      params: {
+        pageNumber,
+        pageSize,
+      },
     });
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const items = filteredBooks.slice(start, end);
-    return {
-      items,
-      total: filteredBooks.length,
-      page,
-      pageSize,
-    };
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching books:', error);
+    throw error;
   }
-  const params = new URLSearchParams();
-  if (genreName) params.append("Query", genreName);
-  if (page) params.append("PageNumber", page);
-  if (pageSize) params.append("PageSize", pageSize);
-  return apiRequest(`/api/Books/by-genre?${params.toString()}`, { method: "GET" });
-}
+};
 
+/**
+ * Get book by ID
+ * @param {string} id - Book ID
+ * @returns {Promise<BookDetailDto>} - Book details
+ */
+export const getBookById = async (id) => {
+  try {
+    const response = await axiosClient.get(`/books/get-book-by-id/${id}`);
+    // Response structure: { data: BookDetailDto, message: string }
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching book details:', error);
+    throw error;
+  }
+};
 
+/**
+ * Get reviews for a specific book
+ * @param {string} bookId - Book ID
+ * @param {number} pageNumber - Page number
+ * @param {number} pageSize - Page size
+ * @returns {Promise} - PagedResult with reviews
+ */
+export const getBookReviews = async (bookId, pageNumber = 1, pageSize = 10) => {
+  try {
+    const response = await axiosClient.get(`/books/${bookId}/reviews`, {
+      params: {
+        pageNumber,
+        pageSize,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching book reviews:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get books by genre
+ * @param {number} pageNumber - Page number
+ * @param {number} pageSize - Page size
+ * @returns {Promise} - PagedResult with books
+ */
+export const getBooksByGenre = async (pageNumber = 1, pageSize = 12) => {
+  try {
+    const response = await axiosClient.get('/books/by-genre', {
+      params: {
+        pageNumber,
+        pageSize,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching books by genre:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update book status (add to default shelf)
+ * Endpoint: POST /api/books/{bookId}/status?targetShelfName={shelfName}
+ * @param {string} bookId - Book ID
+ * @param {string} targetShelfName - Shelf name: "Read", "Want to Read", or "Currently Reading"
+ * @returns {Promise}
+ */
+export const updateBookStatus = async (bookId, targetShelfName) => {
+  try {
+    await axiosClient.post(`/books/${bookId}/status`, null, {
+      params: {
+        targetShelfName,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating book status:', error);
+    throw error;
+  }
+};

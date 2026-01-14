@@ -12,8 +12,13 @@ public class MessagesHub : Hub
         var userId = Context.UserIdentifier;
         if (userId != null)
         {
+            List<string> currentOnlineUsers;
+            
             lock (UserConnections)
             {
+                // Get current online users BEFORE adding this user
+                currentOnlineUsers = UserConnections.Keys.ToList();
+                
                 if (!UserConnections.ContainsKey(userId))
                 {
                     UserConnections[userId] = new HashSet<string>();
@@ -21,7 +26,10 @@ public class MessagesHub : Hub
                 UserConnections[userId].Add(Context.ConnectionId);
             }
 
-            // User online olduğunu bildir
+            // Send current online users to the newly connected user
+            await Clients.Caller.SendAsync("OnlineUsersList", currentOnlineUsers);
+            
+            // Notify others that this user is now online
             await Clients.Others.SendAsync("UserOnline", userId);
         }
 
@@ -77,6 +85,22 @@ public class MessagesHub : Hub
         return string.Compare(userId1, userId2, StringComparison.Ordinal) < 0
             ? $"conversation_{userId1}_{userId2}"
             : $"conversation_{userId2}_{userId1}";
+    }
+
+    /// <summary>
+    /// Get list of currently online users (excluding the caller)
+    /// Can be called by client to refresh online status
+    /// </summary>
+    public Task<List<string>> GetOnlineUsers()
+    {
+        var currentUserId = Context.UserIdentifier;
+        lock (UserConnections)
+        {
+            var onlineUsers = UserConnections.Keys
+                .Where(id => id != currentUserId)
+                .ToList();
+            return Task.FromResult(onlineUsers);
+        }
     }
 
     public static bool IsUserOnline(string userId)

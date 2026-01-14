@@ -1,444 +1,203 @@
-import { apiRequest, USE_API_MOCKS, delay, getEmailFromToken } from "./config";
-import { loadMockAccount, saveMockAccount } from "./mockStorage";
-import { loadMockShelves } from "./mockData";
-import { loadMockReviews, ensureReviewHasBook } from "./mockData";
+import axiosClient from './axiosClient';
 
-function accountToProfile(account) {
-  return {
-    id: account.id,
-    name: `${account.name}${account.surname ? ` ${account.surname}` : ""
-      }`.trim(),
-    firstName: account.name,
-    surname: account.surname,
-    email: account.email,
-    role: account.role,
-    bio: account.bio,
-    avatarUrl: account.avatarUrl || null,
-  };
-}
-
-
-function normalizeProfileDto(dto) {
-  if (!dto) return null;
-  
-  let profileData = dto;
-  if (dto.Data !== undefined) {
-    profileData = dto.Data;
-  } else if (dto.data !== undefined) {
-    profileData = dto.data;
-  }
-  
-  console.log("normalizeProfileDto - raw profileData:", profileData);
-  
-  const firstName = profileData.firstName || profileData.FirstName || "";
-  const lastName = profileData.lastName || profileData.LastName || profileData.surname || profileData.Surname || "";
-  const fullName = `${firstName}${lastName ? ` ${lastName}` : ""}`.trim();
-  
-  const username = profileData.username || 
-                   profileData.Username || 
-                   profileData.userName || 
-                   profileData.UserName ||
-                   profileData.user_name ||
-                   profileData.User_Name ||
-                   (profileData.email ? profileData.email.split("@")[0] : "") ||
-                   "";
-  
-  let name = "";
-  
-  if (username && username.trim() !== "" && username !== "User") {
-    name = username;
-  }
-  else if (fullName && fullName.trim() !== "") {
-    name = fullName;
-  }
-  else if (profileData.name && profileData.name.trim() !== "" && profileData.name !== "User") {
-    name = profileData.name;
-  }
-  else if (profileData.Name && profileData.Name.trim() !== "" && profileData.Name !== "User") {
-    name = profileData.Name;
-  }
-  else if (profileData.email && profileData.email.trim() !== "") {
-    name = profileData.email.split("@")[0];
-  }
-  else {
-    name = "User";
-  }
-  
-  return {
-    id: profileData.id || profileData.Id || "",
-    name: name,
-    firstName: firstName,
-    surname: lastName,
-    email: profileData.email || profileData.Email || "",
-    role: profileData.role || profileData.Role || "reader",
-    bio: profileData.bio || profileData.Bio || "",
-    avatarUrl: profileData.avatarUrl || profileData.AvatarUrl || 
-               profileData.profilePictureUrl || profileData.ProfilePictureUrl || null,
-    username: username || (profileData.email ? profileData.email.split("@")[0] : "") || "",
-  };
-}
-
-export async function getCurrentUserProfile() {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const account = loadMockAccount();
-    return accountToProfile(account);
-  }
-  const response = await apiRequest("/api/Users/get-current-user-profile", { method: "GET" });
-  const profile = normalizeProfileDto(response);
-  
-  if (profile && !profile.email) {
-    const emailFromToken = getEmailFromToken();
-    if (emailFromToken) {
-      profile.email = emailFromToken;
-    }
-  }
-  
-  return profile;
-}
-
-export async function updateProfile(payload) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const account = loadMockAccount();
-    const updated = {
-      ...account,
-      name: payload.name ?? payload.firstName ?? account.name,
-      surname: payload.surname ?? payload.lastName ?? account.surname,
-      bio: payload.bio ?? account.bio,
-      role: payload.role ?? account.role,
-    };
-    saveMockAccount(updated);
-    return accountToProfile(updated);
-  }
-  
-  const backendPayload = {
-    FirstName: payload.firstName || payload.name?.split(/\s+/)[0] || "",
-    LastName: payload.lastName || payload.surname || payload.name?.split(/\s+/).slice(1).join(" ") || "",
-    Bio: payload.bio || "",
-  };
-  
-  await apiRequest("/api/Users/update-user-profile", {
-    method: "PUT",
-    body: backendPayload,
-  });
-  
-  return getCurrentUserProfile();
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-export async function updateProfilePicture(file) {
-  if (USE_API_MOCKS) {
-    const imageData = file ? await readFileAsDataUrl(file) : null;
-    const account = loadMockAccount();
-    const updated = {
-      ...account,
-      avatarUrl: imageData || account.avatarUrl,
-    };
-    saveMockAccount(updated);
-    return accountToProfile(updated);
-  }
-
-  const formData = new FormData();
-  formData.append("File", file);
-
-  await apiRequest("/api/Users/update-profile-picture", {
-    method: "PATCH",
-    body: formData,
-  });
-  
-  return getCurrentUserProfile();
-}
-
-export async function deleteProfilePicture() {
-  if (USE_API_MOCKS) {
-    await delay(150);
-    const account = loadMockAccount();
-    const updated = { ...account, avatarUrl: null };
-    saveMockAccount(updated);
-    return accountToProfile(updated);
-  }
-  
-  await apiRequest("/api/Users/delete-profile-picture", {
-    method: "DELETE",
-  });
-  
-  return getCurrentUserProfile();
-}
-
-export async function getUserByUsername(username) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const account = loadMockAccount();
-    if (account.email.split("@")[0] === username) {
-      return accountToProfile(account);
-    }
-    throw new Error("Mock user not found");
-  }
-  
+/**
+ * Get current user's profile
+ * @returns {Promise<UserProfileDto>}
+ */
+export const getCurrentUserProfile = async () => {
   try {
-    const response = await apiRequest(`/api/Users/get-user-profile-by-username/${encodeURIComponent(username)}`, {
-      method: "GET",
-    });
-    if (response === null) {
-      return null;
-    }
-    return normalizeProfileDto(response);
-  } catch (err) {
-    if (err.status === 404) {
-      return null;
-    }
-    console.error("Error getting user by username:", err);
-    throw err;
-  }
-}
-
-export async function getUserById(userId) {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    const account = loadMockAccount();
-    if (account.id === userId || account.id?.toString() === userId?.toString()) {
-      return accountToProfile(account);
-    }
-    throw new Error("Mock user not found");
-  }
-  
-  try {
-    const response = await apiRequest(`/api/Users/get-user-profile-by-id/${encodeURIComponent(userId)}`, {
-      method: "GET",
-    });
-    if (response === null) {
-      return null;
-    }
-    return normalizeProfileDto(response);
-  } catch (err) {
-    if (err.status === 404) {
-      return null;
-    }
-    console.error("Error getting user by ID:", err);
-    throw err;
-  }
-}
-
-export async function searchUsers(query) {
-  if (!query || !query.trim()) {
-    return [];
-  }
-  
-  if (USE_API_MOCKS) {
-    await delay(150);
-    const account = loadMockAccount();
-    const searchLower = query.toLowerCase();
-    const matches =
-      account.name.toLowerCase().includes(searchLower) ||
-      account.email.toLowerCase().includes(searchLower) ||
-      (account.email?.split("@")[0] || "").toLowerCase().includes(searchLower)
-        ? [accountToProfile(account)]
-        : [];
-    return matches;
-  }
-  
-  const response = await apiRequest(`/api/Users/get-all-users?searchTerm=${encodeURIComponent(query.trim())}`, {
-    method: "GET",
-  });
-  
-  console.log("searchUsers API response:", response);
-  
-  let users = [];
-  if (response) {
-    if (response.items && Array.isArray(response.items)) {
-      users = response.items;
-    } else if (response.Items && Array.isArray(response.Items)) {
-      users = response.Items;
-    } else if (Array.isArray(response)) {
-      users = response;
-    } else if (response.data && Array.isArray(response.data)) {
-      users = response.data;
-    } else if (response.Data && Array.isArray(response.Data)) {
-      users = response.Data;
-    }
-  }
-  
-  console.log("Extracted users array:", users);
-  
-  const searchLower = query.trim().toLowerCase();
-  
-  return users
-    .map(user => {
-      const firstName = user.firstName || user.FirstName || "";
-      const lastName = user.lastName || user.LastName || user.surname || user.Surname || "";
-      const fullName = `${firstName}${lastName ? ` ${lastName}` : ""}`.trim();
-      const username = user.username || user.Username || user.userName || user.UserName || user.email?.split("@")[0] || "";
-      const name = fullName || user.name || user.Name || "";
-      const role = user.role || user.Role || "reader";
-      
-      return {
-        id: user.id || user.Id || user.userId || user.UserId,
-        username: username,
-        name: name,
-        firstName: firstName,
-        lastName: lastName,
-        surname: lastName,
-        email: user.email || user.Email || "",
-        bio: user.bio || user.Bio || "",
-        avatarUrl: user.avatarUrl || user.AvatarUrl || user.profilePictureUrl || user.ProfilePictureUrl || null,
-        role: role,
-      };
-    })
-    .filter(user => {
-      const role = user.role || user.Role || "";
-      const roleLower = String(role).toLowerCase().trim();
-      const isAdmin = roleLower === "admin" || role === "Admin" || role === "ADMIN";
-      if (isAdmin) return false;
-      
-      const usernameMatch = user.username.toLowerCase().includes(searchLower);
-      const nameMatch = user.name.toLowerCase().includes(searchLower);
-      return usernameMatch || nameMatch;
-    });
-}
-
-export async function getMyShelves() {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return loadMockShelves();
-  }
-  const response = await apiRequest("/api/Users/get-current-user-shelves", { method: "GET" });
-
-  let shelves = [];
-  if (response) {
-    if (response.items && Array.isArray(response.items)) {
-      shelves = response.items;
-    } else if (response.Items && Array.isArray(response.Items)) {
-      shelves = response.Items;
-    } else if (Array.isArray(response)) {
-      shelves = response;
-    }
-  }
-
-  return shelves.map(shelf => {
-    const isDefault = shelf.isDefault !== undefined ? shelf.isDefault :
-      (shelf.IsDefault !== undefined ? shelf.IsDefault : false);
-
-    const normalizedShelf = {
-      id: shelf.id || shelf.Id,
-      name: shelf.name || shelf.Name,
-      isDefault: isDefault,
-      type: isDefault ? 'default' : (shelf.type || shelf.Type || 'custom'),
-      bookCount: shelf.bookCount || shelf.BookCount || 0,
-      books: (shelf.books || shelf.Books || []).map(book => ({
-        id: book.id || book.Id,
-        title: book.title || book.Title,
-        authorName: book.authorName || book.AuthorName || book.author || book.Author,
-        coverImageUrl: book.coverImageUrl || book.CoverImageUrl || book.coverImage || book.CoverImage,
-        averageRating: book.averageRating || book.AverageRating || book.rating || book.Rating,
-        genres: book.genres || book.Genres || []
-      }))
-    };
-    return normalizedShelf;
-  });
-}
-
-export async function getMyReviews() {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return loadMockReviews().map(ensureReviewHasBook);
-  }
-  const response = await apiRequest("/api/Users/get-current-user-reviews", { method: "GET" });
-  
-  let reviews = [];
-  if (response) {
-    if (response.items && Array.isArray(response.items)) {
-      reviews = response.items;
-    } else if (response.Items && Array.isArray(response.Items)) {
-      reviews = response.Items;
-    } else if (Array.isArray(response)) {
-      reviews = response;
-    }
-  }
-  
-  return reviews.map(review => ({
-    id: review.id || review.Id,
-    bookId: review.bookId || review.BookId,
-    rating: review.rating || review.Rating || 0,
-    text: review.reviewText || review.ReviewText || review.text || "",
-    book: review.book || review.Book ? {
-      id: review.book.id || review.Book.Id || review.bookId || review.BookId,
-      title: review.book.title || review.Book.Title || review.bookTitle || review.BookTitle,
-      coverImageUrl: review.book.coverImageUrl || review.Book.CoverImageUrl || review.bookCoverImageUrl || review.BookCoverImageUrl,
-    } : null,
-    createdAt: review.createdAt || review.CreatedAt,
-    updatedAt: review.updatedAt || review.UpdatedAt,
-  }));
-}
-
-export async function getMySocials() {
-  if (USE_API_MOCKS) {
-    await delay(200);
-    return { facebook: "", twitter: "", instagram: "", website: "" };
-  }
-  return apiRequest("/api/Users/get-user-social-links", { method: "GET" });
-}
-
-async function mockChangePassword(payload) {
-  await delay(500);
-  if (!payload.currentPassword || !payload.newPassword || !payload.confirmPassword) {
-    throw new Error("Bütün sahələr doldurulmalıdır");
-  }
-  if (payload.newPassword.length < 6) {
-    throw new Error("Yeni şifrə ən azı 6 simvol olmalıdır");
-  }
-  if (payload.newPassword !== payload.confirmPassword) {
-    throw new Error("Yeni şifrə və təsdiq şifrəsi uyğun gəlmir");
-  }
-  return { message: "Şifrə uğurla dəyişdirildi (mock mode)" };
-}
-
-export async function changePassword(payload) {
-  if (USE_API_MOCKS) {
-    return mockChangePassword(payload);
-  }
-
-  try {
-    const backendPayload = {
-      CurrentPassword: payload.currentPassword || payload.CurrentPassword || "",
-      NewPassword: payload.newPassword || payload.NewPassword || "",
-      ConfirmPassword: payload.confirmPassword || payload.ConfirmPassword || "",
-    };
-
-    console.log("Change password payload to backend:", backendPayload);
-
-    try {
-      return await apiRequest("/api/Users/change-password", {
-        method: "POST",
-        body: backendPayload,
-      });
-    } catch (err) {
-      if (err.status === 400) {
-        console.log("PascalCase failed, trying camelCase:", err);
-        const camelCasePayload = {
-          currentPassword: payload.currentPassword || "",
-          newPassword: payload.newPassword || "",
-          confirmPassword: payload.confirmPassword || "",
-        };
-        console.log("Change password payload (camelCase) to backend:", camelCasePayload);
-        return await apiRequest("/api/Users/change-password", {
-          method: "POST",
-          body: camelCasePayload,
-        });
-      }
-      throw err;
-    }
+    const response = await axiosClient.get('/users/get-current-user-profile');
+    return response.data.data;
   } catch (error) {
-    console.error("Change password error:", error);
+    console.error('Error fetching current user profile:', error);
     throw error;
   }
-}
+};
 
+/**
+ * Get user profile by username
+ * @param {string} username
+ * @returns {Promise<UserProfileDto>}
+ */
+export const getUserProfileByUsername = async (username) => {
+  try {
+    const response = await axiosClient.get(`/users/get-user-profile-by-username/${username}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get user profile by ID
+ * @param {string} userId
+ * @returns {Promise<UserProfileDto>}
+ */
+export const getUserProfileById = async (userId) => {
+  try {
+    const response = await axiosClient.get(`/users/get-user-profile-by-id/${userId}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update user profile
+ * @param {Object} data - { firstName, lastName, bio, websiteUrl, country, dateOfBirth }
+ * @returns {Promise}
+ */
+export const updateUserProfile = async (data) => {
+  try {
+    await axiosClient.put('/users/update-user-profile', data);
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get user's social links
+ * @returns {Promise<SocialDto>}
+ */
+export const getUserSocialLinks = async () => {
+  try {
+    const response = await axiosClient.get('/users/get-user-social-links');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching social links:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update user's social links
+ * @param {Object} data - { facebook, twitter, linkedIn }
+ * @returns {Promise}
+ */
+export const updateUserSocialLinks = async (data) => {
+  try {
+    await axiosClient.put('/users/update-user-social-links', data);
+  } catch (error) {
+    console.error('Error updating social links:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update profile picture
+ * @param {File} file - The image file to upload
+ * @returns {Promise}
+ */
+export const updateProfilePicture = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('File', file); // Backend expects 'File' with capital F
+    
+    // Get the token for authorization
+    const token = localStorage.getItem('token');
+    
+    // Use fetch API instead of axios for file uploads (more reliable with FormData)
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+    const response = await fetch(`${apiUrl}/api/users/update-profile-picture`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Do NOT set Content-Type - browser will set it automatically with boundary
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw { response: { data: errorData, status: response.status } };
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Error updating profile picture:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
+};
+
+/**
+ * Delete profile picture
+ * @returns {Promise}
+ */
+export const deleteProfilePicture = async () => {
+  try {
+    await axiosClient.delete('/users/delete-profile-picture');
+  } catch (error) {
+    console.error('Error deleting profile picture:', error);
+    throw error;
+  }
+};
+
+/**
+ * Change password
+ * @param {Object} data - { currentPassword, newPassword, confirmPassword }
+ * @returns {Promise}
+ */
+export const changePassword = async (data) => {
+  try {
+    await axiosClient.post('/users/change-password', data);
+  } catch (error) {
+    console.error('Error changing password:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete account
+ * @returns {Promise}
+ */
+export const deleteAccount = async () => {
+  try {
+    await axiosClient.delete('/users/delete-account');
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get current user's reviews
+ * @param {number} pageNumber
+ * @param {number} pageSize
+ * @returns {Promise}
+ */
+export const getCurrentUserReviews = async (pageNumber = 1, pageSize = 10) => {
+  try {
+    const response = await axiosClient.get('/users/get-current-user-reviews', {
+      params: { pageNumber, pageSize },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user reviews:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all users with pagination and search
+ * @param {number} pageNumber
+ * @param {number} pageSize
+ * @param {string} searchTerm - Optional search term
+ * @returns {Promise} - PagedResult with users
+ */
+export const getAllUsers = async (pageNumber = 1, pageSize = 20, searchTerm = '') => {
+  try {
+    const params = { pageNumber, pageSize };
+    if (searchTerm) {
+      params.searchTerm = searchTerm;
+    }
+    const response = await axiosClient.get('/users/get-all-users', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    throw error;
+  }
+};

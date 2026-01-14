@@ -33,8 +33,9 @@ public class GetMessagesQueryHandler : IRequestHandler<GetMessagesQuery, PagedRe
             throw new UnauthorizedAccessException("User is not authenticated");
 
         var (messages, count) = await _unitOfWork.Messages.GetAllAsync(
-            filter: m => (m.SenderId == userId && m.ReceiverId == request.OtherUserId) ||
-                        (m.SenderId == request.OtherUserId && m.ReceiverId == userId),
+            filter: m => !m.IsDeleted &&
+                        ((m.SenderId == userId && m.ReceiverId == request.OtherUserId) ||
+                         (m.SenderId == request.OtherUserId && m.ReceiverId == userId)),
             sortColumn: "CreatedAt",
             sortOrder: "desc",
             pageNumber: request.Parameters.PageNumber,

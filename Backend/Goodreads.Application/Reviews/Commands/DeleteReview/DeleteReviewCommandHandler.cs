@@ -40,6 +40,7 @@ public class DeleteReviewCommandHandler : IRequestHandler<DeleteReviewCommand, R
       
         if (book != null)
         {
+            // Recalculate average rating (Global Query Filter excludes soft-deleted)
             var (allReviews, _) = await _unitOfWork.BookReviews.GetAllAsync(
                 r => r.BookId == review.BookId);
             
