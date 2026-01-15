@@ -21,6 +21,8 @@ namespace Goodreads.Application.Common.Interfaces
         IRepository<Message> Messages { get; }
         IRepository<Conversation> Conversations { get; }
         IRepository<Notification> Notifications { get; }
+        IRepository<Like> Likes { get; }
+        IRepository<BookShelfLike> BookShelfLikes { get; }
 
         Task<int> SaveChangesAsync();
         void ClearChangeTracker();

@@ -26,6 +26,14 @@ public class UpdateQuoteCommandHandler : IRequestHandler<UpdateQuoteCommand, Res
         if (quote == null)
             return Result.Fail(QuoteErrors.NotFound(request.QuoteId));
 
+        // Check if user owns the quote
+        if (quote.CreatedByUserId != userId)
+        {
+            _logger.LogWarning("User {UserId} attempted to update quote {QuoteId} owned by {OwnerId}", 
+                userId, request.QuoteId, quote.CreatedByUserId);
+            return Result.Fail(Error.Forbidden("Quotes.Unauthorized", "You are not authorized to update this quote."));
+        }
+
         quote.Text = request.Text;
 
         if (request.Tags != null)

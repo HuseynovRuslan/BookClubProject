@@ -2,6 +2,7 @@ using Goodreads.Application.Common.Interfaces.Authorization;
 
 namespace Goodreads.Application.Common.Behaviors;
 public class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : notnull
 {
     private readonly IAuthorAuthorizationService _authorAuthService;
     private readonly IShelfAuthorizationService _shelfAuthService;

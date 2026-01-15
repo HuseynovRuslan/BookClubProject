@@ -17,12 +17,26 @@ import ChatPage from './pages/ChatPage';
 import SocialFeedPage from './pages/SocialFeedPage';
 import CommunityPage from './pages/CommunityPage';
 import PublicProfilePage from './pages/PublicProfilePage';
+import UserProfile from './pages/UserProfile';
+import NewsPage from './pages/NewsPage';
+import FeedbackPage from './pages/FeedbackPage';
+
+// Admin imports
+import AdminLayout from './layouts/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminNews from './pages/admin/AdminNews';
+import AdminFeedbacks from './pages/admin/AdminFeedbacks';
+import AdminBooks from './pages/admin/AdminBooks';
+import AdminAuthors from './pages/admin/AdminAuthors';
+import AdminGenres from './pages/admin/AdminGenres';
+import AdminUsers from './pages/admin/AdminUsers';
 
 // Layout component to show banner on relevant pages
 const AppLayout = ({ children }) => {
   const location = useLocation();
   const hideOnRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
-  const showBanner = !hideOnRoutes.includes(location.pathname);
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const showBanner = !hideOnRoutes.includes(location.pathname) && !isAdminRoute;
 
   return (
     <>
@@ -39,89 +53,110 @@ function App() {
         <SignalRProvider>
           <AppLayout>
             <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          
-          {/* Protected Routes - Require Authentication */}
-          <Route
-            path="/books"
-            element={
-              <ProtectedRoute>
-                <BrowseBooksPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/books/:id"
-            element={
-              <ProtectedRoute>
-                <BookDetailsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/my-shelves"
-            element={
-              <ProtectedRoute>
-                <MyShelvesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/shelves/:id"
-            element={
-              <ProtectedRoute>
-                <ShelfDetailsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/messages"
-            element={
-              <ProtectedRoute>
-                <ChatPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/feed"
-            element={
-              <ProtectedRoute>
-                <SocialFeedPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/community"
-            element={
-              <ProtectedRoute>
-                <CommunityPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/user/:username"
-            element={
-              <ProtectedRoute>
-                <PublicProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          
-          {/* Fallback route */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Public Routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/news" element={<NewsPage />} />
+              <Route path="/feedback" element={<FeedbackPage />} />
+
+              {/* Protected Routes - Require Authentication */}
+              <Route
+                path="/books"
+                element={
+                  <ProtectedRoute>
+                    <BrowseBooksPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/books/:id"
+                element={
+                  <ProtectedRoute>
+                    <BookDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-shelves"
+                element={
+                  <ProtectedRoute>
+                    <MyShelvesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/shelves/:id"
+                element={
+                  <ProtectedRoute>
+                    <ShelfDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/messages"
+                element={
+                  <ProtectedRoute>
+                    <ChatPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/feed"
+                element={
+                  <ProtectedRoute>
+                    <SocialFeedPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/community"
+                element={
+                  <ProtectedRoute>
+                    <CommunityPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/:username"
+                element={
+                  <ProtectedRoute>
+                    <PublicProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile/:userId"
+                element={
+                  <ProtectedRoute>
+                    <UserProfile />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="news" element={<AdminNews />} />
+                <Route path="feedbacks" element={<AdminFeedbacks />} />
+                <Route path="books" element={<AdminBooks />} />
+                <Route path="authors" element={<AdminAuthors />} />
+                <Route path="genres" element={<AdminGenres />} />
+                <Route path="users" element={<AdminUsers />} />
+              </Route>
+
+              {/* Fallback route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AppLayout>
         </SignalRProvider>

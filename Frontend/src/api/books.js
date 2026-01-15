@@ -1,19 +1,24 @@
 import axiosClient from './axiosClient';
 
 /**
- * Get all books with pagination
+ * Get all books with pagination and optional search query
  * @param {number} pageNumber - Current page number (default: 1)
- * @param {number} pageSize - Number of items per page (default: 12)
+ * @param {number} pageSize - Number of items per page (default: 12, max: 50)
+ * @param {string} query - Optional search query to filter books by title, author, or genre
  * @returns {Promise} - PagedResult with books data
  */
-export const getAllBooks = async (pageNumber = 1, pageSize = 12) => {
+export const getAllBooks = async (pageNumber = 1, pageSize = 12, query = null) => {
   try {
-    const response = await axiosClient.get('/books/get-all-books', {
-      params: {
-        pageNumber,
-        pageSize,
-      },
-    });
+    const params = {
+      pageNumber,
+      pageSize: Math.min(pageSize, 50), // Enforce max page size of 50
+    };
+    
+    if (query) {
+      params.query = query;
+    }
+    
+    const response = await axiosClient.get('/books/get-all-books', { params });
     return response.data;
   } catch (error) {
     console.error('Error fetching books:', error);

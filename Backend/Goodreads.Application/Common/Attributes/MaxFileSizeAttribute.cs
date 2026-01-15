@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 namespace Goodreads.Application.Common.Attributes;
 public class MaxFileSizeAttribute(long maxFileSizeInBytes) : ValidationAttribute
 {
-    protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         var file = value as IFormFile;
         if (file != null && file.Length > maxFileSizeInBytes)

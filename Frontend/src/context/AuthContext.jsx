@@ -71,6 +71,7 @@ export const AuthProvider = ({ children }) => {
           email: userPayload.email,
           username: userPayload.username || userPayload.unique_name,
           emailConfirmed: userPayload.email_verified === 'true',
+          role: userPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || userPayload.role || 'User',
         };
         
         localStorage.setItem('user', JSON.stringify(userData));

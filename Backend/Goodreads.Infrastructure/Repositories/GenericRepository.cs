@@ -49,6 +49,29 @@ internal class GenericRepository<T> : IRepository<T> where T : class
         return (items, count);
     }
 
+    public async Task<(IEnumerable<T> Items, int Count)> GetAllAsyncIgnoreFilters(
+        Expression<Func<T, bool>> filter = null,
+        string[]? includes = null,
+        string? sortColumn = null, string? sortOrder = null,
+        int? pageNumber = null, int? pageSize = null)
+    {
+        var query = _dbSet.AsQueryable().IgnoreQueryFilters();
+
+        query = query.ApplyIncludes(includes);
+
+        if (filter != null)
+            query = query.Where(filter);
+
+        var count = await query.CountAsync();
+
+        query = query.ApplySorting(sortColumn, sortOrder);
+        query = query.ApplyPaging(pageNumber, pageSize);
+
+        var items = await query.ToListAsync();
+
+        return (items, count);
+    }
+
     public async Task AddAsync(T entity)
     {
         await _dbSet.AddAsync(entity);
@@ -72,6 +95,11 @@ internal class GenericRepository<T> : IRepository<T> where T : class
     public async Task<int> CountAsync(Expression<Func<T, bool>>? filter = null)
     {
         return await _dbSet.CountAsync(filter ?? (_ => true));
+    }
+
+    public async Task<bool> AnyAsync(Expression<Func<T, bool>> filter)
+    {
+        return await _dbSet.AnyAsync(filter);
     }
 
 

@@ -4,6 +4,7 @@ using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
 using Goodreads.Application.Feed.Queries.GetFeed;
 using Goodreads.Application.Feed.Queries.GetSocialFeed;
+using Goodreads.Application.Feed.Queries.GetUserFeed;
 using Goodreads.Application.Posts.Commands.UploadPostImage;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -28,6 +29,13 @@ public class FeedController : BaseController
     public async Task<IActionResult> GetSocialFeed(int? pageNumber, int? pageSize)
     {
         var result = await Sender.Send(new GetSocialFeedQuery(pageNumber, pageSize));
+        return Ok(result);
+    }
+
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetUserFeed(string userId, int? pageNumber, int? pageSize)
+    {
+        var result = await Sender.Send(new GetUserFeedQuery(userId, pageNumber, pageSize));
         return Ok(result);
     }
 

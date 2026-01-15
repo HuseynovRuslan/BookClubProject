@@ -21,6 +21,24 @@ public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, Resul
             return Result<string>.Fail(AuthorErrors.NotFound(request.AuthorId));
         }
 
+        // Check if ISBN already exists
+        var existingBookByIsbn = await _unitOfWork.Books.GetSingleOrDefaultAsync(
+            b => b.ISBN == request.ISBN && !b.IsDeleted);
+        if (existingBookByIsbn != null)
+        {
+            _logger.LogWarning("Book with ISBN {ISBN} already exists", request.ISBN);
+            return Result<string>.Fail(Error.Conflict("Books.DuplicateISBN", $"A book with ISBN '{request.ISBN}' already exists"));
+        }
+
+        // Check if book with same title already exists
+        var existingBookByTitle = await _unitOfWork.Books.GetSingleOrDefaultAsync(
+            b => b.Title.ToLower() == request.Title.ToLower() && !b.IsDeleted);
+        if (existingBookByTitle != null)
+        {
+            _logger.LogWarning("Book with title '{Title}' already exists", request.Title);
+            return Result<string>.Fail(Error.Conflict("Books.DuplicateTitle", $"A book with title '{request.Title}' already exists"));
+        }
+
         var book = _mapper.Map<Book>(request);
         book.Author = author;
 

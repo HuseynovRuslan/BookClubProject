@@ -20,6 +20,7 @@ internal class GetAllAuthorsQueryHandler : IRequestHandler<GetAllAuthorsQuery, P
 
         var (authors, count) = await _unitOfWork.Authors.GetAllAsync(
             filter: filter,
+            includes: new[] { "Books" },
             sortColumn: p.SortColumn,
             sortOrder: p.SortOrder,
             pageNumber: p.PageNumber,

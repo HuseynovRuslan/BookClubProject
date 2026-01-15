@@ -80,7 +80,7 @@ const BookCardSkeleton = () => (
 const UserSuggestionCard = ({ user, onFollow }) => {
   const [following, setFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const profilePicUrl = getImageUrl(user?.profilePictureUrl);
   const initials = user?.firstName && user?.lastName
     ? `${user.firstName[0]}${user.lastName[0]}`
@@ -88,11 +88,11 @@ const UserSuggestionCard = ({ user, onFollow }) => {
 
   const handleFollow = async () => {
     if (loading || following) return;
-    
+
     // Optimistic UI update
     setLoading(true);
     setFollowing(true);
-    
+
     try {
       await followUser(user.id);
       toast.success(`Following ${user.username}`);
@@ -139,11 +139,10 @@ const UserSuggestionCard = ({ user, onFollow }) => {
       <button
         onClick={handleFollow}
         disabled={following || loading}
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-          following
+        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${following
             ? 'bg-stone-100 text-stone-500'
             : 'bg-stone-900 text-white hover:bg-stone-800'
-        }`}
+          }`}
       >
         {loading ? (
           <Loader className="w-3 h-3 animate-spin" />
@@ -166,7 +165,7 @@ const UserSuggestionCard = ({ user, onFollow }) => {
 // Trending Book Card
 const TrendingBookCard = ({ book, rank }) => {
   const coverUrl = getImageUrl(book?.coverImageUrl);
-  
+
   return (
     <Link
       to={`/books/${book.id}`}
@@ -243,7 +242,7 @@ const EmptyState = ({ feedType, onSwitchFeed }) => (
 const SocialFeedPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   // Feed State
   const [feedType, setFeedType] = useState('personal'); // 'personal' or 'discover'
   const [feedItems, setFeedItems] = useState([]);
@@ -269,13 +268,13 @@ const SocialFeedPage = () => {
 
       const fetchFn = feedType === 'personal' ? getPersonalFeed : getSocialFeed;
       const response = await fetchFn(pageNum, 10);
-      
+
       // Handle different response formats
       // PagedResult format: { data: [], totalPages, pageNumber, pageSize, totalCount }
       // Or direct array
       let items = [];
       let totalPages = 1;
-      
+
       if (response) {
         if (Array.isArray(response)) {
           items = response;
@@ -287,13 +286,13 @@ const SocialFeedPage = () => {
           totalPages = response.totalPages || 1;
         }
       }
-      
+
       if (append) {
         setFeedItems((prev) => [...prev, ...items]);
       } else {
         setFeedItems(items);
       }
-      
+
       setHasMore(pageNum < totalPages);
       setPage(pageNum);
     } catch (error) {
@@ -419,22 +418,20 @@ const SocialFeedPage = () => {
             <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg">
               <button
                 onClick={() => handleSwitchFeed('personal')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  feedType === 'personal'
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${feedType === 'personal'
                     ? 'bg-white text-stone-800 shadow-sm'
                     : 'text-stone-500 hover:text-stone-700'
-                }`}
+                  }`}
               >
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Following</span>
               </button>
               <button
                 onClick={() => handleSwitchFeed('discover')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  feedType === 'discover'
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${feedType === 'discover'
                     ? 'bg-white text-stone-800 shadow-sm'
                     : 'text-stone-500 hover:text-stone-700'
-                }`}
+                  }`}
               >
                 <Globe className="w-4 h-4" />
                 <span className="hidden sm:inline">Discover</span>
@@ -478,7 +475,11 @@ const SocialFeedPage = () => {
             {/* Feed Items */}
             {!loading && Array.isArray(feedItems) &&
               feedItems.map((item) => (
-                <FeedItemCard key={item.id} item={item} />
+                <FeedItemCard
+                  key={item.id}
+                  item={item}
+                  onItemDeleted={(itemId) => setFeedItems(prev => prev.filter(i => i.id !== itemId))}
+                />
               ))}
 
             {/* Load More Button */}

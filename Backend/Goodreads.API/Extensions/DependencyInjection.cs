@@ -10,7 +10,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddPresentation(this IServiceCollection services)
     {
-        services.AddControllers();
+        services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+            });
         services.AddSwaggerWithAuth();
         services.AddExceptionHandler<AuthorizationExceptionHandler>();
         services.AddExceptionHandler<ValidationExceptionHandler>();

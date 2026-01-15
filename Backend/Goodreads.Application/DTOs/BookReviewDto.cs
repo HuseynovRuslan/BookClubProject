@@ -14,4 +14,9 @@ public class BookReviewDto
     public string? ReviewText { get; set; }
 
     public DateTime CreatedAt { get; set; }
+    
+    // Like data
+    public int LikesCount { get; set; }
+    public int CommentsCount { get; set; }
+    public bool IsLiked { get; set; }
 }

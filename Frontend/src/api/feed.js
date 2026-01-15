@@ -37,6 +37,25 @@ export const getSocialFeed = async (pageNumber = 1, pageSize = 10) => {
 };
 
 /**
+ * Get user-specific feed (activities from a specific user)
+ * @param {string} userId
+ * @param {number} pageNumber
+ * @param {number} pageSize
+ * @returns {Promise} - PagedResult with feed items
+ */
+export const getUserFeed = async (userId, pageNumber = 1, pageSize = 10) => {
+  try {
+    const response = await axiosClient.get(`/feed/user/${userId}`, {
+      params: { pageNumber, pageSize },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user feed:', error);
+    throw error;
+  }
+};
+
+/**
  * Get suggested users to follow
  * @param {number} limit
  * @returns {Promise} - Array of users
@@ -123,6 +142,99 @@ export const unlikeQuote = async (quoteId) => {
     await axiosClient.delete(`/quotes/${quoteId}/unlike`);
   } catch (error) {
     console.error('Error unliking quote:', error);
+    throw error;
+  }
+};
+
+// ============================================
+// QUOTE CRUD OPERATIONS
+// ============================================
+
+/**
+ * Delete a quote
+ * @param {string} quoteId
+ * @returns {Promise}
+ */
+export const deleteQuote = async (quoteId) => {
+  try {
+    await axiosClient.delete(`/quotes/delete-quote/${quoteId}`);
+  } catch (error) {
+    console.error('Error deleting quote:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a quote
+ * @param {string} quoteId
+ * @param {string} text
+ * @param {string[]} tags
+ * @returns {Promise}
+ */
+export const updateQuote = async (quoteId, text, tags = []) => {
+  try {
+    await axiosClient.put(`/quotes/update-quote/${quoteId}`, {
+      text,
+      tags,
+    });
+  } catch (error) {
+    console.error('Error updating quote:', error);
+    throw error;
+  }
+};
+
+// ============================================
+// REVIEW CRUD OPERATIONS
+// ============================================
+
+/**
+ * Delete a review
+ * @param {string} reviewId
+ * @returns {Promise}
+ */
+export const deleteReview = async (reviewId) => {
+  try {
+    await axiosClient.delete(`/reviews/delete-review/${reviewId}`);
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a review
+ * @param {string} reviewId
+ * @param {number} rating
+ * @param {string} reviewText
+ * @returns {Promise}
+ */
+export const updateReview = async (reviewId, rating, reviewText) => {
+  try {
+    await axiosClient.put(`/reviews/update-review/${reviewId}`, {
+      rating,
+      reviewText,
+    });
+  } catch (error) {
+    console.error('Error updating review:', error);
+    throw error;
+  }
+};
+
+// ============================================
+// BOOKSHELF CRUD OPERATIONS
+// ============================================
+
+/**
+ * Delete a bookshelf entry (remove book from shelf)
+ * @param {string} bookId
+ * @param {string} shelfId
+ * @returns {Promise}
+ */
+export const deleteBookShelf = async (bookId, shelfId) => {
+  try {
+    await axiosClient.delete(`/shelves/remove-book-from-shelf/${shelfId}/books/${bookId}`);
+  } catch (error) {
+    console.error('Error deleting bookshelf entry:', error);
     throw error;
   }
 };
