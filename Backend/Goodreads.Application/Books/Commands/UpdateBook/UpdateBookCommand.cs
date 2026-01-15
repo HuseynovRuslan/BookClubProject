@@ -18,4 +18,6 @@ public class UpdateBookCommand : IRequest<Result>, IRequireAuthorAuthorization
     [AllowedExtensions(ExtensionGroup.Image)]
     [MaxFileSize(AppConstants.MaxFileSizeInBytes)]
     public IFormFile? CoverImage { get; set; }
+
+    string IRequireAuthorAuthorization.AuthorId => AuthorId ?? string.Empty;
 }

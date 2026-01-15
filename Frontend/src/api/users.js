@@ -201,3 +201,20 @@ export const getAllUsers = async (pageNumber = 1, pageSize = 20, searchTerm = ''
     throw error;
   }
 };
+
+/**
+ * Send feedback
+ * @param {Object} data - { subject: string, message: string }
+ * @returns {Promise}
+ */
+export const sendFeedback = async (data) => {
+  try {
+    await axiosClient.post('/users/send-feedback', {
+      subject: data.subject,
+      message: data.message,
+    });
+  } catch (error) {
+    console.error('Error sending feedback:', error);
+    throw error;
+  }
+};

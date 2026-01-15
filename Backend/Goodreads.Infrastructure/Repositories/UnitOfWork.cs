@@ -24,6 +24,8 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Message>? _messageRepository;
     private IRepository<Conversation>? _conversationRepository;
     private IRepository<Notification>? _notificationRepository;
+    private IRepository<Like>? _likeRepository;
+    private IRepository<BookShelfLike>? _bookShelfLikeRepository;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -49,6 +51,8 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Message> Messages => _messageRepository ??= new GenericRepository<Message>(_context);
     public IRepository<Conversation> Conversations => _conversationRepository ??= new GenericRepository<Conversation>(_context);
     public IRepository<Notification> Notifications => _notificationRepository ??= new GenericRepository<Notification>(_context);
+    public IRepository<Like> Likes => _likeRepository ??= new GenericRepository<Like>(_context);
+    public IRepository<BookShelfLike> BookShelfLikes => _bookShelfLikeRepository ??= new GenericRepository<BookShelfLike>(_context);
 
     public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
     public void ClearChangeTracker() => _context.ChangeTracker.Clear();

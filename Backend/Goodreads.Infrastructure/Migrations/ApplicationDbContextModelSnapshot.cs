@@ -218,6 +218,35 @@ namespace Goodreads.Infrastructure.Migrations
                     b.ToTable("BookShelves");
                 });
 
+            modelBuilder.Entity("Goodreads.Domain.Entities.BookShelfLike", b =>
+                {
+                    b.Property<string>("BookId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ShelfId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LikedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("BookId", "ShelfId", "UserId");
+
+                    b.HasIndex("ShelfId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BookShelfLikes");
+                });
+
             modelBuilder.Entity("Goodreads.Domain.Entities.Comment", b =>
                 {
                     b.Property<string>("Id")
@@ -402,6 +431,47 @@ namespace Goodreads.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Informations");
+                });
+
+            modelBuilder.Entity("Goodreads.Domain.Entities.Like", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LikedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TargetId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TargetId", "TargetType");
+
+                    b.HasIndex("TargetId", "TargetType", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("Likes");
                 });
 
             modelBuilder.Entity("Goodreads.Domain.Entities.Message", b =>
@@ -1040,6 +1110,33 @@ namespace Goodreads.Infrastructure.Migrations
                     b.Navigation("Shelf");
                 });
 
+            modelBuilder.Entity("Goodreads.Domain.Entities.BookShelfLike", b =>
+                {
+                    b.HasOne("Goodreads.Domain.Entities.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Goodreads.Domain.Entities.Shelf", "Shelf")
+                        .WithMany()
+                        .HasForeignKey("ShelfId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Goodreads.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("Shelf");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Goodreads.Domain.Entities.Comment", b =>
                 {
                     b.HasOne("Goodreads.Domain.Entities.User", "User")
@@ -1071,6 +1168,17 @@ namespace Goodreads.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("Goodreads.Domain.Entities.FeedBack", b =>
+                {
+                    b.HasOne("Goodreads.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Goodreads.Domain.Entities.Like", b =>
                 {
                     b.HasOne("Goodreads.Domain.Entities.User", "User")
                         .WithMany()

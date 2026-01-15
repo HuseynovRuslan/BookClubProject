@@ -8,7 +8,7 @@ public class QueryParametersValidator : AbstractValidator<QueryParameters>
             .When(q => q.PageNumber != null);
 
         RuleFor(q => q.PageSize)
-            .InclusiveBetween(1, 50).WithMessage("Page size must be between 1 and 50")
+            .InclusiveBetween(1, 1000).WithMessage("Page size must be between 1 and 1000")
             .When(q => q.PageSize != null);
 
         RuleFor(q => q.SortOrder)

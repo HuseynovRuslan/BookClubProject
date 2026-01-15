@@ -47,6 +47,30 @@ internal class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Res
             book.Author = author;
         }
 
+        // Check if ISBN already exists (excluding current book)
+        if (!string.IsNullOrEmpty(request.ISBN) && request.ISBN != book.ISBN)
+        {
+            var existingBookByIsbn = await _unitOfWork.Books.GetSingleOrDefaultAsync(
+                b => b.ISBN == request.ISBN && b.Id != request.Id && !b.IsDeleted);
+            if (existingBookByIsbn != null)
+            {
+                _logger.LogWarning("Book with ISBN {ISBN} already exists", request.ISBN);
+                return Result.Fail(Error.Conflict("Books.DuplicateISBN", $"A book with ISBN '{request.ISBN}' already exists"));
+            }
+        }
+
+        // Check if book with same title already exists (excluding current book)
+        if (!string.IsNullOrEmpty(request.Title) && request.Title.ToLower() != book.Title.ToLower())
+        {
+            var existingBookByTitle = await _unitOfWork.Books.GetSingleOrDefaultAsync(
+                b => b.Title.ToLower() == request.Title.ToLower() && b.Id != request.Id && !b.IsDeleted);
+            if (existingBookByTitle != null)
+            {
+                _logger.LogWarning("Book with title '{Title}' already exists", request.Title);
+                return Result.Fail(Error.Conflict("Books.DuplicateTitle", $"A book with title '{request.Title}' already exists"));
+            }
+        }
+
         // Update cover image if provided
         if (request.CoverImage != null)
         {

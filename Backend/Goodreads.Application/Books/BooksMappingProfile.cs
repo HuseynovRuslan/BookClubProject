@@ -7,6 +7,7 @@ public class BooksMappingProfile : Profile
     public BooksMappingProfile()
     {
         CreateMap<Book, BookDto>()
+            .ForMember(dest => dest.AuthorId, opt => opt.MapFrom(src => src.AuthorId))
             .ForMember(dest => dest.AuthorName, opt => opt.MapFrom(src => src.Author.Name))
             .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.BookGenres.Select(bg => bg.Genre)))
             .ForMember(dest => dest.CoverImageUrl, opt => opt.Ignore()); // Query handler-da təyin edilir

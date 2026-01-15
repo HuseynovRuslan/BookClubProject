@@ -15,36 +15,37 @@ public class BookImageService : IBookImageService
         _localStorageService = localStorageService;
     }
 
-    public string GetCoverImageUrl(string? coverImageUrl, string? isbn, string? coverImageBlobName)
+    public string? GetCoverImageUrl(string? coverImageUrl, string? isbn, string? coverImageBlobName)
     {
-        // 1. ƏVVƏLCƏ lokal şəkil yoxla (coverImageBlobName)
+        // 1. ƏVVƏLCƏ lokal şəkil yoxla (coverImageBlobName) - özümüz yaratdığımız kitablar üçün
+        // coverImageBlobName varsa, bu bizim yüklədiyimiz şəkil deməkdir
         if (!string.IsNullOrEmpty(coverImageBlobName))
         {
-            var localPath = Path.Combine(_env.WebRootPath ?? _env.ContentRootPath, "books", coverImageBlobName);
-            
-            if (File.Exists(localPath))
-            {
-                var localUrl = _localStorageService.GetUrl(LocalContainer.Books, coverImageBlobName);
-                return localUrl;
-            }
+            // LocalStorageService-dən URL al - format: /books/{blobName}
+            return _localStorageService.GetUrl(LocalContainer.Books, coverImageBlobName);
         }
 
-        // 2. Əgər lokal path varsa (coverImageUrl lokal path-dirsə), yoxla
-        if (!string.IsNullOrEmpty(coverImageUrl) && 
-            !coverImageUrl.StartsWith("http://") && 
-            !coverImageUrl.StartsWith("https://"))
+        // 2. Əgər lokal path varsa (coverImageUrl lokal path-dirsə), direkt qaytar
+        if (!string.IsNullOrEmpty(coverImageUrl))
         {
-            // Local path formatı: /books/filename.jpg
-            var fileName = coverImageUrl.TrimStart('/').Replace("books/", "");
-            var localPath = Path.Combine(_env.WebRootPath ?? _env.ContentRootPath, "books", fileName);
-            
-            if (File.Exists(localPath))
+            // Əgər artıq HTTP/HTTPS URL-dirsə (OpenLibrary və ya başqa), olduğu kimi qaytar
+            if (coverImageUrl.StartsWith("http://") || coverImageUrl.StartsWith("https://"))
             {
                 return coverImageUrl;
             }
+            
+            // Local path formatı: /books/filename.jpg və ya books/filename.jpg
+            // Əgər artıq / ilə başlayırsa, olduğu kimi qaytar
+            if (coverImageUrl.StartsWith("/"))
+            {
+                return coverImageUrl;
+            }
+            
+            // Əgər / yoxdursa, əlavə et
+            return $"/{coverImageUrl}";
         }
 
-        // 3. Əgər lokal şəkil yoxdursa, OpenLibrary-dən götür (ISBN varsa)
+        // 3. Əgər lokal şəkil yoxdursa, OpenLibrary-dən götür (ISBN varsa) - yalnız fallback kimi
         if (!string.IsNullOrEmpty(isbn))
         {
             // ISBN-dən xüsusi simvolları təmizlə
@@ -55,14 +56,7 @@ public class BookImageService : IBookImageService
             }
         }
 
-        // 4. Əgər artıq OpenLibrary URL-dirsə (lokal şəkil yoxdursa), olduğu kimi qaytar
-        if (!string.IsNullOrEmpty(coverImageUrl) && 
-            (coverImageUrl.StartsWith("http://") || coverImageUrl.StartsWith("https://")))
-        {
-            return coverImageUrl;
-        }
-
-        // 5. Heç biri yoxdursa, null qaytar
+        // 4. Heç biri yoxdursa, null qaytar
         return null;
     }
 }

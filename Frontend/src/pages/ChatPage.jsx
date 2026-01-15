@@ -182,6 +182,28 @@ const ChatPage = () => {
     }
   }, [newMessage]);
 
+  // Handle message read events from SignalR
+  useEffect(() => {
+    const unsubMessageRead = signalRService.onMessageRead((data) => {
+      // Update message status when receiver reads it
+      // Backend sends MessageId (PascalCase), but JavaScript converts it to messageId (camelCase)
+      const messageId = data?.messageId || data?.MessageId;
+      if (messageId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId
+              ? { ...msg, isRead: true, readAt: data.readAt || data.ReadAt }
+              : msg
+          )
+        );
+      }
+    });
+
+    return () => {
+      unsubMessageRead();
+    };
+  }, []);
+
 
   const initializeChat = async () => {
     // SignalR connection is managed by global SignalRContext

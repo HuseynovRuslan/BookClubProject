@@ -36,29 +36,35 @@ const BookCard = ({ book }) => {
       return null;
     }
 
+    // If already a full URL, return as is
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
 
+    // Normalize path separators
     const normalizedPath = imagePath.replace(/\\/g, '/');
+    
+    // Remove leading slash if present (BASE_URL already ends with /)
     const cleanPath = normalizedPath.startsWith('/') 
       ? normalizedPath.substring(1) 
       : normalizedPath;
 
+    // BASE_URL already ends with '/', so just append cleanPath
     return `${BASE_URL}${cleanPath}`;
   };
 
-  // Priority: OpenLibrary > Backend > Placeholder
-  const openLibraryCover = getOpenLibraryCover(book.isbn || book.ISBN);
+  // Priority: Backend (our uploaded images) > OpenLibrary > Placeholder
   const backendCover = getBackendImageUrl(book.coverImageUrl);
+  const openLibraryCover = getOpenLibraryCover(book.isbn || book.ISBN);
   
   // Initialize current image source on mount or when book changes
   useEffect(() => {
-    const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
     const backend = getBackendImageUrl(book.coverImageUrl);
+    const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
     
-    if (openLib || backend) {
-      setCurrentImageSrc(openLib || backend);
+    // Prioritize backend URL (our uploaded images) over OpenLibrary
+    if (backend || openLib) {
+      setCurrentImageSrc(backend || openLib);
       setImageError(false); // Reset error when book changes
       setImageLoaded(false); // Reset loaded state when book changes
     } else {
@@ -97,13 +103,17 @@ const BookCard = ({ book }) => {
               loading="lazy"
               onError={() => {
                 // Recalculate URLs
-                const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
                 const backend = getBackendImageUrl(book.coverImageUrl);
+                const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
                 
-                // If OpenLibrary failed and we have backend URL, try it
-                if (currentImageSrc === openLib && backend) {
+                // If backend failed, try OpenLibrary as fallback
+                if (currentImageSrc === backend && openLib) {
+                  setCurrentImageSrc(openLib);
+                  setImageError(false); // Reset error to try OpenLibrary
+                } else if (currentImageSrc === openLib && backend) {
+                  // If OpenLibrary failed, try backend
                   setCurrentImageSrc(backend);
-                  setImageError(false); // Reset error to try backend
+                  setImageError(false);
                 } else {
                   // Both failed, show placeholder
                   setImageError(true);

@@ -23,13 +23,19 @@ import {
   LogOut,
   User,
   ChevronDown,
+  Quote,
+  Loader2,
+  Shield,
 } from 'lucide-react';
 import BookCard from '../components/BookCard';
 import ReadingChallengeCard from '../components/ReadingChallengeCard';
+import QuoteCard from '../components/QuoteCard';
+import AddEditQuoteModal from '../components/AddEditQuoteModal';
 import { getAllBooks } from '../api/books';
 import { getUserShelves, getShelfById } from '../api/shelves';
 import { getUserYearChallenge, getSocialFeed, getConversations } from '../api/dashboard';
 import { getCurrentUserProfile } from '../api/users';
+import { getAllQuotes } from '../api/quotes';
 import { useAuth } from '../context/AuthContext';
 import { useSignalR } from '../context/SignalRContext';
 
@@ -138,19 +144,40 @@ const HomePage = () => {
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [challengeBooks, setChallengeBooks] = useState([]);
 
+  // Quotes state
+  const [quotes, setQuotes] = useState([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(true);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteModalMode, setQuoteModalMode] = useState('add');
+  const [editingQuote, setEditingQuote] = useState(null);
+
   useEffect(() => {
     fetchAllData();
   }, [isAuthenticated]);
 
   const fetchAllData = async () => {
-    // Always fetch books
+    // Always fetch books and quotes
     fetchBooks();
+    fetchQuotes();
     
     // Fetch dashboard data only if authenticated
     if (isAuthenticated && user) {
       fetchDashboardData();
     } else {
       setLoadingDashboard(false);
+    }
+  };
+
+  const fetchQuotes = async () => {
+    try {
+      setLoadingQuotes(true);
+      const res = await getAllQuotes(1, 30);
+      const items = res?.items || res?.data || res || [];
+      setQuotes(items);
+    } catch (err) {
+      console.error('Error loading quotes:', err);
+    } finally {
+      setLoadingQuotes(false);
     }
   };
 
@@ -277,6 +304,28 @@ const HomePage = () => {
     navigate('/login');
   };
 
+  // Quote modal handlers
+  const handleOpenAddQuote = () => {
+    setQuoteModalMode('add');
+    setEditingQuote(null);
+    setShowQuoteModal(true);
+  };
+
+  const handleOpenEditQuote = (quote) => {
+    setQuoteModalMode('edit');
+    setEditingQuote(quote);
+    setShowQuoteModal(true);
+  };
+
+  const handleCloseQuoteModal = () => {
+    setShowQuoteModal(false);
+    setEditingQuote(null);
+  };
+
+  const handleQuoteSuccess = () => {
+    fetchQuotes(); // Refresh quotes list
+  };
+
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -305,6 +354,9 @@ const HomePage = () => {
             </Link>
 
             <div className="hidden md:flex items-center gap-6">
+              <Link to="/news" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
+                News
+              </Link>
               {isAuthenticated && (
                 <>
                   <Link to="/feed" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
@@ -321,6 +373,9 @@ const HomePage = () => {
                   </Link>
                 </>
               )}
+              <Link to="/feedback" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
+                Feedback
+              </Link>
             </div>
 
             <div className="flex items-center gap-3">
@@ -421,6 +476,16 @@ const HomePage = () => {
                             </span>
                           )}
                         </Link>
+                        {user?.role === 'Admin' && (
+                          <Link
+                            to="/admin"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-amber-700 hover:bg-amber-50 transition-colors"
+                          >
+                            <Shield className="w-4 h-4 text-amber-600" />
+                            <span className="text-sm font-medium">Admin Panel</span>
+                          </Link>
+                        )}
                       </div>
 
                       {/* Logout */}
@@ -627,6 +692,55 @@ const HomePage = () => {
                   year={new Date().getFullYear()} 
                   onUpdate={fetchDashboardData}
                 />
+
+                {/* Community Quotes Section */}
+                <div className="bg-white rounded-xl border border-stone-200 overflow-hidden flex flex-col" style={{ maxHeight: '600px' }}>
+                  <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Quote className="w-4 h-4 text-amber-500" />
+                      <h3 className="font-semibold text-stone-800 text-sm">Community Quotes</h3>
+                    </div>
+                    <button
+                      onClick={handleOpenAddQuote}
+                      className="flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Add
+                    </button>
+                  </div>
+                  
+                  <div className="p-3 overflow-y-auto flex-1">
+                    {loadingQuotes ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                      </div>
+                    ) : quotes.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Quote className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+                        <p className="text-sm text-stone-500">No quotes yet</p>
+                        <p className="text-xs text-stone-400 mt-1">Be the first to share!</p>
+                        <button
+                          onClick={handleOpenAddQuote}
+                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Share a Quote
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {quotes.map((quote) => (
+                          <QuoteCard
+                            key={quote.id}
+                            quote={quote}
+                            onEdit={handleOpenEditQuote}
+                            onDelete={fetchQuotes}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Community Pulse */}
                 <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
@@ -1012,6 +1126,15 @@ const HomePage = () => {
           </div>
         </div>
       )}
+
+      {/* Add/Edit Quote Modal */}
+      <AddEditQuoteModal
+        isOpen={showQuoteModal}
+        onClose={handleCloseQuoteModal}
+        mode={quoteModalMode}
+        initialData={editingQuote}
+        onSuccess={handleQuoteSuccess}
+      />
     </div>
   );
 };

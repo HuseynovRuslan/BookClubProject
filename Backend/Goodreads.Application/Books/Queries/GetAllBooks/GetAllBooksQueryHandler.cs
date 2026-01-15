@@ -27,10 +27,11 @@ internal class GetAllBooksQueryHandler : IRequestHandler<GetAllBooksQuery, Paged
         var p = request.Parameters;
 
         Expression<Func<Book, bool>> filter = book =>
-            string.IsNullOrEmpty(p.Query)
+            !book.IsDeleted
+            && (string.IsNullOrEmpty(p.Query)
             || book.Title.Contains(p.Query)
             || book.Author.Name.Contains(p.Query)
-            || book.BookGenres.Any(bg => bg.Genre.Name.Contains(p.Query));
+            || book.BookGenres.Any(bg => bg.Genre.Name.Contains(p.Query)));
 
         var (books, totalCount) = await _unitOfWork.Books.GetAllAsync(
             filter: filter,

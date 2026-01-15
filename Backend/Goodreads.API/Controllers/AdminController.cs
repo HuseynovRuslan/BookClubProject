@@ -10,6 +10,7 @@ using Goodreads.Application.FeedBacks.Commands.DeleteFeedBack;
 using Goodreads.Application.FeedBacks.Queries.GetAllFeedBacks;
 using Goodreads.Application.FeedBacks.Queries.GetFeedBackById;
 using Goodreads.Application.News.Commands.DeleteInformation;
+using Goodreads.Application.Users.Commands.DeleteUser;
 using Goodreads.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -89,6 +90,15 @@ public class AdminController : BaseController
     public async Task<IActionResult> DeleteInformation(string id)
     {
         var result = await Sender.Send(new DeleteInformationCommand(id));
+        return result.Match(
+            () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
+
+    [HttpDelete("users/{id}")]
+    public async Task<IActionResult> DeleteUser(string id)
+    {
+        var result = await Sender.Send(new DeleteUserCommand(id));
         return result.Match(
             () => NoContent(),
             failure => CustomResults.Problem(failure));

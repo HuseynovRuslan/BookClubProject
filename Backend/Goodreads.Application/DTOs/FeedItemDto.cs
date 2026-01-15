@@ -16,6 +16,12 @@ public class FeedItemDto
     // Book added activity
     public BookDto? Book { get; set; }
     public string? ShelfName { get; set; }
+    public string? BookShelfId { get; set; }
+    
+    // Like data for BookAdded items
+    public int LikesCount { get; set; }
+    public int CommentsCount { get; set; }
+    public bool IsLiked { get; set; }
 }
 
 
