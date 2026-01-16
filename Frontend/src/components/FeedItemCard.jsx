@@ -30,7 +30,16 @@ const BASE_URL = API_BASE.endsWith('/') ? API_BASE : API_BASE + '/';
 const getImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url}`;
+  
+  // Normalize path separators (convert Windows backslashes to forward slashes)
+  let normalizedPath = url.replace(/\\/g, '/');
+  
+  // Remove leading slash if present (BASE_URL already ends with /)
+  const cleanPath = normalizedPath.startsWith('/') 
+    ? normalizedPath.substring(1) 
+    : normalizedPath;
+  
+  return `${BASE_URL}${cleanPath}`;
 };
 
 // Relative time formatter

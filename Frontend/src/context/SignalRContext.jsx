@@ -18,6 +18,8 @@ export const SignalRProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [newMessage, setNewMessage] = useState(null);
   const [onlineUserIds, setOnlineUserIds] = useState([]);
+  const [newNotification, setNewNotification] = useState(null);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const currentConversationUserIdRef = useRef(null);
   const lastProcessedMessageIdRef = useRef(null);
 
@@ -93,11 +95,19 @@ export const SignalRProvider = ({ children }) => {
         });
       });
 
+      // Subscribe to notifications
+      const unsubNotification = signalRService.onNotification((notification) => {
+        setNewNotification(notification);
+        // Don't increment count here - let the component fetch fresh count from backend
+        // This prevents double-counting issues
+      });
+
       // Store unsubscribe functions for cleanup
       window._signalRCleanup = () => {
         unsubMessage();
         unsubStatus();
         unsubOnlineList();
+        unsubNotification();
       };
 
       // NOW start the connection (after subscribing)
@@ -149,17 +159,31 @@ export const SignalRProvider = ({ children }) => {
     currentConversationUserIdRef.current = userId;
   }, []);
 
+  // Clear new notification after it's been handled
+  const clearNewNotification = useCallback(() => {
+    setNewNotification(null);
+  }, []);
+
+  // Update notification unread count from external source (e.g., API)
+  const setNotificationCount = useCallback((count) => {
+    setNotificationUnreadCount(count);
+  }, []);
+
   const value = {
     isConnected,
     unreadCount,
     newMessage,
     onlineUserIds,
+    newNotification,
+    notificationUnreadCount,
     resetUnreadCount,
     clearNewMessage,
     setTotalUnreadCount,
     joinConversation,
     leaveConversation,
     setCurrentConversationUser,
+    clearNewNotification,
+    setNotificationCount,
   };
 
   return (

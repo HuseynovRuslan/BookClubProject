@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BookOpen, ChevronLeft, ChevronRight, Loader, ArrowLeft, Search } from 'lucide-react';
 import BookCard from '../components/BookCard';
 import { getAllBooks } from '../api/books';
@@ -7,21 +7,30 @@ import { toast } from 'react-toastify';
 
 const BrowseBooksPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const pageSize = 12;
 
+  // Read search query from URL
   useEffect(() => {
-    fetchBooks(currentPage);
-  }, [currentPage]);
+    const search = searchParams.get('search') || '';
+    setSearchQuery(search);
+    setCurrentPage(1); // Reset to first page when search changes
+  }, [searchParams]);
 
-  const fetchBooks = async (page) => {
+  useEffect(() => {
+    fetchBooks(currentPage, searchQuery);
+  }, [currentPage, searchQuery]);
+
+  const fetchBooks = async (page, query = '') => {
     try {
       setLoading(true);
-      const response = await getAllBooks(page, pageSize);
+      const response = await getAllBooks(page, pageSize, query || null);
       
       setBooks(response.items || []);
       setTotalPages(response.totalPages || 1);
@@ -78,20 +87,54 @@ const BrowseBooksPage = () => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearchQuery(value);
+                // Update URL without page reload
+                const params = new URLSearchParams(searchParams);
+                if (value.trim()) {
+                  params.set('search', value.trim());
+                } else {
+                  params.delete('search');
+                }
+                navigate(`/books?${params.toString()}`, { replace: true });
+                setCurrentPage(1); // Reset to first page on search
+              }}
+              placeholder="Search books by title, author, or genre..."
+              className="w-full pl-12 pr-4 py-3.5 bg-white border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition-all"
+            />
+          </div>
+        </div>
+
         {/* Stats Bar */}
         {!loading && (
           <div className="mb-6 flex items-center justify-between">
             <p className="text-stone-600 text-sm">
-              Showing{' '}
-              <span className="font-medium text-stone-900">
-                {(currentPage - 1) * pageSize + 1}
-              </span>
-              {' – '}
-              <span className="font-medium text-stone-900">
-                {Math.min(currentPage * pageSize, totalCount)}
-              </span>
-              {' of '}
-              <span className="font-medium text-stone-900">{totalCount}</span> books
+              {searchQuery ? (
+                <>
+                  Found <span className="font-medium text-stone-900">{totalCount}</span> book{totalCount !== 1 ? 's' : ''} matching "{searchQuery}"
+                </>
+              ) : (
+                <>
+                  Showing{' '}
+                  <span className="font-medium text-stone-900">
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>
+                  {' – '}
+                  <span className="font-medium text-stone-900">
+                    {Math.min(currentPage * pageSize, totalCount)}
+                  </span>
+                  {' of '}
+                  <span className="font-medium text-stone-900">{totalCount}</span> books
+                </>
+              )}
             </p>
             <p className="text-sm text-stone-500">
               Page {currentPage} of {totalPages}

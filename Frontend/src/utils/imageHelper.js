@@ -1,5 +1,6 @@
 // API Base URL - environment variable ilə konfiqurasiya olunur
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const API_BASE_URL = API_BASE.endsWith('/') ? API_BASE : API_BASE + '/';
 
 /**
  * Helper function to get the correct image URL
@@ -8,7 +9,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
  * @returns {string|null} - Full image URL or null
  */
 export const getImageUrl = (imagePath, baseURL = API_BASE_URL) => {
-  if (!imagePath) {
+  if (!imagePath || imagePath.trim() === '') {
     return null;
   }
 
@@ -17,9 +18,15 @@ export const getImageUrl = (imagePath, baseURL = API_BASE_URL) => {
     return imagePath;
   }
 
-  // If it's a relative path, prepend the base URL
-  // Remove leading slash if present to avoid double slashes
-  const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  // Normalize path separators
+  const normalizedPath = imagePath.replace(/\\/g, '/');
+  
+  // Remove leading slash if present (baseURL already ends with /)
+  const cleanPath = normalizedPath.startsWith('/') 
+    ? normalizedPath.substring(1) 
+    : normalizedPath;
+  
+  // baseURL already ends with '/', so just append cleanPath
   return `${baseURL}${cleanPath}`;
 };
 

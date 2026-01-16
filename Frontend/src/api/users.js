@@ -191,8 +191,9 @@ export const getCurrentUserReviews = async (pageNumber = 1, pageSize = 10) => {
 export const getAllUsers = async (pageNumber = 1, pageSize = 20, searchTerm = '') => {
   try {
     const params = { pageNumber, pageSize };
+    // Backend uses 'Query' parameter, not 'searchTerm'
     if (searchTerm) {
-      params.searchTerm = searchTerm;
+      params.query = searchTerm;
     }
     const response = await axiosClient.get('/users/get-all-users', { params });
     return response.data;

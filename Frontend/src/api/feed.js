@@ -56,16 +56,32 @@ export const getUserFeed = async (userId, pageNumber = 1, pageSize = 10) => {
 };
 
 /**
+ * Helper to check if user is admin
+ */
+const isAdmin = (user) => {
+  if (!user) return false;
+  const isAdminByRole = user?.role === 'Admin' || 
+         user?.roles?.includes('Admin') ||
+         user?.userRole === 'Admin' ||
+         (Array.isArray(user?.roles) && user.roles.some(r => r === 'Admin' || r?.name === 'Admin'));
+  const isAdminByUsername = user?.username?.toLowerCase() === 'admin' ||
+                            user?.username?.toLowerCase().startsWith('admin_');
+  return isAdminByRole || isAdminByUsername;
+};
+
+/**
  * Get suggested users to follow
  * @param {number} limit
- * @returns {Promise} - Array of users
+ * @returns {Promise} - Array of users (excluding admins)
  */
 export const getSuggestedUsers = async (limit = 5) => {
   try {
     const response = await axiosClient.get('/users/get-suggested-users', {
       params: { limit },
     });
-    return response.data.data || [];
+    const users = response.data.data || [];
+    // Filter out admin users
+    return users.filter(u => !isAdmin(u));
   } catch (error) {
     console.error('Error fetching suggested users:', error);
     return [];

@@ -32,10 +32,4 @@
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.17" />
   </ItemGroup>
 
-  <!-- Completely override DiscoverPrecompressedAssets target to prevent duplicate key errors -->
-  <!-- This must be placed after PropertyGroup to ensure it overrides SDK targets -->
-  <Target Name="DiscoverPrecompressedAssets" />
-  <Target Name="_DiscoverPrecompressedAssets" />
-
-
 </Project>

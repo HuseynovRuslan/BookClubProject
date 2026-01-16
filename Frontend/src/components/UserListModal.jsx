@@ -10,6 +10,18 @@ const getImageUrl = (url) => {
   return `${BASE_URL}${url}`;
 };
 
+// Helper to check if user is admin
+const isAdmin = (user) => {
+  if (!user) return false;
+  const isAdminByRole = user?.role === 'Admin' || 
+         user?.roles?.includes('Admin') ||
+         user?.userRole === 'Admin' ||
+         (Array.isArray(user?.roles) && user.roles.some(r => r === 'Admin' || r?.name === 'Admin'));
+  const isAdminByUsername = user?.username?.toLowerCase() === 'admin' ||
+                            user?.username?.toLowerCase().startsWith('admin_');
+  return isAdminByRole || isAdminByUsername;
+};
+
 /**
  * UserListModal - A reusable modal to display a list of users
  * @param {boolean} isOpen - Whether the modal is open
@@ -23,7 +35,7 @@ const UserListModal = ({ isOpen, onClose, title, users = [] }) => {
   if (!isOpen) return null;
 
   const handleUserClick = (username) => {
-    navigate(`/user/${username}`);
+    navigate(`/profile/${username}`);
     onClose();
   };
 
@@ -59,7 +71,7 @@ const UserListModal = ({ isOpen, onClose, title, users = [] }) => {
             </div>
           ) : (
             <div className="space-y-2">
-              {users.map((user) => {
+              {users.filter(u => !isAdmin(u)).map((user) => {
                 const profilePicUrl = getImageUrl(user.profilePictureUrl);
                 const initials = user.firstName && user.lastName
                   ? `${user.firstName[0]}${user.lastName[0]}`

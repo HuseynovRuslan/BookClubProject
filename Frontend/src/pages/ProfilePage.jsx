@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   User,
   Camera,
@@ -23,6 +23,12 @@ import {
   BookOpen,
   Users,
   UserPlus,
+  UserCheck,
+  MessageCircle,
+  Library,
+  ChevronRight,
+  BookMarked,
+  ExternalLink,
 } from 'lucide-react';
 import {
   getCurrentUserProfile,
@@ -33,43 +39,159 @@ import {
   deleteProfilePicture,
   changePassword,
   deleteAccount,
+  getUserProfileByUsername,
+  getUserProfileById,
 } from '../api/users';
-import { getUserShelves } from '../api/shelves';
+import { getUserShelves, getUserShelvesById } from '../api/shelves';
+import { followUser, unfollowUser, getMyFollowing, getUserFollowers, getUserFollowing } from '../api/userFollows';
+import { startConversation } from '../api/messages';
+import { getUserFeed } from '../api/feed';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import BookCard from '../components/BookCard';
+import UserListModal from '../components/UserListModal';
+import FeedItemCard from '../components/FeedItemCard';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
 
+// Helper to get full image URL
+const getImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  
+  // Normalize path separators (convert Windows backslashes to forward slashes)
+  let normalizedPath = url.replace(/\\/g, '/');
+  
+  // Remove leading slash if present
+  const cleanPath = normalizedPath.startsWith('/') 
+    ? normalizedPath.substring(1) 
+    : normalizedPath;
+  
+  return `${BASE_URL}/${cleanPath}`;
+};
+
+// Helper to check if user is admin
+const isAdmin = (user) => {
+  return user?.role === 'Admin' || user?.roles?.includes('Admin');
+};
+
+// Format date
+const formatDate = (dateStr) => {
+  if (!dateStr) return 'Not set';
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+// Shelf Preview Card
+const ShelfPreviewCard = ({ shelf }) => {
+  const books = shelf?.books || [];
+  const displayBooks = books.slice(0, 4);
+  
+  return (
+    <div className="bg-white rounded-xl border border-stone-200 p-5 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Library className="w-5 h-5 text-amber-500" />
+          <h3 className="font-semibold text-stone-800">{shelf.name}</h3>
+          <span className="text-sm text-stone-400">({shelf.bookCount || books.length})</span>
+        </div>
+        {books.length > 4 && (
+          <Link
+            to={`/shelves/${shelf.id}`}
+            className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+          >
+            View all
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        )}
+      </div>
+      
+      {displayBooks.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {displayBooks.map((book) => (
+            <BookCard key={book.id} book={book} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-6 text-stone-400">
+          <BookOpen className="w-8 h-8 mx-auto mb-2 text-stone-300" />
+          <p className="text-sm">No books in this shelf yet</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const tabs = [
   { id: 'overview', label: 'Overview', icon: Eye },
+  { id: 'shelves', label: 'Bookshelves', icon: Library },
+  { id: 'activity', label: 'Activity', icon: BookOpen },
+];
+
+const editTabs = [
   { id: 'edit', label: 'Edit Profile', icon: Edit3 },
   { id: 'socials', label: 'Social Links', icon: LinkIcon },
   { id: 'security', label: 'Security', icon: Shield },
 ];
 
 const ProfilePage = () => {
+  const { identifier } = useParams(); // Can be username or userId
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const fileInputRef = useRef(null);
-  const coverInputRef = useRef(null);
+
+  // Determine if viewing own profile
+  const isOwnProfile = !identifier || identifier === user?.username || identifier === user?.id;
 
   // State
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const [deletingPicture, setDeletingPicture] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
-  // Profile data
-  const [profile, setProfile] = useState(null);
-  const [socials, setSocials] = useState({});
-  const [stats, setStats] = useState({ booksRead: 0, followers: 0, following: 0 });
-  
-  // Cover image (local state - stored in localStorage since no backend support)
-  const [coverImage, setCoverImage] = useState(() => {
-    return localStorage.getItem('coverImage') || null;
+  // Profile data - Initialize with user data if viewing own profile to prevent flickering
+  const [profile, setProfile] = useState(() => {
+    // Check if viewing own profile during initialization
+    const checkIsOwnProfile = !identifier || identifier === user?.username || identifier === user?.id;
+    if (checkIsOwnProfile && user) {
+      return {
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profilePictureUrl: user.profilePictureUrl,
+        bio: user.bio,
+        country: user.country,
+      };
+    }
+    return null;
   });
+  const [socials, setSocials] = useState({});
+  const [shelves, setShelves] = useState([]);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [booksReadCount, setBooksReadCount] = useState(0);
+
+  // Modal states
+  const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
+  const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
+  const [followersList, setFollowersList] = useState([]);
+  const [followingList, setFollowingList] = useState([]);
+  const [loadingFollowers, setLoadingFollowers] = useState(false);
+  const [loadingFollowing, setLoadingFollowing] = useState(false);
+
+  // Activity feed state
+  const [feedItems, setFeedItems] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [feedPage, setFeedPage] = useState(1);
+  const [hasMoreFeed, setHasMoreFeed] = useState(true);
 
   // Form states
   const [profileForm, setProfileForm] = useState({
@@ -96,36 +218,142 @@ const ProfilePage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
-
-  const fetchAllData = async () => {
+  // Fetch user feed for Activity tab
+  const fetchUserFeed = useCallback(async (pageNum = 1, append = false) => {
+    if (!profile?.id) return;
+    
     try {
-      setLoading(true);
-      const [profileData, socialsData, shelvesData] = await Promise.allSettled([
-        getCurrentUserProfile(),
-        getUserSocialLinks(),
-        getUserShelves(),
-      ]);
-
-      if (profileData.status === 'fulfilled') {
-        const p = profileData.value;
-        console.log('Profile data:', p);
-        console.log('Profile picture URL:', p?.profilePictureUrl);
-        setProfile(p);
-        setProfileForm({
-          firstName: p.firstName || '',
-          lastName: p.lastName || '',
-          bio: p.bio || '',
-          country: p.country || '',
-          websiteUrl: p.websiteUrl || '',
-          dateOfBirth: p.dateOfBirth || '',
-        });
+      if (pageNum === 1 && !append) {
+        setFeedLoading(true);
       }
 
-      if (socialsData.status === 'fulfilled') {
-        const s = socialsData.value || {};
+      const response = await getUserFeed(profile.id, pageNum, 10);
+
+      let items = [];
+      let totalPages = 1;
+
+      if (response) {
+        if (Array.isArray(response)) {
+          items = response;
+        } else if (Array.isArray(response.data)) {
+          items = response.data;
+          totalPages = response.totalPages || 1;
+        } else if (response.items && Array.isArray(response.items)) {
+          items = response.items;
+          totalPages = response.totalPages || 1;
+        }
+      }
+
+      // Filter out items from admin users (shouldn't happen but just in case)
+      const filteredItems = items.filter(item => !isAdmin(item?.user));
+      
+      if (append) {
+        setFeedItems((prev) => [...prev, ...filteredItems]);
+      } else {
+        setFeedItems(filteredItems);
+      }
+
+      setHasMoreFeed(pageNum < totalPages);
+      setFeedPage(pageNum);
+    } catch (error) {
+      console.error('Error fetching user feed:', error);
+      toast.error('Failed to load activity feed');
+    } finally {
+      setFeedLoading(false);
+    }
+  }, [profile?.id]);
+
+  // Fetch profile data
+  const fetchAllData = useCallback(async () => {
+    try {
+      setLoading(true);
+      let profileData;
+
+      // Determine if it's own profile or another user's profile
+      if (isOwnProfile) {
+        // Own profile
+        profileData = await getCurrentUserProfile();
+      } else {
+        // Another user's profile - try username first, then ID
+        try {
+          profileData = await getUserProfileByUsername(identifier);
+        } catch (err) {
+          // If username fails, try as ID
+          if (err.response?.status === 404) {
+            profileData = await getUserProfileById(identifier);
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      // Check if profile is admin - don't show admin profiles
+      if (!isOwnProfile && isAdmin(profileData)) {
+        setError('User not found');
+        setLoading(false);
+        return;
+      }
+
+      setProfile(profileData);
+      setProfileForm({
+        firstName: profileData.firstName || '',
+        lastName: profileData.lastName || '',
+        bio: profileData.bio || '',
+        country: profileData.country || '',
+        websiteUrl: profileData.websiteUrl || '',
+        dateOfBirth: profileData.dateOfBirth || '',
+      });
+
+      // Fetch additional data in parallel
+      const promises = [];
+
+      // Get shelves
+      if (isOwnProfile) {
+        promises.push(getUserShelves());
+      } else {
+        promises.push(getUserShelvesById(profileData.id, 1, 10));
+      }
+
+      // Get social links (only for own profile)
+      if (isOwnProfile) {
+        promises.push(getUserSocialLinks());
+      } else {
+        promises.push(Promise.resolve(null));
+      }
+
+      // Get followers/following counts
+      promises.push(getUserFollowers(profileData.id, 1, 1));
+      promises.push(getUserFollowing(profileData.id, 1, 1));
+
+      const [shelvesData, socialsData, followersRes, followingRes] = await Promise.allSettled(promises);
+
+      // Process shelves
+      if (shelvesData.status === 'fulfilled') {
+        let shelvesList = [];
+        const data = shelvesData.value;
+        if (Array.isArray(data)) {
+          shelvesList = data;
+        } else if (Array.isArray(data?.data)) {
+          shelvesList = data.data;
+        } else if (Array.isArray(data?.items)) {
+          shelvesList = data.items;
+        }
+        
+        // For other users, show only default shelves
+        if (!isOwnProfile) {
+          shelvesList = shelvesList.filter(s => s.isDefault);
+        }
+        
+        setShelves(shelvesList);
+        
+        // Count books read
+        const readShelf = shelvesList.find(s => s.name === 'Read');
+        setBooksReadCount(readShelf?.bookCount || readShelf?.books?.length || 0);
+      }
+
+      // Process social links
+      if (socialsData.status === 'fulfilled' && socialsData.value) {
+        const s = socialsData.value;
         setSocials(s);
         setSocialsForm({
           facebook: s.facebook || '',
@@ -134,18 +362,161 @@ const ProfilePage = () => {
         });
       }
 
-      if (shelvesData.status === 'fulfilled') {
-        const shelves = shelvesData.value?.items || shelvesData.value || [];
-        // Count books in "Read" shelf
-        const readShelf = shelves.find(s => s.name === 'Read');
-        const booksRead = readShelf?.bookCount || readShelf?.books?.length || 0;
-        setStats(prev => ({ ...prev, booksRead }));
+      // Process followers count
+      if (followersRes.status === 'fulfilled') {
+        const data = followersRes.value;
+        setFollowersCount(data?.totalCount || data?.length || 0);
+      }
+
+      // Process following count
+      if (followingRes.status === 'fulfilled') {
+        const data = followingRes.value;
+        setFollowingCount(data?.totalCount || data?.length || 0);
+      }
+
+      // Check if current user follows this profile
+      if (!isOwnProfile && user?.id) {
+        try {
+          const myFollowingRes = await getMyFollowing(1, 1000);
+          let myFollowing = [];
+          if (Array.isArray(myFollowingRes)) {
+            myFollowing = myFollowingRes;
+          } else if (Array.isArray(myFollowingRes?.data)) {
+            myFollowing = myFollowingRes.data;
+          } else if (Array.isArray(myFollowingRes?.items)) {
+            myFollowing = myFollowingRes.items;
+          }
+          const isFollowed = myFollowing.some(u => u.id === profileData.id);
+          setIsFollowing(isFollowed);
+        } catch (err) {
+          console.error('Error checking follow status:', err);
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
     } finally {
       setLoading(false);
+    }
+  }, [identifier, isOwnProfile, user?.id]);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  // Fetch activity feed when tab is active
+  useEffect(() => {
+    if (activeTab === 'activity' && profile?.id && feedItems.length === 0) {
+      fetchUserFeed(1);
+    }
+  }, [activeTab, profile?.id, fetchUserFeed]);
+
+  // Handle follow/unfollow
+  const handleFollowToggle = async () => {
+    if (followLoading || isOwnProfile || !profile?.id || isAdmin(profile)) return;
+    
+    setFollowLoading(true);
+    const wasFollowing = isFollowing;
+    
+    // Optimistic update
+    setIsFollowing(!wasFollowing);
+    setFollowersCount(prev => wasFollowing ? prev - 1 : prev + 1);
+    
+    try {
+      if (wasFollowing) {
+        await unfollowUser(profile.id);
+        toast.success(`Unfollowed ${profile.firstName || profile.username}`);
+      } else {
+        await followUser(profile.id);
+        toast.success(`Following ${profile.firstName || profile.username}`);
+      }
+    } catch (error) {
+      // Handle 409 Conflict
+      if (error.response?.status === 409) {
+        if (!wasFollowing) {
+          setIsFollowing(true);
+          toast.info(`Already following ${profile.firstName || profile.username}`);
+        } else {
+          setIsFollowing(false);
+          setFollowersCount(prev => prev - 1);
+        }
+      } else {
+        // Revert on error
+        setIsFollowing(wasFollowing);
+        setFollowersCount(prev => wasFollowing ? prev + 1 : prev - 1);
+        toast.error(wasFollowing ? 'Failed to unfollow' : 'Failed to follow');
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  // Navigate to messages
+  const handleMessage = async () => {
+    if (!profile?.id) return;
+    
+    try {
+      await startConversation(profile.id);
+      navigate('/messages', { state: { selectedUserId: profile.id } });
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      toast.error('Failed to start conversation');
+    }
+  };
+
+  // Handle opening followers modal
+  const handleOpenFollowers = async () => {
+    if (!profile?.id || loadingFollowers) return;
+    
+    setLoadingFollowers(true);
+    try {
+      const response = await getUserFollowers(profile.id, 1, 100);
+      
+      let users = [];
+      if (Array.isArray(response)) {
+        users = response;
+      } else if (Array.isArray(response?.data)) {
+        users = response.data;
+      } else if (Array.isArray(response?.items)) {
+        users = response.items;
+      }
+      
+      // No need to filter here - backend already filters admins
+      setFollowersList(users);
+      setIsFollowersModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching followers:', error);
+      toast.error('Failed to load followers');
+    } finally {
+      setLoadingFollowers(false);
+    }
+  };
+
+  // Handle opening following modal
+  const handleOpenFollowing = async () => {
+    if (!profile?.id || loadingFollowing) return;
+    
+    setLoadingFollowing(true);
+    try {
+      const response = await getUserFollowing(profile.id, 1, 100);
+      
+      let users = [];
+      if (Array.isArray(response)) {
+        users = response;
+      } else if (Array.isArray(response?.data)) {
+        users = response.data;
+      } else if (Array.isArray(response?.items)) {
+        users = response.items;
+      }
+      
+      // No need to filter here - backend already filters admins
+      setFollowingList(users);
+      setIsFollowingModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching following:', error);
+      toast.error('Failed to load following');
+    } finally {
+      setLoadingFollowing(false);
     }
   };
 
@@ -199,13 +570,11 @@ const ProfilePage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size must be less than 5MB');
       return;
@@ -224,37 +593,10 @@ const ProfilePage = () => {
       toast.error(errorMessage);
     } finally {
       setUploadingPicture(false);
-      // Reset input so same file can be selected again
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
-  };
-
-  const handleCoverUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingCover(true);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result;
-      setCoverImage(base64);
-      localStorage.setItem('coverImage', base64);
-      toast.success('Cover image updated');
-      setUploadingCover(false);
-    };
-    reader.onerror = () => {
-      toast.error('Failed to upload cover');
-      setUploadingCover(false);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleDeleteCover = () => {
-    setCoverImage(null);
-    localStorage.removeItem('coverImage');
-    toast.success('Cover image removed');
   };
 
   const handleDeletePicture = async () => {
@@ -288,34 +630,18 @@ const ProfilePage = () => {
   };
 
   const getInitials = () => {
-    const first = profile?.firstName?.[0] || user?.username?.[0] || 'U';
+    const first = profile?.firstName?.[0] || user?.username?.[0] || profile?.username?.[0] || 'U';
     const last = profile?.lastName?.[0] || '';
     return (first + last).toUpperCase();
   };
 
-  // Format profile picture URL - add base URL if needed
   const getProfilePictureUrl = () => {
-    const url = profile?.profilePictureUrl;
-    if (!url) return null;
-    
-    // If already a full URL, return as is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    
-    // Prepend base URL for relative paths
-    const cleanPath = url.replace(/\\/g, '/'); // Replace backslashes
-    return `${BASE_URL}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
+    return getImageUrl(profile?.profilePictureUrl);
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return 'Not set';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+  const displayName = profile?.firstName && profile?.lastName
+    ? `${profile.firstName} ${profile.lastName}`
+    : profile?.username || user?.username || 'User';
 
   if (loading) {
     return (
@@ -331,10 +657,43 @@ const ProfilePage = () => {
     );
   }
 
+  if (error || !profile) {
+    return (
+      <div className="min-h-screen bg-stone-50">
+        <div className="bg-white border-b border-stone-200 sticky top-0 z-40">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+            <button
+              onClick={() => navigate('/')}
+              className="group inline-flex items-center gap-2 text-stone-500 hover:text-stone-800 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-medium">Back to Home</span>
+            </button>
+          </div>
+        </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 text-center">
+          <div className="w-20 h-20 mx-auto bg-stone-100 rounded-full flex items-center justify-center mb-4">
+            <Users className="w-10 h-10 text-stone-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-stone-800 mb-2">User not found</h2>
+          <p className="text-stone-500 mb-6">{error || "The user doesn't exist or has been removed."}</p>
+          <button
+            onClick={() => navigate('/community')}
+            className="px-6 py-2.5 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
+          >
+            Browse Community
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentTabs = isOwnProfile ? [...tabs, ...editTabs] : tabs;
+
   return (
     <div className="min-h-screen bg-stone-50">
       {/* Header */}
-      <div className="bg-white border-b border-stone-200">
+      <div className="bg-white border-b border-stone-200 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <button
             onClick={() => navigate('/')}
@@ -349,103 +708,58 @@ const ProfilePage = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Profile Header Card */}
         <div className="bg-white rounded-xl border border-stone-200 overflow-hidden mb-6">
-          {/* Cover */}
-          <div className="relative h-48 group">
-            {coverImage ? (
-              <img
-                src={coverImage}
-                alt="Cover"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-r from-stone-800 via-stone-700 to-stone-900"></div>
-            )}
-            
-            {/* Cover Upload/Delete Buttons */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-              <button
-                onClick={() => coverInputRef.current?.click()}
-                disabled={uploadingCover}
-                className="px-4 py-2 bg-white/90 hover:bg-white rounded-lg text-stone-800 text-sm font-medium flex items-center gap-2 transition-colors"
-              >
-                {uploadingCover ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Camera className="w-4 h-4" />
-                )}
-                {coverImage ? 'Change Cover' : 'Add Cover'}
-              </button>
-              {coverImage && (
-                <button
-                  onClick={handleDeleteCover}
-                  className="px-4 py-2 bg-red-500/90 hover:bg-red-500 rounded-lg text-white text-sm font-medium flex items-center gap-2 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Remove
-                </button>
-              )}
-            </div>
-            <input
-              ref={coverInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleCoverUpload}
-              className="hidden"
-            />
-          </div>
-          
-          {/* Profile Info */}
-          <div className="px-6 pb-6">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4 -mt-16">
+          <div className="px-6 py-6">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-6">
               {/* Avatar */}
               <div className="relative group shrink-0">
-                <div className="w-28 h-28 rounded-full border-4 border-white bg-stone-200 overflow-hidden shadow-lg">
+                <div className="w-28 h-28 rounded-full border-4 border-stone-100 bg-stone-200 overflow-hidden shadow-lg">
                   {getProfilePictureUrl() ? (
                     <img
                       src={getProfilePictureUrl()}
                       alt="Profile"
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        console.error('Profile image failed to load:', getProfilePictureUrl());
                         e.target.style.display = 'none';
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-stone-700 text-white text-3xl font-bold">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-stone-700 to-stone-900 text-white text-3xl font-bold">
                       {getInitials()}
                     </div>
                   )}
                 </div>
                 
-                {/* Upload/Delete Buttons */}
-                <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingPicture}
-                    className="w-9 h-9 bg-stone-900/80 hover:bg-stone-900 rounded-full flex items-center justify-center text-white transition-colors"
-                    title="Upload picture"
-                  >
-                    {uploadingPicture ? (
-                      <Loader className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Camera className="w-4 h-4" />
-                    )}
-                  </button>
-                  {getProfilePictureUrl() && (
+                {/* Upload/Delete Buttons - Only for own profile */}
+                {isOwnProfile && (
+                  <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={handleDeletePicture}
-                      disabled={deletingPicture}
-                      className="w-9 h-9 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors"
-                      title="Remove picture"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingPicture}
+                      className="w-9 h-9 bg-stone-900/80 hover:bg-stone-900 rounded-full flex items-center justify-center text-white transition-colors"
+                      title="Upload picture"
                     >
-                      {deletingPicture ? (
+                      {uploadingPicture ? (
                         <Loader className="w-4 h-4 animate-spin" />
                       ) : (
-                        <Trash2 className="w-4 h-4" />
+                        <Camera className="w-4 h-4" />
                       )}
                     </button>
-                  )}
-                </div>
+                    {getProfilePictureUrl() && (
+                      <button
+                        onClick={handleDeletePicture}
+                        disabled={deletingPicture}
+                        className="w-9 h-9 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors"
+                        title="Remove picture"
+                      >
+                        {deletingPicture ? (
+                          <Loader className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -455,33 +769,107 @@ const ProfilePage = () => {
                 />
               </div>
 
-              {/* Name & Bio */}
-              <div className="flex-1 min-w-0 pt-16 sm:pt-20">
-                <h1 className="text-2xl font-bold text-stone-900">
-                  {profile?.firstName || profile?.lastName
-                    ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
-                    : user?.username || 'User'}
-                </h1>
-                <p className="text-stone-500">@{user?.username || user?.email}</p>
+              {/* Name & Info */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-stone-900">{displayName}</h1>
+                <p className="text-stone-500 mb-2">@{profile?.username || user?.username}</p>
                 {profile?.bio && (
-                  <p className="text-stone-600 mt-2 line-clamp-2">{profile.bio}</p>
+                  <p className="text-stone-600 mb-4">{profile.bio}</p>
                 )}
-              </div>
+                
+                {/* Meta Info */}
+                {!isOwnProfile && (
+                  <div className="flex flex-wrap gap-4 text-sm text-stone-500 mb-4">
+                    {profile?.country && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {profile.country}
+                      </span>
+                    )}
+                    {profile?.websiteUrl && (
+                      <a
+                        href={profile.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-amber-600 hover:text-amber-700"
+                      >
+                        <Globe className="w-4 h-4" />
+                        Website
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                    {profile?.createdAt && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        Joined {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                )}
 
-              {/* Stats */}
-              <div className="flex gap-6 pt-2 sm:pt-20">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-stone-900">{stats.booksRead}</div>
-                  <div className="text-xs text-stone-500">Books Read</div>
+                {/* Stats */}
+                <div className="flex gap-6 mb-4">
+                  <button
+                    onClick={handleOpenFollowers}
+                    disabled={loadingFollowers}
+                    className="text-center hover:bg-stone-50 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <div className="text-xl font-bold text-stone-900">
+                      {loadingFollowers ? <Loader className="w-5 h-5 animate-spin mx-auto" /> : followersCount}
+                    </div>
+                    <div className="text-xs text-stone-500">Followers</div>
+                  </button>
+                  <button
+                    onClick={handleOpenFollowing}
+                    disabled={loadingFollowing}
+                    className="text-center hover:bg-stone-50 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <div className="text-xl font-bold text-stone-900">
+                      {loadingFollowing ? <Loader className="w-5 h-5 animate-spin mx-auto" /> : followingCount}
+                    </div>
+                    <div className="text-xs text-stone-500">Following</div>
+                  </button>
+                  <div className="text-center px-3 py-2">
+                    <div className="text-xl font-bold text-stone-900">{booksReadCount}</div>
+                    <div className="text-xs text-stone-500">Books Read</div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-stone-900">{stats.followers}</div>
-                  <div className="text-xs text-stone-500">Followers</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-stone-900">{stats.following}</div>
-                  <div className="text-xs text-stone-500">Following</div>
-                </div>
+
+                {/* Action Buttons */}
+                {!isOwnProfile && !isAdmin(profile) && (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleFollowToggle}
+                      disabled={followLoading}
+                      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
+                        isFollowing
+                          ? 'bg-stone-100 text-stone-700 hover:bg-red-50 hover:text-red-600'
+                          : 'bg-stone-900 text-white hover:bg-stone-800'
+                      }`}
+                    >
+                      {followLoading ? (
+                        <Loader className="w-4 h-4 animate-spin" />
+                      ) : isFollowing ? (
+                        <>
+                          <UserCheck className="w-4 h-4" />
+                          Following
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4" />
+                          Follow
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleMessage}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors font-medium"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Message
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -491,7 +879,7 @@ const ProfilePage = () => {
         <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
           {/* Tab Headers */}
           <div className="flex border-b border-stone-200 overflow-x-auto">
-            {tabs.map((tab) => {
+            {currentTabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
@@ -592,8 +980,95 @@ const ProfilePage = () => {
               </div>
             )}
 
-            {/* Edit Profile Tab */}
-            {activeTab === 'edit' && (
+            {/* Shelves Tab */}
+            {activeTab === 'shelves' && (
+              <div className="space-y-4">
+                {shelves.length > 0 ? (
+                  shelves.map((shelf) => (
+                    <ShelfPreviewCard key={shelf.id} shelf={shelf} />
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-stone-400">
+                    <BookMarked className="w-12 h-12 mx-auto mb-3 text-stone-300" />
+                    <h3 className="font-medium text-stone-800 mb-1">No shelves yet</h3>
+                    <p className="text-sm text-stone-500">
+                      {isOwnProfile ? "You haven't added any books to your shelves yet." : "This user hasn't added any books yet."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Activity Tab */}
+            {activeTab === 'activity' && (
+              <div className="space-y-4">
+                {feedLoading && feedItems.length === 0 ? (
+                  // Loading skeleton
+                  <>
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="bg-stone-50 rounded-xl border border-stone-200 p-4 animate-pulse">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 bg-stone-200 rounded-full" />
+                          <div className="flex-1">
+                            <div className="h-4 bg-stone-200 rounded w-32 mb-2" />
+                            <div className="h-3 bg-stone-200 rounded w-20" />
+                          </div>
+                        </div>
+                        <div className="mt-4 space-y-2">
+                          <div className="h-4 bg-stone-200 rounded w-full" />
+                          <div className="h-4 bg-stone-200 rounded w-3/4" />
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : feedItems.length > 0 ? (
+                  <>
+                    {feedItems.map((item) => (
+                      <FeedItemCard
+                        key={item.id}
+                        item={item}
+                        onItemDeleted={(itemId) =>
+                          setFeedItems((prev) => prev.filter((i) => i.id !== itemId))
+                        }
+                      />
+                    ))}
+                    
+                    {/* Load More Button */}
+                    {hasMoreFeed && (
+                      <div className="text-center py-4">
+                        <button
+                          onClick={() => fetchUserFeed(feedPage + 1, true)}
+                          disabled={feedLoading}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-stone-200 rounded-xl text-stone-600 hover:bg-stone-50 hover:border-stone-300 transition-all font-medium disabled:opacity-50"
+                        >
+                          {feedLoading ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            'Load More'
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-stone-400">
+                    <BookOpen className="w-12 h-12 mx-auto mb-3 text-stone-300" />
+                    <h3 className="font-medium text-stone-800 mb-1">No activity yet</h3>
+                    <p className="text-sm text-stone-500">
+                      {isOwnProfile 
+                        ? "You haven't shared any quotes, reviews, or added books yet." 
+                        : "This user hasn't shared any activity yet."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Edit Profile Tab - Only for own profile */}
+            {isOwnProfile && activeTab === 'edit' && (
               <form onSubmit={handleProfileSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -694,8 +1169,8 @@ const ProfilePage = () => {
               </form>
             )}
 
-            {/* Social Links Tab */}
-            {activeTab === 'socials' && (
+            {/* Social Links Tab - Only for own profile */}
+            {isOwnProfile && activeTab === 'socials' && (
               <form onSubmit={handleSocialsSubmit} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-stone-600 mb-1.5">
@@ -765,8 +1240,8 @@ const ProfilePage = () => {
               </form>
             )}
 
-            {/* Security Tab */}
-            {activeTab === 'security' && (
+            {/* Security Tab - Only for own profile */}
+            {isOwnProfile && activeTab === 'security' && (
               <div className="space-y-8">
                 {/* Change Password */}
                 <div>
@@ -891,6 +1366,20 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {/* User List Modals */}
+      <UserListModal
+        isOpen={isFollowersModalOpen}
+        onClose={() => setIsFollowersModalOpen(false)}
+        title="Followers"
+        users={followersList}
+      />
+      <UserListModal
+        isOpen={isFollowingModalOpen}
+        onClose={() => setIsFollowingModalOpen(false)}
+        title="Following"
+        users={followingList}
+      />
     </div>
   );
 };

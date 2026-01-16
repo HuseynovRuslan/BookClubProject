@@ -16,8 +16,6 @@ import ProfilePage from './pages/ProfilePage';
 import ChatPage from './pages/ChatPage';
 import SocialFeedPage from './pages/SocialFeedPage';
 import CommunityPage from './pages/CommunityPage';
-import PublicProfilePage from './pages/PublicProfilePage';
-import UserProfile from './pages/UserProfile';
 import NewsPage from './pages/NewsPage';
 import FeedbackPage from './pages/FeedbackPage';
 
@@ -104,6 +102,14 @@ function App() {
                 }
               />
               <Route
+                path="/profile/:identifier"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/messages"
                 element={
                   <ProtectedRoute>
@@ -124,22 +130,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <CommunityPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/user/:username"
-                element={
-                  <ProtectedRoute>
-                    <PublicProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile/:userId"
-                element={
-                  <ProtectedRoute>
-                    <UserProfile />
                   </ProtectedRoute>
                 }
               />

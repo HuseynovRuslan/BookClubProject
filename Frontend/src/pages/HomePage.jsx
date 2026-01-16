@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -13,7 +13,6 @@ import {
   Users,
   Bell,
   Target,
-  Sparkles,
   ChevronRight,
   BookMarked,
   Heart,
@@ -31,11 +30,13 @@ import BookCard from '../components/BookCard';
 import ReadingChallengeCard from '../components/ReadingChallengeCard';
 import QuoteCard from '../components/QuoteCard';
 import AddEditQuoteModal from '../components/AddEditQuoteModal';
+import NotificationDropdown from '../components/NotificationDropdown';
 import { getAllBooks } from '../api/books';
 import { getUserShelves, getShelfById } from '../api/shelves';
 import { getUserYearChallenge, getSocialFeed, getConversations } from '../api/dashboard';
 import { getCurrentUserProfile } from '../api/users';
 import { getAllQuotes } from '../api/quotes';
+import { getUnreadCount as getNotificationUnreadCount, getNotifications } from '../api/notifications';
 import { useAuth } from '../context/AuthContext';
 import { useSignalR } from '../context/SignalRContext';
 
@@ -82,57 +83,73 @@ const FeedItemSkeleton = () => (
 );
 
 // Section Component
-const Section = ({ title, icon: Icon, books, loading, onSeeAll, count = 5 }) => (
-  <div className="space-y-4">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Icon className="w-5 h-5 text-stone-600" />
-        <h3 className="text-lg font-semibold text-stone-800">{title}</h3>
+const Section = ({ title, icon: Icon, books, loading, onSeeAll, count = 5 }) => {
+  // Safety check: ensure books is an array
+  const safeBooks = Array.isArray(books) ? books : [];
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className="w-5 h-5 text-stone-600" />
+          <h3 className="text-lg font-semibold text-stone-800">{title}</h3>
+        </div>
+        {onSeeAll && (
+          <button
+            onClick={onSeeAll}
+            className="flex items-center gap-1 text-stone-500 hover:text-stone-800 text-sm font-medium transition-colors"
+          >
+            View all <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
-      {onSeeAll && (
-        <button
-          onClick={onSeeAll}
-          className="flex items-center gap-1 text-stone-500 hover:text-stone-800 text-sm font-medium transition-colors"
-        >
-          View all <ChevronRight className="w-4 h-4" />
-        </button>
+
+      {loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {Array.from({ length: count }).map((_, idx) => (
+            <BookCardSkeleton key={idx} />
+          ))}
+        </div>
+      ) : safeBooks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 bg-stone-50 rounded-xl border border-dashed border-stone-200">
+          <BookOpen className="w-8 h-8 text-stone-300 mb-2" />
+          <p className="text-stone-500 text-sm">No books found</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {safeBooks.slice(0, count).map((book) => (
+            <BookCard key={book.id} book={book} />
+          ))}
+        </div>
       )}
     </div>
-
-    {loading ? (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {Array.from({ length: count }).map((_, idx) => (
-          <BookCardSkeleton key={idx} />
-        ))}
-      </div>
-    ) : books.length === 0 ? (
-      <div className="flex flex-col items-center justify-center py-10 bg-stone-50 rounded-xl border border-dashed border-stone-200">
-        <BookOpen className="w-8 h-8 text-stone-300 mb-2" />
-        <p className="text-stone-500 text-sm">No books found</p>
-      </div>
-    ) : (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {books.slice(0, count).map((book) => (
-          <BookCard key={book.id} book={book} />
-        ))}
-      </div>
-    )}
-  </div>
-);
+  );
+};
 
 const HomePage = () => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { unreadCount: signalRUnread, newMessage, setTotalUnreadCount } = useSignalR();
+  const { 
+    unreadCount: signalRUnread, 
+    newMessage, 
+    setTotalUnreadCount,
+    newNotification,
+    notificationUnreadCount,
+    clearNewNotification,
+    setNotificationCount
+  } = useSignalR();
   const navigate = useNavigate();
   
   // Data states
-  const [books, setBooks] = useState([]);
+  const [allBooks, setAllBooks] = useState([]);
   const [shelves, setShelves] = useState([]);
   const [challenge, setChallenge] = useState(null);
   const [feed, setFeed] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  
+  // Use ref instead of state to avoid re-render loops
+  const addNotificationCallbackRef = useRef(null);
   
   // Loading states
   const [loadingBooks, setLoadingBooks] = useState(true);
@@ -155,9 +172,42 @@ const HomePage = () => {
     fetchAllData();
   }, [isAuthenticated]);
 
+  // Fetch notification unread count on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotificationUnreadCount();
+    }
+  }, [isAuthenticated]);
+
+  // Handle new notification from SignalR
+  useEffect(() => {
+    if (newNotification) {
+      // Ignore MessageReceived notifications (type 4) - they don't go to notification dropdown
+      // Messages are handled separately via the messages system
+      if (newNotification.type === 4) {
+        clearNewNotification();
+        return;
+      }
+      
+      // For other notifications, add to dropdown
+      if (addNotificationCallbackRef.current) {
+        addNotificationCallbackRef.current(newNotification);
+      }
+      clearNewNotification();
+      
+      // Refresh unread count from backend to ensure accuracy
+      // This ensures we get the correct count from the server
+      fetchNotificationUnreadCount();
+      
+      // Optional: Play subtle sound (you can add a notification sound file)
+      // new Audio('/notification-sound.mp3').play().catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newNotification, clearNewNotification]);
+
   const fetchAllData = async () => {
     // Always fetch books and quotes
-    fetchBooks();
+    fetchAllBooks();
     fetchQuotes();
     
     // Fetch dashboard data only if authenticated
@@ -167,6 +217,34 @@ const HomePage = () => {
       setLoadingDashboard(false);
     }
   };
+
+  const fetchNotificationUnreadCount = async () => {
+    try {
+      // Get all notifications to filter out MessageReceived (type 4)
+      const response = await getNotifications(1, 100);
+      const items = response?.items || response?.data || [];
+      
+      // Count only non-message notifications (exclude type 4 - MessageReceived)
+      const nonMessageNotifications = items.filter(n => n.type !== 4);
+      const unreadCount = nonMessageNotifications.filter(n => !n.isRead).length;
+      
+      setNotificationCount(unreadCount);
+    } catch (error) {
+      console.error('Error fetching notification unread count:', error);
+      // Fallback to API count if filtering fails
+      try {
+        const count = await getNotificationUnreadCount();
+        setNotificationCount(count);
+      } catch (fallbackError) {
+        console.error('Error fetching fallback unread count:', fallbackError);
+      }
+    }
+  };
+
+  // Memoized callback to prevent re-render loops
+  const handleNewNotification = useCallback((callback) => {
+    addNotificationCallbackRef.current = callback;
+  }, []);
 
   const fetchQuotes = async () => {
     try {
@@ -181,14 +259,18 @@ const HomePage = () => {
     }
   };
 
-  const fetchBooks = async () => {
+  const fetchAllBooks = async () => {
     try {
       setLoadingBooks(true);
-      const res = await getAllBooks(1, 30);
-      const items = res?.items || res?.data || res || [];
-      setBooks(items);
+      // Fetch all books in a single call with large page size
+      const response = await getAllBooks(1, 1000);
+      
+      // Safe data extraction: handle both PagedResult and array responses
+      const allBooksData = response?.items || (Array.isArray(response) ? response : []);
+      setAllBooks(allBooksData);
     } catch (err) {
       console.error('Error loading books:', err);
+      setAllBooks([]); // Set empty array on error
     } finally {
       setLoadingBooks(false);
     }
@@ -259,20 +341,36 @@ const HomePage = () => {
   // SignalR context-dən gələn unread count-u istifadə et (real-time)
   const unreadMessages = signalRUnread;
 
-  const trendingBooks = useMemo(() => 
-    [...books].sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0)).slice(0, 5), 
-    [books]
-  );
-  
-  const topRatedBooks = useMemo(() => 
-    [...books].sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0)).slice(0, 5), 
-    [books]
-  );
-  
-  const newArrivals = useMemo(() => 
-    [...books].reverse().slice(0, 5), 
-    [books]
-  );
+  // Client-side filtering and sorting for book sections
+  const trendingBooks = useMemo(() => {
+    if (!allBooks || allBooks.length === 0) return [];
+    // Trending: Most rated/popular (by rating count)
+    return [...allBooks]
+      .sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0))
+      .slice(0, 10);
+  }, [allBooks]);
+
+  const topRatedBooks = useMemo(() => {
+    if (!allBooks || allBooks.length === 0) return [];
+    // Top Rated: Highest average rating (filter out 0 ratings)
+    return [...allBooks]
+      .filter(book => (book.averageRating || 0) > 0)
+      .sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
+      .slice(0, 10);
+  }, [allBooks]);
+
+  const newArrivals = useMemo(() => {
+    if (!allBooks || allBooks.length === 0) return [];
+    // New Arrivals: Most recently created
+    return [...allBooks]
+      .filter(book => book.createdAt) // Only include books with createdAt
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA; // Descending: newest first
+      })
+      .slice(0, 10);
+  }, [allBooks]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -380,12 +478,19 @@ const HomePage = () => {
 
             <div className="flex items-center gap-3">
               {isAuthenticated ? (
-                <div className="relative user-menu-container">
-                  {/* User Menu Button */}
-                  <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-2 px-3 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
-                  >
+                <>
+                  {/* Notification Dropdown */}
+                  <NotificationDropdown 
+                    unreadCount={notificationUnreadCount}
+                    onNewNotification={handleNewNotification}
+                  />
+                  
+                  <div className="relative user-menu-container">
+                    {/* User Menu Button */}
+                    <button
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                      className="flex items-center gap-2 px-3 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                    >
                     <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
                       {userProfile?.profilePictureUrl ? (
                         <img
@@ -500,7 +605,8 @@ const HomePage = () => {
                       </div>
                     </div>
                   )}
-                </div>
+                  </div>
+                </>
               ) : (
                 <>
                   <Link to="/login" className="px-4 py-2 text-stone-600 hover:text-stone-900 text-sm font-medium">
@@ -742,54 +848,6 @@ const HomePage = () => {
                   </div>
                 </div>
 
-                {/* Community Pulse */}
-                <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      <h3 className="font-semibold text-stone-800 text-sm">Community Pulse</h3>
-                    </div>
-                    <Link to="/feed" className="text-xs text-stone-500 hover:text-stone-700">
-                      View all
-                    </Link>
-                  </div>
-                  
-                  <div className="divide-y divide-stone-100">
-                    {loadingDashboard ? (
-                      <>
-                        <FeedItemSkeleton />
-                        <FeedItemSkeleton />
-                        <FeedItemSkeleton />
-                      </>
-                    ) : feed.length === 0 ? (
-                      <div className="p-6 text-center">
-                        <Users className="w-8 h-8 text-stone-300 mx-auto mb-2" />
-                        <p className="text-sm text-stone-500">No activity yet</p>
-                        <p className="text-xs text-stone-400 mt-1">Follow readers to see their activity</p>
-                      </div>
-                    ) : (
-                      feed.slice(0, 4).map((item, idx) => (
-                        <div key={idx} className="px-4 py-3 hover:bg-stone-50 transition-colors">
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-stone-200 rounded-full flex items-center justify-center shrink-0">
-                              <BookOpen className="w-4 h-4 text-stone-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm text-stone-700 line-clamp-2">
-                                <span className="font-medium">{item.userName || 'A reader'}</span>
-                                {' '}{item.action || 'added a book'}
-                              </p>
-                              <p className="text-xs text-stone-400 mt-0.5">
-                                {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
                 {/* Quick Actions */}
                 <div className="bg-white rounded-xl border border-stone-200 p-4">
                   <h3 className="font-semibold text-stone-800 text-sm mb-3">Quick Actions</h3>
@@ -992,7 +1050,7 @@ const HomePage = () => {
               <span className="font-semibold text-stone-900">BookClub</span>
             </div>
             <p className="text-sm text-stone-500">
-              © 2024 BookClub. Your personal reading companion.
+              © 2026 BookClub. Your personal reading companion.
             </p>
           </div>
         </div>

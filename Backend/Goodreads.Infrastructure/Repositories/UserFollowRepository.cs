@@ -38,22 +38,51 @@ internal class UserFollowRepository(ApplicationDbContext context) : IUserFollowR
 
     public async Task<List<User>> GetFollowersAsync(string userId, int? pageNumber, int? pageSize)
     {
+        // Exclude admin users from followers list
         return await context.UserFollows
              .Where(f => f.FollowingId == userId)
              .Select(f => f.Follower)
+             .Where(u => !context.UserRoles.Any(ur => 
+                ur.UserId == u.Id && 
+                context.Roles.Any(r => r.Id == ur.RoleId && r.Name == "Admin")))
              .ApplyPaging(pageNumber, pageSize)
              .ToListAsync();
     }
 
     public async Task<List<User>> GetFollowingAsync(string userId, int? pageNumber, int? pageSize)
     {
+        // Exclude admin users from following list
         return await context.UserFollows
          .Where(f => f.FollowerId == userId)
          .Select(f => f.Following)
+         .Where(u => !context.UserRoles.Any(ur => 
+            ur.UserId == u.Id && 
+            context.Roles.Any(r => r.Id == ur.RoleId && r.Name == "Admin")))
          .ApplyPaging(pageNumber, pageSize)
          .ToListAsync();
     }
 
-    public async Task<int> GetFollowersCountAsync(string userId) => await context.UserFollows.CountAsync(f => f.FollowingId == userId);
-    public async Task<int> GetFollowingCountAsync(string userId) => await context.UserFollows.CountAsync(f => f.FollowerId == userId);
+    public async Task<int> GetFollowersCountAsync(string userId) 
+    {
+        // Exclude admin users from followers count
+        return await context.UserFollows
+            .Where(f => f.FollowingId == userId)
+            .Select(f => f.Follower)
+            .Where(u => !context.UserRoles.Any(ur => 
+                ur.UserId == u.Id && 
+                context.Roles.Any(r => r.Id == ur.RoleId && r.Name == "Admin")))
+            .CountAsync();
+    }
+    
+    public async Task<int> GetFollowingCountAsync(string userId)
+    {
+        // Exclude admin users from following count
+        return await context.UserFollows
+            .Where(f => f.FollowerId == userId)
+            .Select(f => f.Following)
+            .Where(u => !context.UserRoles.Any(ur => 
+                ur.UserId == u.Id && 
+                context.Roles.Any(r => r.Id == ur.RoleId && r.Name == "Admin")))
+            .CountAsync();
+    }
 }

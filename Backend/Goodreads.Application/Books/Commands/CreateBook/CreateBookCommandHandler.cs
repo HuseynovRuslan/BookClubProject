@@ -41,6 +41,7 @@ public class CreateBookCommandHandler : IRequestHandler<CreateBookCommand, Resul
 
         var book = _mapper.Map<Book>(request);
         book.Author = author;
+        book.CreatedAt = DateTime.UtcNow; // Ensure CreatedAt is set
 
         if (request.CoverImage != null)
         {

@@ -10,7 +10,9 @@ import {
   TrendingUp,
   ArrowRight,
 } from 'lucide-react';
-import { getAdminStats } from '../../api/admin';
+import { getAdminStats, recalculateBookRatings } from '../../api/admin';
+import { toast } from 'react-toastify';
+import { RefreshCw } from 'lucide-react';
 
 const StatCard = ({ icon: Icon, label, value, color, to, loading }) => (
   <Link
@@ -58,6 +60,22 @@ const AdminDashboard = () => {
       console.error('Error fetching stats:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRecalculateRatings = async () => {
+    if (!window.confirm('This will recalculate ratings for all books. Continue?')) {
+      return;
+    }
+
+    try {
+      const result = await recalculateBookRatings();
+      const count = result?.data || result;
+      toast.success(`Successfully recalculated ratings for ${count} books`);
+      fetchStats(); // Refresh stats
+    } catch (error) {
+      console.error('Error recalculating ratings:', error);
+      toast.error('Failed to recalculate ratings');
     }
   };
 
@@ -123,9 +141,18 @@ const AdminDashboard = () => {
 
       {/* Quick Actions */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <TrendingUp className="w-5 h-5 text-amber-500" />
-          <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="w-5 h-5 text-amber-500" />
+            <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
+          </div>
+          <button
+            onClick={handleRecalculateRatings}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg transition-colors text-sm font-medium"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Recalculate Ratings
+          </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link

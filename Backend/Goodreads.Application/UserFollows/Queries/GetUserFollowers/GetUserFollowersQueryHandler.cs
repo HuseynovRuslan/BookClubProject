@@ -34,6 +34,17 @@ internal class GetUserFollowersQueryHandler : IRequestHandler<GetUserFollowersQu
 
         var dtoList = _mapper.Map<List<UserDto>>(followers);
 
+        // Set role for each user (admin users are already filtered out by repository)
+        foreach (var userDto in dtoList)
+        {
+            var followerUser = followers.FirstOrDefault(u => u.Id == userDto.Id);
+            if (followerUser != null)
+            {
+                var roles = await _userManager.GetRolesAsync(followerUser);
+                userDto.Role = roles.FirstOrDefault() ?? "User";
+            }
+        }
+
         var pagedResult = PagedResult<UserDto>.Create(
             dtoList,
             request.PageNumber ?? 1,

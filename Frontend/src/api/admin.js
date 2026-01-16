@@ -90,6 +90,11 @@ export const deleteFeedback = async (id) => {
 };
 
 // ==================== BOOKS (Admin) ====================
+export const recalculateBookRatings = async () => {
+  const response = await axiosClient.post('/admin/books/recalculate-ratings');
+  return response.data;
+};
+
 export const getAllBooksAdmin = async (pageNumber = 1, pageSize = 10, searchTerm = '') => {
   const params = { pageNumber, pageSize };
   // Backend uses 'Query' parameter, not 'searchTerm'
@@ -107,7 +112,11 @@ export const createBook = async (formData) => {
       'Content-Type': 'multipart/form-data',
     },
   });
-  return response.data;
+  // Return both data and headers for extracting bookId from Location header
+  return {
+    data: response.data,
+    headers: response.headers,
+  };
 };
 
 export const updateBook = async (formData) => {
