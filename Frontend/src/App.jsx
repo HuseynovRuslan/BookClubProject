@@ -18,6 +18,7 @@ import SocialFeedPage from './pages/SocialFeedPage';
 import CommunityPage from './pages/CommunityPage';
 import NewsPage from './pages/NewsPage';
 import FeedbackPage from './pages/FeedbackPage';
+import AiRecommendationsPage from './pages/AiRecommendationsPage';
 
 // Admin imports
 import AdminLayout from './layouts/AdminLayout';
@@ -130,6 +131,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <CommunityPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ai-recommendations"
+                element={
+                  <ProtectedRoute>
+                    <AiRecommendationsPage />
                   </ProtectedRoute>
                 }
               />

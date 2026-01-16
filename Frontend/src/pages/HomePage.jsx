@@ -25,6 +25,7 @@ import {
   Quote,
   Loader2,
   Shield,
+  Sparkles,
 } from 'lucide-react';
 import BookCard from '../components/BookCard';
 import ReadingChallengeCard from '../components/ReadingChallengeCard';
@@ -469,6 +470,10 @@ const HomePage = () => {
                   <Link to="/my-shelves" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
                     My Shelves
                   </Link>
+                  <Link to="/ai-recommendations" className="flex items-center gap-1 text-purple-600 hover:text-purple-700 font-medium transition-colors">
+                    <Sparkles className="w-4 h-4" />
+                    AI Picks
+                  </Link>
                 </>
               )}
               <Link to="/feedback" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
@@ -869,6 +874,15 @@ const HomePage = () => {
                         <Plus className="w-4 h-4 text-stone-600" />
                       </div>
                       <span className="text-sm text-stone-700">Create Shelf</span>
+                    </Link>
+                    <Link
+                      to="/ai-recommendations"
+                      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-purple-50 transition-colors group"
+                    >
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg flex items-center justify-center group-hover:from-purple-200 group-hover:to-blue-200 transition-colors">
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <span className="text-sm text-purple-700 font-medium">AI Picks</span>
                     </Link>
                   </div>
                 </div>

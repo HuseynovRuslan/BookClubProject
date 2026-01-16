@@ -11,7 +11,9 @@ using Goodreads.Infrastructure.Security.TokenProvider;
 using Goodreads.Infrastructure.Services.EmailService;
 //using Goodreads.Infrastructure.Services.Storage;
 using Goodreads.Infrastructure.Services.TokenProvider;
+using Goodreads.Infrastructure.Services.AI;
 using Goodreads.Infrastructure.Jobs;
+using OpenAI.Chat;
 using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -32,6 +34,7 @@ public static class DependencyInjection
             .AddAuthentication(configuration)
             .AddAuthorization()
             .AddEmailServices(configuration)
+            .AddAiServices(configuration)
             .AddBackgroundJobs(configuration);
             //.AddBlobStorage(configuration)
 
@@ -153,6 +156,24 @@ public static class DependencyInjection
     //    services.AddSingleton<IBlobStorageService, BlobStorageService>();
     //    return services;
     //}
+
+    private static IServiceCollection AddAiServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var apiKey = configuration["OpenAI:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new InvalidOperationException("OpenAI API key is not configured. Please add 'OpenAI:ApiKey' to appsettings.json");
+        }
+
+        // Register ChatClient with gpt-4o-mini model using official OpenAI library
+        services.AddSingleton<ChatClient>(sp =>
+            new ChatClient(model: "gpt-4o-mini", apiKey: apiKey));
+
+        // Register the recommendation service
+        services.AddScoped<Goodreads.Application.Common.Interfaces.AI.IAiRecommendationService, OpenAiRecommendationService>();
+
+        return services;
+    }
 
     private static IServiceCollection AddBackgroundJobs(this IServiceCollection services, IConfiguration configuration)
     {
