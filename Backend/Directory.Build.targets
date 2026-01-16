@@ -7,9 +7,4 @@
     <!-- Prevent the compression targets from being imported -->
     <_StaticWebAssetsCompressionTargetsImported>true</_StaticWebAssetsCompressionTargetsImported>
   </PropertyGroup>
-  
-  <!-- Override the DiscoverPrecompressedAssets target AFTER SDK targets are imported -->
-  <!-- This empty target will replace the SDK's implementation -->
-  <Target Name="DiscoverPrecompressedAssets" />
-  <Target Name="_DiscoverPrecompressedAssets" />
 </Project>

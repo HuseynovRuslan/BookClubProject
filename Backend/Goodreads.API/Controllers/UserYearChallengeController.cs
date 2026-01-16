@@ -13,7 +13,7 @@ using SharedKernel;
 namespace Goodreads.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/useryearchallenge")]
 public class UserYearChallengeController(IMediator mediator) : ControllerBase
 {
 
@@ -21,14 +21,24 @@ public class UserYearChallengeController(IMediator mediator) : ControllerBase
     [Authorize]
     [EndpointSummary("Get challenge details for a specific year")]
     [ProducesResponseType(typeof(ApiResponse<UserYearChallengeDetailsDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK)] // Return 200 with null data if not found
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetChallengeDetails(int year, [FromQuery] string userId)
     {
         var result = await mediator.Send(new GetUserYearChallengeQuery(userId, year));
         return result.Match(
             challenge => Ok(ApiResponse<UserYearChallengeDetailsDto>.Success(challenge)),
-            failure => CustomResults.Problem(failure)
+            failure =>
+            {
+                // If challenge not found, return 200 OK with null data instead of 404
+                // This is expected behavior when user hasn't created a challenge yet
+                if (failure.Error.Type == SharedKernel.ErrorType.NotFound && 
+                    failure.Error.Code == "YearChallenge.NotFound")
+                {
+                    return Ok(ApiResponse<UserYearChallengeDetailsDto>.Success(null));
+                }
+                return CustomResults.Problem(failure);
+            }
         );
     }
 

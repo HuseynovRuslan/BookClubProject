@@ -13,10 +13,12 @@ export const getUserYearChallenge = async (year, userId) => {
     });
     return response.data.data;
   } catch (error) {
-    // 404 means no challenge exists for this year
-    if (error.response?.status === 404) {
+    // 404 means no challenge exists for this year - this is expected for new users
+    if (error.response?.status === 404 || error.silent) {
+      // Silently return null - no need to log or throw
       return null;
     }
+    // Only log and throw for unexpected errors (500, network errors, etc.)
     console.error('Error fetching year challenge:', error);
     throw error;
   }

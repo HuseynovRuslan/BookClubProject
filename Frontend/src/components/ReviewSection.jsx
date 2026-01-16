@@ -63,6 +63,10 @@ const ReviewSection = ({ bookId }) => {
       setLoading(true);
       const data = await getReviewsByBookId(bookId, 1, 50);
       const reviewsList = data?.items || data || [];
+      // Debug: Check if review data includes firstName, lastName, userProfilePictureUrl
+      if (reviewsList.length > 0) {
+        console.log('Review data sample:', reviewsList[0]);
+      }
       setReviews(reviewsList);
     } catch (error) {
       toast.error('Failed to load reviews');
@@ -398,7 +402,11 @@ const ReviewSection = ({ bookId }) => {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-stone-700 text-white font-medium">
-                                {review.username?.[0]?.toUpperCase() || 'U'}
+                                {review.firstName && review.lastName
+                                  ? `${review.firstName[0]}${review.lastName[0]}`.toUpperCase()
+                                  : review.firstName
+                                  ? review.firstName[0].toUpperCase()
+                                  : review.username?.[0]?.toUpperCase() || 'U'}
                               </div>
                             )}
                           </div>
@@ -406,9 +414,20 @@ const ReviewSection = ({ bookId }) => {
                           {/* User Info */}
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-stone-900">
-                                {review.username || 'Anonymous'}
-                              </span>
+                              <div className="flex flex-col">
+                                {(review.firstName || review.lastName) ? (
+                                  <span className="font-medium text-stone-900">
+                                    {[review.firstName, review.lastName].filter(Boolean).join(' ') || review.username || 'Anonymous'}
+                                  </span>
+                                ) : (
+                                  <span className="font-medium text-stone-900">
+                                    {review.username || 'Anonymous'}
+                                  </span>
+                                )}
+                                {review.username && (review.firstName || review.lastName) && (
+                                  <span className="text-xs text-stone-500">@{review.username}</span>
+                                )}
+                              </div>
                               {isOwn && (
                                 <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
                                   You

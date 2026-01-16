@@ -24,12 +24,18 @@ const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => 
     try {
       setLoading(true);
       const data = await getUserYearChallenge(year, user?.id);
+      // data will be null if no challenge exists (404) - this is expected
       setChallenge(data);
       if (data) {
         setTargetInput(data.targetBooksCount?.toString() || '');
       }
     } catch (error) {
-      console.error('Error fetching challenge:', error);
+      // Only log unexpected errors (not 404s, which are handled in the API)
+      if (error.response?.status !== 404) {
+        console.error('Error fetching challenge:', error);
+      }
+      // Set challenge to null on any error to show empty state
+      setChallenge(null);
     } finally {
       setLoading(false);
     }
@@ -108,7 +114,7 @@ const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => 
         </div>
         
         <p className="text-stone-600 text-sm mb-4">
-          Set a reading goal and track your progress throughout the year!
+          Set your Reading Challenge for {year}! Track your progress and achieve your reading goals.
         </p>
         
         <button

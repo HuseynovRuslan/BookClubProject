@@ -16,6 +16,8 @@ public class Book
 
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     public string AuthorId { get; set; }
     public Author Author { get; set; }

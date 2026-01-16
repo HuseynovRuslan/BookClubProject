@@ -197,14 +197,15 @@ const MyShelvesPage = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex -space-x-2">
                           {shelf.books.slice(0, 4).map((book, bookIndex) => {
-                            const openLibraryCover = getOpenLibraryCover(book.isbn || book.ISBN);
                             const backendCover = getImageUrl(book.coverImageUrl);
-                            const coverImage = openLibraryCover || backendCover;
+                            const openLibraryCover = getOpenLibraryCover(book.isbn || book.ISBN);
+                            // Prioritize backend URL (our uploaded images) over OpenLibrary
+                            const coverImage = backendCover || openLibraryCover;
                             
                             return (
                               <div
                                 key={book.id}
-                                className="w-10 h-14 rounded-md overflow-hidden border-2 border-white shadow-sm"
+                                className="w-10 h-14 rounded-md overflow-hidden border-2 border-white shadow-sm bg-stone-100"
                                 style={{ zIndex: 4 - bookIndex }}
                               >
                                 {coverImage ? (
@@ -213,15 +214,30 @@ const MyShelvesPage = () => {
                                     alt={book.title}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
-                                      e.target.onerror = null;
-                                      e.target.src = '';
-                                      e.target.parentElement.innerHTML = `
-                                        <div class="w-full h-full bg-stone-100 flex items-center justify-center">
-                                          <svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                          </svg>
-                                        </div>
-                                      `;
+                                      const currentSrc = e.target.src;
+                                      const backend = getImageUrl(book.coverImageUrl);
+                                      const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
+                                      
+                                      // If backend failed, try OpenLibrary as fallback
+                                      if (currentSrc === backend && openLib) {
+                                        e.target.src = openLib;
+                                        e.target.onerror = null; // Prevent infinite loop
+                                      } else if (currentSrc === openLib && backend) {
+                                        // If OpenLibrary failed, try backend
+                                        e.target.src = backend;
+                                        e.target.onerror = null;
+                                      } else {
+                                        // Both failed, show placeholder
+                                        e.target.onerror = null;
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.innerHTML = `
+                                          <div class="w-full h-full bg-stone-100 flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                            </svg>
+                                          </div>
+                                        `;
+                                      }
                                     }}
                                   />
                                 ) : (

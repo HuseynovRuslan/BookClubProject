@@ -13,6 +13,13 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
         builder.Property(b => b.ISBN).HasMaxLength(20);
         builder.Property(b => b.Language).HasMaxLength(50);
         builder.Property(b => b.Publisher).HasMaxLength(100);
+        
+        // Configure CreatedAt with default value for existing records
+        builder.Property(b => b.CreatedAt)
+            .IsRequired()
+            .HasDefaultValueSql("GETUTCDATE()");
+        
+        builder.Property(b => b.UpdatedAt).IsRequired(false);
 
         builder
             .HasOne(b => b.Author)

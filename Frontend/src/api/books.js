@@ -5,17 +5,24 @@ import axiosClient from './axiosClient';
  * @param {number} pageNumber - Current page number (default: 1)
  * @param {number} pageSize - Number of items per page (default: 12, max: 50)
  * @param {string} query - Optional search query to filter books by title, author, or genre
+ * @param {string} sortColumn - Optional column to sort by (e.g., 'CreatedAt', 'AverageRating', 'RatingCount')
+ * @param {string} sortOrder - Sort order: 'asc' or 'desc' (default: 'desc')
  * @returns {Promise} - PagedResult with books data
  */
-export const getAllBooks = async (pageNumber = 1, pageSize = 12, query = null) => {
+export const getAllBooks = async (pageNumber = 1, pageSize = 12, query = null, sortColumn = null, sortOrder = 'desc') => {
   try {
     const params = {
       pageNumber,
-      pageSize: Math.min(pageSize, 50), // Enforce max page size of 50
+      pageSize: Math.min(pageSize, 1000), // Allow up to 1000 for HomePage
     };
     
     if (query) {
       params.query = query;
+    }
+    
+    if (sortColumn) {
+      params.sortColumn = sortColumn;
+      params.sortOrder = sortOrder;
     }
     
     const response = await axiosClient.get('/books/get-all-books', { params });
@@ -101,6 +108,22 @@ export const updateBookStatus = async (bookId, targetShelfName) => {
     });
   } catch (error) {
     console.error('Error updating book status:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add genres to a book
+ * Endpoint: POST /api/books/{bookId}/genres
+ * @param {string} bookId - Book ID
+ * @param {string[]} genreIds - Array of genre IDs
+ * @returns {Promise}
+ */
+export const addGenresToBook = async (bookId, genreIds) => {
+  try {
+    await axiosClient.post(`/books/${bookId}/genres`, genreIds);
+  } catch (error) {
+    console.error('Error adding genres to book:', error);
     throw error;
   }
 };

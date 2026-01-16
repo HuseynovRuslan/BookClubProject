@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -19,9 +19,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import FeedItemCard from '../components/FeedItemCard';
-import { getPersonalFeed, getSocialFeed, getTrendingBooks } from '../api/feed';
+import { getPersonalFeed, getSocialFeed } from '../api/feed';
 import { getAllUsers } from '../api/users';
 import { followUser, getMyFollowing } from '../api/userFollows';
+import { getAllBooks } from '../api/books';
 import { useAuth } from '../context/AuthContext';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
@@ -31,6 +32,22 @@ const getImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http')) return url;
   return `${BASE_URL}${url}`;
+};
+
+// Helper to check if user is admin
+const isAdmin = (user) => {
+  if (!user) return false;
+  // Check multiple possible field names for role
+  const isAdminByRole = user?.role === 'Admin' || 
+         user?.roles?.includes('Admin') ||
+         user?.userRole === 'Admin' ||
+         (Array.isArray(user?.roles) && user.roles.some(r => r === 'Admin' || r?.name === 'Admin'));
+  
+  // Also check by username (common admin username patterns)
+  const isAdminByUsername = user?.username?.toLowerCase() === 'admin' ||
+                            user?.username?.toLowerCase().startsWith('admin_');
+  
+  return isAdminByRole || isAdminByUsername;
 };
 
 // Skeleton Components
@@ -87,7 +104,7 @@ const UserSuggestionCard = ({ user, onFollow }) => {
     : user?.username?.[0]?.toUpperCase() || '?';
 
   const handleFollow = async () => {
-    if (loading || following) return;
+    if (loading || following || isAdmin(user)) return;
 
     // Optimistic UI update
     setLoading(true);
@@ -116,7 +133,7 @@ const UserSuggestionCard = ({ user, onFollow }) => {
   return (
     <div className="flex items-center gap-3 p-3 hover:bg-stone-50 rounded-lg transition-colors">
       <Link
-        to={`/user/${user.username}`}
+        to={`/profile/${user.username}`}
         className="w-10 h-10 rounded-full bg-gradient-to-br from-stone-700 to-stone-900 flex items-center justify-center text-white text-sm font-semibold overflow-hidden shrink-0"
       >
         {profilePicUrl ? (
@@ -127,7 +144,7 @@ const UserSuggestionCard = ({ user, onFollow }) => {
       </Link>
       <div className="flex-1 min-w-0">
         <Link
-          to={`/user/${user.username}`}
+          to={`/profile/${user.username}`}
           className="font-medium text-stone-800 hover:text-stone-600 truncate block text-sm"
         >
           {user.firstName && user.lastName
@@ -254,8 +271,9 @@ const SocialFeedPage = () => {
 
   // Sidebar State
   const [suggestedUsers, setSuggestedUsers] = useState([]);
-  const [trendingBooks, setTrendingBooks] = useState([]);
+  const [allBooks, setAllBooks] = useState([]);
   const [sidebarLoading, setSidebarLoading] = useState(true);
+  const [loadingBooks, setLoadingBooks] = useState(true);
 
   // Fetch feed
   const fetchFeed = useCallback(async (pageNum = 1, append = false) => {
@@ -287,10 +305,13 @@ const SocialFeedPage = () => {
         }
       }
 
+      // Filter out items from admin users
+      const filteredItems = items.filter(item => !isAdmin(item?.user));
+      
       if (append) {
-        setFeedItems((prev) => [...prev, ...items]);
+        setFeedItems((prev) => [...prev, ...filteredItems]);
       } else {
-        setFeedItems(items);
+        setFeedItems(filteredItems);
       }
 
       setHasMore(pageNum < totalPages);
@@ -306,18 +327,39 @@ const SocialFeedPage = () => {
     }
   }, [feedType]);
 
-  // Fetch sidebar data (Who to Follow + Trending Books)
+  // Fetch all books for trending calculation (same as HomePage)
+  const fetchAllBooks = useCallback(async () => {
+    try {
+      setLoadingBooks(true);
+      const response = await getAllBooks(1, 1000);
+      const allBooksData = response?.items || (Array.isArray(response) ? response : []);
+      setAllBooks(allBooksData);
+    } catch (err) {
+      console.error('Error loading books:', err);
+      setAllBooks([]);
+    } finally {
+      setLoadingBooks(false);
+    }
+  }, []);
+
+  // Calculate trending books using the same algorithm as HomePage
+  const trendingBooks = useMemo(() => {
+    if (!allBooks || allBooks.length === 0) return [];
+    // Trending: Most rated/popular (by rating count) - same as HomePage
+    return [...allBooks]
+      .sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0))
+      .slice(0, 5); // Show top 5 in sidebar
+  }, [allBooks]);
+
+  // Fetch sidebar data (Who to Follow)
   const fetchSidebarData = useCallback(async () => {
     setSidebarLoading(true);
     try {
-      // Fetch in parallel: all users, current user's following list, trending books
-      const [allUsersRes, followingRes, books] = await Promise.all([
+      // Fetch in parallel: all users, current user's following list
+      const [allUsersRes, followingRes] = await Promise.all([
         getAllUsers(1, 30), // Get first 30 users
         getMyFollowing(1, 1000), // Get all users I'm following
-        getTrendingBooks(5),
       ]);
-
-      setTrendingBooks(books);
 
       // Parse users response
       let allUsers = [];
@@ -347,9 +389,9 @@ const SocialFeedPage = () => {
       const followingIds = new Set(following.map((u) => u.id));
       const currentUserId = user?.id;
 
-      // Filter out: users I already follow + myself
+      // Filter out: users I already follow + myself + admins
       const eligibleUsers = allUsers.filter(
-        (u) => u.id !== currentUserId && !followingIds.has(u.id)
+        (u) => u.id !== currentUserId && !followingIds.has(u.id) && !isAdmin(u)
       );
 
       // Shuffle and pick 3 random users
@@ -372,6 +414,10 @@ const SocialFeedPage = () => {
   useEffect(() => {
     fetchSidebarData();
   }, [fetchSidebarData]);
+
+  useEffect(() => {
+    fetchAllBooks();
+  }, [fetchAllBooks]);
 
   // Refresh feed
   const handleRefresh = () => {
@@ -570,7 +616,7 @@ const SocialFeedPage = () => {
                 </div>
               </div>
               <div className="divide-y divide-stone-100">
-                {sidebarLoading ? (
+                {sidebarLoading || loadingBooks ? (
                   <>
                     <BookCardSkeleton />
                     <BookCardSkeleton />

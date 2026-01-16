@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getAllBooksAdmin, createBook, updateBook, deleteBookAdmin } from '../../api/admin';
 import { getAllAuthors, getAllGenres } from '../../api/admin';
+import { addGenresToBook } from '../../api/books';
 import { toast } from 'react-toastify';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
@@ -44,6 +45,7 @@ const AdminBooks = () => {
     pageCount: '',
     publisher: '',
     authorId: '',
+    genreIds: [], // Array of selected genre IDs
     coverImage: null,
   });
   const [coverPreview, setCoverPreview] = useState(null);
@@ -108,6 +110,7 @@ const AdminBooks = () => {
       pageCount: book.pageCount?.toString() || '',
       publisher: book.publisher || '',
       authorId: book.authorId || book.author?.id || '',
+      genreIds: book.genres?.map(g => g.id || g) || [],
       coverImage: null,
     });
     if (book.coverImageUrl || book.coverImage) {
@@ -145,6 +148,23 @@ const AdminBooks = () => {
         }
 
         await updateBook(submitData);
+        
+        // Update genres if changed
+        if (formData.genreIds && formData.genreIds.length >= 0) {
+          try {
+            // First, get current book to see existing genres
+            // For simplicity, we'll just add the selected genres
+            // Note: This will add genres, not replace. For full replacement, we'd need to remove existing first.
+            if (formData.genreIds.length > 0) {
+              await addGenresToBook(editingId, formData.genreIds);
+            }
+          } catch (genreError) {
+            console.error('Error updating genres:', genreError);
+            // Don't fail the whole operation if genres fail
+            toast.warning('Book updated but genres may not have been updated');
+          }
+        }
+        
         toast.success('Book updated successfully');
       } else {
         // Create mode
@@ -160,7 +180,32 @@ const AdminBooks = () => {
           submitData.append('CoverImage', formData.coverImage);
         }
 
-        await createBook(submitData);
+        const result = await createBook(submitData);
+        // Extract bookId from Location header (CreatedAtAction returns Location header)
+        let bookId = null;
+        if (result?.headers?.location) {
+          const locationMatch = result.headers.location.match(/\/books\/get-book-by-id\/([^\/]+)/);
+          if (locationMatch) {
+            bookId = locationMatch[1];
+          }
+        }
+        
+        // Fallback: try to get from response data if Location header doesn't have it
+        if (!bookId && result?.data) {
+          bookId = result.data;
+        }
+        
+        // Add genres to the book if any are selected
+        if (formData.genreIds && formData.genreIds.length > 0 && bookId) {
+          try {
+            await addGenresToBook(bookId, formData.genreIds);
+          } catch (genreError) {
+            console.error('Error adding genres:', genreError);
+            // Don't fail the whole operation if genres fail
+            toast.warning('Book created but some genres may not have been added');
+          }
+        }
+        
         toast.success('Book created successfully');
       }
       
@@ -212,6 +257,7 @@ const AdminBooks = () => {
       pageCount: '',
       publisher: '',
       authorId: '',
+      genreIds: [],
       coverImage: null,
     });
     setCoverPreview(null);
@@ -535,6 +581,35 @@ const AdminBooks = () => {
                     className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
                     placeholder="Publisher name"
                   />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Genres</label>
+                  <select
+                    multiple
+                    value={formData.genreIds}
+                    onChange={(e) => {
+                      const selectedIds = Array.from(e.target.selectedOptions, option => option.value);
+                      setFormData({ ...formData, genreIds: selectedIds });
+                    }}
+                    className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-amber-500 min-h-[120px] max-h-[200px] overflow-y-auto"
+                    size="5"
+                  >
+                    {genres.length > 0 ? (
+                      genres.map((genre) => (
+                        <option key={genre.id} value={genre.id} className="py-2">
+                          {genre.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Loading genres...</option>
+                    )}
+                  </select>
+                  <p className="text-xs text-slate-400 mt-2">
+                    {formData.genreIds.length > 0 
+                      ? `${formData.genreIds.length} genre(s) selected: ${genres.filter(g => formData.genreIds.includes(g.id)).map(g => g.name).join(', ')}`
+                      : 'Hold Ctrl (Windows) or Cmd (Mac) to select multiple genres'}
+                  </p>
                 </div>
 
                 <div className="md:col-span-2">

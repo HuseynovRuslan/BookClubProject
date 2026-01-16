@@ -32,8 +32,7 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
         }
       } catch (error) {
-        console.error('Failed to restore auth state:', error);
-        // Clear corrupted data
+        // Clear corrupted data silently
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
@@ -87,13 +86,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Invalid response from server');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      
-      const errorMessage = 
-        error.response?.data?.message || 
-        error.response?.data?.errors?.[0]?.description ||
-        error.message ||
-        'Login failed. Please try again.';
+      const errorMessage = extractErrorMessage(error) || 'Login failed. Please check your credentials.';
       
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
@@ -117,13 +110,7 @@ export const AuthProvider = ({ children }) => {
       toast.success(message);
       return { success: true, message };
     } catch (error) {
-      console.error('Registration error:', error);
-      
-      const errorMessage = 
-        error.response?.data?.message || 
-        error.response?.data?.errors?.[0]?.description ||
-        error.message ||
-        'Registration failed. Please try again.';
+      const errorMessage = extractErrorMessage(error) || 'Registration failed. Please try again.';
       
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
@@ -140,7 +127,6 @@ export const AuthProvider = ({ children }) => {
         await axiosClient.post('/auth/logout');
       }
     } catch (error) {
-      console.error('Logout error:', error);
       // Continue with logout even if API call fails
     } finally {
       // Clear local storage
@@ -184,6 +170,49 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Helper function to extract error message from various error formats
+  const extractErrorMessage = (error) => {
+    if (!error) return 'An unexpected error occurred.';
+    
+    const errorData = error.response?.data;
+    if (!errorData) {
+      return error.message || 'An unexpected error occurred.';
+    }
+
+    // Check for ProblemDetails format (used by CustomResults.Problem)
+    // Format: { title: "Error.Code", detail: "Error description", status: 401 }
+    if (errorData.detail) {
+      return errorData.detail;
+    }
+
+    // Check for ApiResponse format (used by successful responses)
+    if (errorData.message) {
+      return errorData.message;
+    }
+
+    // Check for errors array format (validation errors)
+    if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+      const firstError = errorData.errors[0];
+      if (typeof firstError === 'string') {
+        return firstError;
+      }
+      if (firstError.description) {
+        return firstError.description;
+      }
+    }
+
+    // Check for errors object format (validation errors as object)
+    if (errorData.errors && typeof errorData.errors === 'object' && !Array.isArray(errorData.errors)) {
+      const errorValues = Object.values(errorData.errors).flat();
+      if (errorValues.length > 0) {
+        return errorValues[0];
+      }
+    }
+
+    // Fallback to title or generic message
+    return errorData.title || error.message || 'An unexpected error occurred.';
+  };
+
   // Helper function to decode JWT (client-side only, not for validation)
   const parseJwt = (token) => {
     try {
@@ -197,7 +226,7 @@ export const AuthProvider = ({ children }) => {
       );
       return JSON.parse(jsonPayload);
     } catch (error) {
-      console.error('Failed to parse JWT:', error);
+      // Silently return empty object if JWT parsing fails
       return {};
     }
   };

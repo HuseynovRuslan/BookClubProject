@@ -29,16 +29,37 @@ axiosClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Clear authentication data
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      // Don't redirect if we're already on login or register pages
+      // This allows proper error handling for login/register failures
+      const isAuthPage = window.location.pathname === '/login' || 
+                        window.location.pathname === '/register';
       
-      // Redirect to login page
-      if (window.location.pathname !== '/login') {
+      if (!isAuthPage) {
+        // Clear authentication data
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        
+        // Redirect to login page
         window.location.href = '/login';
       }
     }
+    
+    // Suppress 404 errors for user year challenge endpoints (expected when no challenge exists)
+    if (error.response?.status === 404) {
+      const url = error.config?.url || '';
+      if (url.includes('/useryearchallenge/')) {
+        // This is expected - user hasn't created a challenge yet
+        // Return a custom error that can be handled gracefully
+        const silentError = new Error('Challenge not found');
+        silentError.response = error.response;
+        silentError.config = error.config;
+        silentError.isAxiosError = true;
+        silentError.silent = true; // Flag to indicate this shouldn't be logged
+        return Promise.reject(silentError);
+      }
+    }
+    
     return Promise.reject(error);
   }
 );

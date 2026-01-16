@@ -1,5 +1,6 @@
 using Goodreads.API.Common;
 using Goodreads.Application.Books.Commands.DeleteBook.DeleteBookCommand;
+using Goodreads.Application.Books.Commands.RecalculateBookRatings;
 using Goodreads.Application.Books.Queries.GetAllBooks;
 using Goodreads.Application.Common;
 using Goodreads.Application.Common.Responses;
@@ -101,6 +102,15 @@ public class AdminController : BaseController
         var result = await Sender.Send(new DeleteUserCommand(id));
         return result.Match(
             () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
+
+    [HttpPost("books/recalculate-ratings")]
+    public async Task<IActionResult> RecalculateBookRatings()
+    {
+        var result = await Sender.Send(new RecalculateBookRatingsCommand());
+        return result.Match(
+            count => Ok(ApiResponse<int>.Success(count, $"Recalculated ratings for {count} books")),
             failure => CustomResults.Problem(failure));
     }
 }

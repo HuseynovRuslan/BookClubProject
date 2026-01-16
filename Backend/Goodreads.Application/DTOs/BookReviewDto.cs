@@ -9,6 +9,9 @@ public class BookReviewDto
 
     public string UserId { get; set; }
     public string? Username { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? UserProfilePictureUrl { get; set; }
 
     public int Rating { get; set; }
     public string? ReviewText { get; set; }

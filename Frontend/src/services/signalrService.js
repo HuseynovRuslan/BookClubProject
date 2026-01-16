@@ -3,11 +3,14 @@ import * as signalR from '@microsoft/signalr';
 class SignalRService {
   constructor() {
     this.connection = null;
+    this.notificationConnection = null;
     this.isConnected = false;
+    this.isNotificationConnected = false;
     this.messageHandlers = [];
     this.userStatusHandlers = [];
     this.messageReadHandlers = [];
     this.onlineUsersListHandlers = [];
+    this.notificationHandlers = [];
   }
 
   /**
@@ -71,6 +74,68 @@ class SignalRService {
     this.connection.onclose(() => {
       this.isConnected = false;
     });
+
+    // Start notification hub connection
+    await this.startNotificationConnection();
+  }
+
+  /**
+   * Start SignalR notification connection
+   */
+  async startNotificationConnection() {
+    if (this.notificationConnection && this.isNotificationConnected) {
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return;
+    }
+
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+    this.notificationConnection = new signalR.HubConnectionBuilder()
+      .withUrl(`${apiUrl}/hubs/notifications`, {
+        accessTokenFactory: () => token,
+      })
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+      .configureLogging(signalR.LogLevel.Information)
+      .build();
+
+    // Set up notification event handlers
+    this.setupNotificationEventHandlers();
+
+    try {
+      await this.notificationConnection.start();
+      this.isNotificationConnected = true;
+    } catch (error) {
+      console.error('SignalR Notification Connection Error:', error);
+      this.isNotificationConnected = false;
+    }
+
+    // Handle reconnection events
+    this.notificationConnection.onreconnecting(() => {
+      this.isNotificationConnected = false;
+    });
+
+    this.notificationConnection.onreconnected(() => {
+      this.isNotificationConnected = true;
+    });
+
+    this.notificationConnection.onclose(() => {
+      this.isNotificationConnected = false;
+    });
+  }
+
+  /**
+   * Setup event handlers for notification hub
+   */
+  setupNotificationEventHandlers() {
+    if (!this.notificationConnection) return;
+
+    // Handle incoming notifications
+    this.notificationConnection.on('ReceiveNotification', (notification) => {
+      this.notificationHandlers.forEach((handler) => handler(notification));
+    });
   }
 
   /**
@@ -121,6 +186,15 @@ class SignalRService {
         // Ignore stop errors
       }
       this.isConnected = false;
+    }
+
+    if (this.notificationConnection) {
+      try {
+        await this.notificationConnection.stop();
+      } catch (error) {
+        // Ignore stop errors
+      }
+      this.isNotificationConnected = false;
     }
   }
 
@@ -212,10 +286,22 @@ class SignalRService {
   }
 
   /**
+   * Register a handler for incoming notifications
+   * @param {Function} handler - Callback function (notification) => void
+   * @returns {Function} - Unsubscribe function
+   */
+  onNotification(handler) {
+    this.notificationHandlers.push(handler);
+    return () => {
+      this.notificationHandlers = this.notificationHandlers.filter((h) => h !== handler);
+    };
+  }
+
+  /**
    * Get connection state
    */
   getConnectionState() {
-    return this.isConnected;
+    return this.isConnected && this.isNotificationConnected;
   }
 }
 

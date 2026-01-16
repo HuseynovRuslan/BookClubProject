@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, BookOpen } from 'lucide-react';
-
-// Base URL for the backend API - environment variable ilə konfiqurasiya olunur
-const BASE_URL = (import.meta.env.VITE_API_URL || 'https://localhost:7050') + '/';
+import { getImageUrl } from '../utils/imageHelper';
 
 /**
  * BookCard Component - Displays a book in a card format
@@ -30,36 +28,9 @@ const BookCard = ({ book }) => {
     return `https://covers.openlibrary.org/b/isbn/${cleanISBN}-L.jpg`;
   };
 
-  // Helper function to format backend image URL
-  const getBackendImageUrl = (imagePath) => {
-    if (!imagePath || imagePath.trim() === '') {
-      return null;
-    }
-
-    // If already a full URL, return as is
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
-    }
-
-    // Normalize path separators
-    const normalizedPath = imagePath.replace(/\\/g, '/');
-    
-    // Remove leading slash if present (BASE_URL already ends with /)
-    const cleanPath = normalizedPath.startsWith('/') 
-      ? normalizedPath.substring(1) 
-      : normalizedPath;
-
-    // BASE_URL already ends with '/', so just append cleanPath
-    return `${BASE_URL}${cleanPath}`;
-  };
-
-  // Priority: Backend (our uploaded images) > OpenLibrary > Placeholder
-  const backendCover = getBackendImageUrl(book.coverImageUrl);
-  const openLibraryCover = getOpenLibraryCover(book.isbn || book.ISBN);
-  
   // Initialize current image source on mount or when book changes
   useEffect(() => {
-    const backend = getBackendImageUrl(book.coverImageUrl);
+    const backend = getImageUrl(book.coverImageUrl);
     const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
     
     // Prioritize backend URL (our uploaded images) over OpenLibrary
@@ -103,7 +74,7 @@ const BookCard = ({ book }) => {
               loading="lazy"
               onError={() => {
                 // Recalculate URLs
-                const backend = getBackendImageUrl(book.coverImageUrl);
+                const backend = getImageUrl(book.coverImageUrl);
                 const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
                 
                 // If backend failed, try OpenLibrary as fallback

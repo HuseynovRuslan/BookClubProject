@@ -26,6 +26,22 @@ const getImageUrl = (url) => {
   return `${BASE_URL}${url}`;
 };
 
+// Helper to check if user is admin
+const isAdmin = (user) => {
+  if (!user) return false;
+  // Check multiple possible field names for role
+  const isAdminByRole = user?.role === 'Admin' || 
+         user?.roles?.includes('Admin') ||
+         user?.userRole === 'Admin' ||
+         (Array.isArray(user?.roles) && user.roles.some(r => r === 'Admin' || r?.name === 'Admin'));
+  
+  // Also check by username (common admin username patterns)
+  const isAdminByUsername = user?.username?.toLowerCase() === 'admin' ||
+                            user?.username?.toLowerCase().startsWith('admin_');
+  
+  return isAdminByRole || isAdminByUsername;
+};
+
 // Skeleton Components
 const UserCardSkeleton = () => (
   <div className="bg-white rounded-xl border border-stone-200 p-5 animate-pulse">
@@ -56,7 +72,7 @@ const UserCard = ({ user, isFollowing, onFollowToggle, isCurrentUser }) => {
     : user?.username?.[0]?.toUpperCase() || '?';
 
   const handleFollowToggle = async () => {
-    if (loading || isCurrentUser) return;
+    if (loading || isCurrentUser || isAdmin(user)) return;
     
     // Optimistic UI update
     setLoading(true);
@@ -101,7 +117,7 @@ const UserCard = ({ user, isFollowing, onFollowToggle, isCurrentUser }) => {
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <Link
-          to={`/user/${user.username}`}
+          to={`/profile/${user.username}`}
           className="w-14 h-14 rounded-full bg-gradient-to-br from-stone-700 to-stone-900 flex items-center justify-center text-white text-lg font-semibold overflow-hidden shrink-0 ring-2 ring-stone-100 group-hover:ring-amber-200 transition-all"
         >
           {profilePicUrl ? (
@@ -114,7 +130,7 @@ const UserCard = ({ user, isFollowing, onFollowToggle, isCurrentUser }) => {
         {/* User Info */}
         <div className="flex-1 min-w-0">
           <Link
-            to={`/user/${user.username}`}
+            to={`/profile/${user.username}`}
             className="font-semibold text-stone-800 hover:text-amber-600 transition-colors block truncate"
           >
             {user.firstName && user.lastName
@@ -128,7 +144,7 @@ const UserCard = ({ user, isFollowing, onFollowToggle, isCurrentUser }) => {
         </div>
 
         {/* Follow Button */}
-        {!isCurrentUser && (
+        {!isCurrentUser && !isAdmin(user) && (
           <button
             onClick={handleFollowToggle}
             disabled={loading}
@@ -270,14 +286,21 @@ const CommunityPage = () => {
         }
       }
 
+      // Filter out admin users
+      const filteredItems = items.filter(u => !isAdmin(u));
+      
+      // Recalculate total count after filtering (subtract admin count)
+      const adminCount = items.length - filteredItems.length;
+      const adjustedTotal = Math.max(0, total - adminCount);
+      
       if (append) {
-        setUsers((prev) => [...prev, ...items]);
+        setUsers((prev) => [...prev, ...filteredItems]);
       } else {
-        setUsers(items);
+        setUsers(filteredItems);
       }
       
-      setTotalCount(total);
-      setHasMore(pageNum < totalPages);
+      setTotalCount(adjustedTotal);
+      setHasMore(pageNum < totalPages && filteredItems.length > 0);
       setPage(pageNum);
     } catch (error) {
       console.error('Error fetching users:', error);

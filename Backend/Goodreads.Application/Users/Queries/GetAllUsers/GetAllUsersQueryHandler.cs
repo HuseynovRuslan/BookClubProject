@@ -41,6 +41,16 @@ internal class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, Paged
 
         var dtoList = _mapper.Map<List<UserDto>>(users);
 
+        // Set role for each user
+        foreach (var userDto in dtoList)
+        {
+            var user = users.FirstOrDefault(u => u.Id == userDto.Id);
+            if (user != null)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                userDto.Role = roles.FirstOrDefault() ?? "User";
+            }
+        }
 
         return PagedResult<UserDto>.Create(dtoList, p.PageNumber, p.PageSize, totalCount);
     }

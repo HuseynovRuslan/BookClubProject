@@ -3,7 +3,18 @@
 namespace Goodreads.Application.Books.Queries.GetAllBooks;
 public class GetAllBooksQueryValidator : AbstractValidator<GetAllBooksQuery>
 {
-    private readonly string[] allowedSortColumns = { "title", "language", "publisher" };
+    private readonly string[] allowedSortColumns = { 
+        "title", 
+        "authorid", 
+        "author",
+        "createdat", 
+        "averagerating", 
+        "ratingcount", 
+        "publicationdate",
+        "publishdate",
+        "language", 
+        "publisher" 
+    };
 
     public GetAllBooksQueryValidator()
     {
