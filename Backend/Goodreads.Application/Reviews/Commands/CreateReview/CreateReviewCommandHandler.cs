@@ -49,24 +49,6 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
             book.RatingCount = reviewsList.Count;
             _unitOfWork.Books.Update(book);
         }
-
-        var readShelf = await _unitOfWork.Shelves.GetSingleOrDefaultAsync(
-            s => s.UserId == userId && s.Name == DefaultShelves.Read && s.IsDefault,
-            includes: new[] { "BookShelves" });
-
-        if (readShelf != null)
-        {
-            var alreadyExists = readShelf.BookShelves.Any(bs => bs.BookId == request.BookId);
-            if (!alreadyExists)
-            {
-                readShelf.BookShelves.Add(new BookShelf
-                {
-                    BookId = request.BookId,
-                    ShelfId = readShelf.Id,
-                });
-            }
-        }
-
         await _unitOfWork.SaveChangesAsync();
 
         return Result<string>.Ok(review.Id);
