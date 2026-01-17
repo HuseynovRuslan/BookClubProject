@@ -1,4 +1,4 @@
-# 📚 BookClub Project (Goodreads Clone)
+# 📚 BookClub Project 
 
 BookClub is a social platform for book lovers, allowing users to discover books, track reading progress, and interact with a community of readers.
 
