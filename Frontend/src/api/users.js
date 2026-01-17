@@ -1,4 +1,4 @@
-import axiosClient from './axiosClient';
+﻿import axiosClient from './axiosClient';
 
 /**
  * Get current user's profile
@@ -95,29 +95,20 @@ export const updateProfilePicture = async (file) => {
   try {
     const formData = new FormData();
     formData.append('File', file); // Backend expects 'File' with capital F
-    
-    // Get the token for authorization
-    const token = localStorage.getItem('token');
-    
-    // Use fetch API instead of axios for file uploads (more reliable with FormData)
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:7050';
-    const response = await fetch(`${apiUrl}/api/users/update-profile-picture`, {
-      method: 'PATCH',
+
+    // Use axiosClient which handles base URL and auth tokens appropriately
+    // Also explicitly setting Content-Type to multipart/form-data is good practice, 
+    // though axios often detects it automatically with FormData
+    const response = await axiosClient.patch('/users/update-profile-picture', formData, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        // Do NOT set Content-Type - browser will set it automatically with boundary
+        'Content-Type': 'multipart/form-data',
       },
-      body: formData,
     });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw { response: { data: errorData, status: response.status } };
-    }
-    
+
     return response;
   } catch (error) {
     console.error('Error updating profile picture:', error);
+    // Error details are handled by axios interceptor usually, but we log for local debugging
     console.error('Error details:', error.response?.data);
     throw error;
   }

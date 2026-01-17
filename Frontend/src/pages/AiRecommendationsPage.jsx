@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAiRecommendations } from '../api/ai';
 import { createFeedback } from '../api/feedback';

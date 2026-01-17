@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Quote, 
@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { deleteQuote, toggleQuoteLike } from '../api/quotes';
 import { toast } from 'react-toastify';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 // Helper to get profile picture URL
 const getProfilePictureUrl = (url) => {

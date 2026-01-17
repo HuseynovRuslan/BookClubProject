@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Plus,
   Trash2,
@@ -11,7 +11,7 @@ import {
 import { getAllNews, createNews, updateNews, deleteNews } from '../../api/admin';
 import { toast } from 'react-toastify';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 const AdminNews = () => {
   const [news, setNews] = useState([]);
@@ -68,7 +68,7 @@ const AdminNews = () => {
     try {
       setSubmitting(true);
       const submitData = new FormData();
-      
+
       if (editingId) {
         // Update mode
         submitData.append('Id', editingId);
@@ -89,14 +89,36 @@ const AdminNews = () => {
         await createNews(submitData);
         toast.success('News created successfully');
       }
-      
+
       setShowModal(false);
       setEditingId(null);
       setFormData({ title: '', content: '', details: '', coverImageUrl: '' });
       fetchNews();
     } catch (error) {
       console.error('Error saving news:', error);
-      toast.error(error.response?.data?.message || `Failed to ${editingId ? 'update' : 'create'} news`);
+      console.error('Error saving news:', error);
+
+      // Extract specific error message
+      let errorMessage = `Failed to ${editingId ? 'update' : 'create'} news`;
+      const errorData = error.response?.data;
+
+      if (errorData) {
+        if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.errors) {
+          // Handle ValidationProblemDetails format
+          if (Array.isArray(errorData.errors)) {
+            errorMessage = errorData.errors[0]?.description || errorData.errors[0];
+          } else if (typeof errorData.errors === 'object') {
+            const values = Object.values(errorData.errors).flat();
+            errorMessage = values[0] || 'Validation error';
+          }
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

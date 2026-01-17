@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Mail, Lock, User, BookOpen, Eye, EyeOff, ArrowRight, Loader, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -413,11 +413,11 @@ const RegisterPage = () => {
               </div>
               <span className="text-amber-400 font-medium">Join 5,000+ readers</span>
             </div>
-            
+
             <h2 className="text-4xl font-bold text-white mb-6 leading-tight">
               Your personal library, anywhere you go
             </h2>
-            
+
             <p className="text-white/70 text-lg leading-relaxed mb-8">
               Track your reading progress, discover new books, connect with fellow readers, and build your digital bookshelf.
             </p>

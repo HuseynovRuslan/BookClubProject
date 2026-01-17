@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Newspaper,
@@ -12,7 +12,7 @@ import {
 import { getAllNews } from '../api/admin';
 import { toast } from 'react-toastify';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 const NewsPage = () => {
   const [news, setNews] = useState([]);

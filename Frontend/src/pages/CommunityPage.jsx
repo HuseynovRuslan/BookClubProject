@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+﻿import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,7 +17,7 @@ import { getAllUsers } from '../api/users';
 import { followUser, unfollowUser, getMyFollowing } from '../api/userFollows';
 import { useAuth } from '../context/AuthContext';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 // Helper to get full image URL
 const getImageUrl = (url) => {

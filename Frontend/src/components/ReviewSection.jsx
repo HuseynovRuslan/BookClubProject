@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   MessageSquare,
   Pencil,
@@ -20,7 +20,7 @@ import {
 } from '../api/reviews';
 import { useAuth } from '../context/AuthContext';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 /**
  * Review Section Component

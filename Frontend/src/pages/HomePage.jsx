@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+﻿import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -41,7 +41,7 @@ import { getUnreadCount as getNotificationUnreadCount, getNotifications } from '
 import { useAuth } from '../context/AuthContext';
 import { useSignalR } from '../context/SignalRContext';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 // Helper to get profile picture URL
 const getProfilePictureUrl = (url) => {

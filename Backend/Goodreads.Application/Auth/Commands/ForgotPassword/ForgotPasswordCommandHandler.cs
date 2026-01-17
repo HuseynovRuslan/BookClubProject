@@ -24,7 +24,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         // Password reset token yaradılır
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var encodedToken = WebUtility.UrlEncode(token);
-        var resetLink = $"https://localhost:7050/api/auth/reset-password?userId={user.Id}&token={encodedToken}";
+        var resetLink = $"http://localhost:7050/api/auth/reset-password?userId={user.Id}&token={encodedToken}";
 
         // Send password reset email using clean email service
         await _emailService.SendPasswordResetEmailAsync(user.Email!, user.UserName ?? "Reader", resetLink);

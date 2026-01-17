@@ -33,7 +33,8 @@ internal class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand,
         var authResult = new AuthResultDto
         {
             AccessToken = accessToken,
-            RefreshToken = refreshToken
+            RefreshToken = refreshToken,
+            EmailConfirmed = storedRefreshToken.User.EmailConfirmed
         };
 
         _logger.LogInformation("Token refreshed successfully for user {UserId}", storedRefreshToken.UserId);

@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Trophy, Target, Edit3, Check, X, Loader, Sparkles, BookOpen } from 'lucide-react';
 import { getUserYearChallenge, upsertUserYearChallenge } from '../api/readingChallenge';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => {
   const { user } = useAuth();
@@ -112,11 +114,11 @@ const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => 
           </div>
           <h3 className="font-semibold text-stone-800">{year} Reading Challenge</h3>
         </div>
-        
+
         <p className="text-stone-600 text-sm mb-4">
           Set your Reading Challenge for {year}! Track your progress and achieve your reading goals.
         </p>
-        
+
         <button
           onClick={() => setIsCreating(true)}
           className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -138,11 +140,11 @@ const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => 
           </div>
           <h3 className="font-semibold text-stone-800">Set Your {year} Goal</h3>
         </div>
-        
+
         <p className="text-stone-600 text-sm mb-4">
           How many books do you want to read this year?
         </p>
-        
+
         <div className="flex items-center gap-2 mb-4">
           <input
             type="number"
@@ -155,24 +157,23 @@ const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => 
           />
           <span className="text-stone-600 font-medium">books</span>
         </div>
-        
+
         {/* Quick suggestions */}
         <div className="flex gap-2 mb-4">
           {[12, 24, 52].map((num) => (
             <button
               key={num}
               onClick={() => setNewTarget(num)}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                parseInt(newTarget) === num
-                  ? 'bg-amber-500 text-white'
-                  : 'bg-white border border-amber-200 text-stone-600 hover:bg-amber-50'
-              }`}
+              className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-colors ${parseInt(newTarget) === num
+                ? 'bg-amber-500 text-white'
+                : 'bg-white border border-amber-200 text-stone-600 hover:bg-amber-50'
+                }`}
             >
               {num}
             </button>
           ))}
         </div>
-        
+
         <div className="flex gap-2">
           <button
             onClick={() => setIsCreating(false)}
@@ -201,17 +202,15 @@ const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => 
 
   // Active challenge
   return (
-    <div className={`rounded-xl border p-5 ${
-      isCompleted 
-        ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200' 
-        : 'bg-white border-stone-200'
-    }`}>
+    <div className={`rounded-xl border p-5 ${isCompleted
+      ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200'
+      : 'bg-white border-stone-200'
+      }`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-            isCompleted ? 'bg-emerald-100' : 'bg-amber-100'
-          }`}>
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted ? 'bg-emerald-100' : 'bg-amber-100'
+            }`}>
             <Trophy className={`w-5 h-5 ${isCompleted ? 'text-emerald-600' : 'text-amber-600'}`} />
           </div>
           <div>
@@ -221,7 +220,7 @@ const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => 
             )}
           </div>
         </div>
-        
+
         {!isEditing && (
           <button
             onClick={() => setIsEditing(true)}
@@ -291,11 +290,10 @@ const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => 
           {/* Progress bar */}
           <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                isCompleted 
-                  ? 'bg-gradient-to-r from-emerald-400 to-green-500' 
-                  : 'bg-gradient-to-r from-amber-400 to-orange-500'
-              }`}
+              className={`h-full rounded-full transition-all duration-500 ${isCompleted
+                ? 'bg-gradient-to-r from-emerald-400 to-green-500'
+                : 'bg-gradient-to-r from-amber-400 to-orange-500'
+                }`}
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -314,9 +312,68 @@ const ReadingChallengeCard = ({ year = new Date().getFullYear(), onUpdate }) => 
               `${target - booksRead} books to go. Keep reading! 📖`
             )}
           </p>
+
+          {/* Grid of Books */}
+          <div className="mt-4 grid grid-cols-4 sm:grid-cols-6 gap-2">
+            {/* Display read books */}
+            {challenge?.books?.map((book) => {
+              const imageUrl = book.coverImageUrl
+                ? (book.coverImageUrl.startsWith('http')
+                  ? book.coverImageUrl
+                  : `${BASE_URL}${book.coverImageUrl}`)
+                : null;
+
+              return (
+                <div key={book.bookId} className="aspect-[2/3] relative group">
+                  <div className="w-full h-full rounded-md overflow-hidden border border-stone-200 bg-stone-100 shadow-sm transition-transform group-hover:scale-105">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={book.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null; // Prevent infinite loop
+                          e.target.style.display = 'none'; // Hide broken image
+                          e.target.nextSibling.style.display = 'flex'; // Show fallback
+                        }}
+                      />
+                    ) : null}
+                    {/* Fallback for when image is missing or errors out */}
+                    <div
+                      className="absolute inset-0 flex items-center justify-center bg-stone-100 p-1 text-center"
+                      style={{ display: imageUrl ? 'none' : 'flex' }}
+                    >
+                      <BookOpen className="w-5 h-5 text-stone-300" />
+                    </div>
+                    {/* Tooltip */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
+                      <p className="text-[10px] text-white text-center line-clamp-3 leading-tight font-medium">
+                        {book.title}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Display empty slots to fill up to target (limit to reasonable number if target is huge) */}
+            {[...Array(Math.max(0, Math.min(target - booksRead, 12)))].map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-[2/3] rounded-md border-2 border-dashed border-stone-200 bg-stone-50 flex items-center justify-center">
+                <span className="text-stone-300 font-bold text-lg opacity-50">{booksRead + i + 1}</span>
+              </div>
+            ))}
+
+            {/* If there are more remaining books than we displayed slots for */}
+            {target - booksRead > 12 && (
+              <div className="aspect-[2/3] rounded-md border-2 border-dashed border-stone-200 bg-stone-50 flex items-center justify-center">
+                <span className="text-stone-400 font-medium text-xs">+{target - booksRead - 12} more</span>
+              </div>
+            )}
+          </div>
         </>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
 

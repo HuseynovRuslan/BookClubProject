@@ -1,4 +1,4 @@
-import axiosClient from './axiosClient';
+﻿import axiosClient from './axiosClient';
 
 // ==================== ADMIN STATS ====================
 export const getAdminStats = async () => {
@@ -219,6 +219,12 @@ export const getAllUsers = async (pageNumber = 1, pageSize = 10, searchTerm = ''
 // Delete user (Admin only)
 export const deleteUser = async (id) => {
   const response = await axiosClient.delete(`/admin/users/${id}`);
+  return response.data;
+};
+
+// Update user (Admin only)
+export const updateUserAdmin = async (id, data) => {
+  const response = await axiosClient.put(`/admin/users/${id}`, data);
   return response.data;
 };
 

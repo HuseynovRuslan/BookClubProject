@@ -55,6 +55,7 @@ internal class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Resul
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
+            EmailConfirmed = user.EmailConfirmed
         };
 
         _logger.LogInformation("User {Email} logged in successfully.", request.UsernameOrEmail);

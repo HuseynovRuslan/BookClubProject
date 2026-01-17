@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+﻿import { createContext, useContext, useState, useEffect } from 'react';
 import axiosClient from '../api/axiosClient';
 import { resendConfirmationEmail as resendEmailApi } from '../api/auth';
 import { toast } from 'react-toastify';
@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (usernameOrEmail, password) => {
     try {
       setLoading(true);
-      
+
       // Call the API endpoint matching AuthController Login method
       const response = await axiosClient.post('/auth/login', {
         usernameOrEmail,
@@ -57,29 +57,29 @@ export const AuthProvider = ({ children }) => {
 
       // Extract data from ApiResponse<AuthResultDto> structure
       const { data } = response.data;
-      
+
       if (data?.accessToken) {
         // Store tokens
         localStorage.setItem('token', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
-        
+
         // Decode JWT to get user info (basic decode, not validation)
         const userPayload = parseJwt(data.accessToken);
         const userData = {
           id: userPayload.sub || userPayload.userId,
           email: userPayload.email,
           username: userPayload.username || userPayload.unique_name,
-          emailConfirmed: userPayload.email_verified === 'true',
+          emailConfirmed: data.emailConfirmed ?? (userPayload.email_verified === 'true'),
           role: userPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || userPayload.role || 'User',
         };
-        
+
         localStorage.setItem('user', JSON.stringify(userData));
-        
+
         // Update state
         setToken(data.accessToken);
         setUser(userData);
         setIsAuthenticated(true);
-        
+
         toast.success(response.data.message || 'Login successful!');
         return { success: true };
       } else {
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       const errorMessage = extractErrorMessage(error) || 'Login failed. Please check your credentials.';
-      
+
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
@@ -99,19 +99,18 @@ export const AuthProvider = ({ children }) => {
   const register = async (registerData) => {
     try {
       setLoading(true);
-      
+
       // Call the API endpoint matching AuthController Register method
       const response = await axiosClient.post('/auth/register', registerData);
-      
+
       // Registration returns ApiResponse<string>
-      const message = response.data.message || 
-        'Registration successful! Please check your email to confirm your account.';
-      
+      const message = response.data.message || 'Registration successful! You can login now.';
+
       toast.success(message);
       return { success: true, message };
     } catch (error) {
       const errorMessage = extractErrorMessage(error) || 'Registration failed. Please try again.';
-      
+
       toast.error(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
@@ -133,12 +132,12 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      
+
       // Reset state
       setToken(null);
       setUser(null);
       setIsAuthenticated(false);
-      
+
       toast.info('Logged out successfully');
     }
   };
@@ -151,13 +150,13 @@ export const AuthProvider = ({ children }) => {
     }
 
     const result = await resendEmailApi(user.email);
-    
+
     if (result.success) {
       toast.success(result.message || 'Confirmation email sent!');
     } else {
       toast.error(result.message || 'Failed to send confirmation email');
     }
-    
+
     return result;
   };
 
@@ -170,10 +169,41 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Refresh user data from server (silent refresh without logout)
+  const refreshUser = async () => {
+    try {
+      const response = await axiosClient.get('/auth/me');
+      const { data } = response.data;
+
+      if (data) {
+        const updatedUser = {
+          id: data.id,
+          email: data.email,
+          username: data.userName,
+          emailConfirmed: data.emailConfirmed,
+          role: data.role || 'User',
+          firstName: data.firstName,
+          lastName: data.lastName,
+        };
+
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        console.log('🔄 User refreshed:', updatedUser);
+        return { success: true, emailConfirmed: data.emailConfirmed };
+      }
+      return { success: false };
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      return { success: false };
+    }
+  };
+
+
   // Helper function to extract error message from various error formats
   const extractErrorMessage = (error) => {
     if (!error) return 'An unexpected error occurred.';
-    
+
     const errorData = error.response?.data;
     if (!errorData) {
       return error.message || 'An unexpected error occurred.';
@@ -236,12 +266,13 @@ export const AuthProvider = ({ children }) => {
     token,
     isAuthenticated,
     loading,
-    emailConfirmed: user?.emailConfirmed ?? true, // Default to true for backwards compatibility
+    emailConfirmed: user?.emailConfirmed ?? false, // Default to false for security
     login,
     register,
     logout,
     resendConfirmationEmail,
     updateEmailConfirmed,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

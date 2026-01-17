@@ -19,18 +19,10 @@ public static class MigrationExtensions
                 logger.LogInformation("Starting database migration for {DbContext} (attempt {Attempt}/{MaxRetries})", 
                     typeof(TContext).Name, retry + 1, maxRetries);
                 
-                // Test database connection first
-                if (await dbContext.Database.CanConnectAsync())
-                {
-                    await dbContext.Database.MigrateAsync();
-                    logger.LogInformation("Database migration completed successfully for {DbContext}", typeof(TContext).Name);
-                    return; // Success - exit the method
-                }
-                else
-                {
-                    logger.LogWarning("Cannot connect to database for {DbContext}, attempt {Attempt}/{MaxRetries}", 
-                        typeof(TContext).Name, retry + 1, maxRetries);
-                }
+                // Attempt to migrate directly (this will create the DB if it doesn't exist)
+                await dbContext.Database.MigrateAsync();
+                logger.LogInformation("Database migration completed successfully for {DbContext}", typeof(TContext).Name);
+                return; // Success - exit the method
             }
             catch (Exception ex)
             {

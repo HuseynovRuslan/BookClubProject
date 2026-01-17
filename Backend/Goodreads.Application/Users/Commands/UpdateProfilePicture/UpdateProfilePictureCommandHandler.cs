@@ -44,8 +44,8 @@ internal class UpdateProfilePictureCommandHandler : IRequestHandler<UpdateProfil
             return Result.Fail(UserErrors.InvalidFileExtension());
         }
 
-        // Validate file size (max 5MB)
-        const long maxFileSize = 5 * 1024 * 1024; // 5MB
+        // Validate file size (max 2MB)
+        const long maxFileSize = 2 * 1024 * 1024; // 2MB
         if (request.File.Length > maxFileSize)
         {
             return Result.Fail(UserErrors.FileTooLarge());

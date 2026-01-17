@@ -177,6 +177,8 @@ public class UsersController(IUserContext userContext) : BaseController
     public async Task<IActionResult> GetMyYearlyChallenges([FromQuery] QueryParameters parameters, [FromQuery] int? year)
     {
         var userId = userContext.UserId;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
         var result = await Sender.Send(new GetAllUserYearChallengesQuery(userId, parameters, year));
         return Ok(result);
     }
@@ -190,6 +192,8 @@ public class UsersController(IUserContext userContext) : BaseController
     public async Task<IActionResult> GetMyYearlyChallengeDetails(int year)
     {
         var userId = userContext.UserId;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
         var result = await Sender.Send(new GetUserYearChallengeQuery(userId, year));
         return result.Match(
             challenge => Ok(ApiResponse<UserYearChallengeDetailsDto>.Success(challenge)),

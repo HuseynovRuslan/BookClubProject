@@ -94,6 +94,41 @@ public class AuthController : BaseController
             failure => CustomResults.Problem(failure));
     }
 
+    /// <summary>
+    /// Get current user's latest info from database (for refreshing user state without re-login)
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(ApiResponse.Failure("User not found in token"));
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound(ApiResponse.Failure("User not found"));
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        var userDto = new
+        {
+            Id = user.Id,
+            Email = user.Email,
+            UserName = user.UserName,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            EmailConfirmed = user.EmailConfirmed,
+            Role = roles.FirstOrDefault() ?? "User"
+        };
+
+        return Ok(ApiResponse<object>.Success(userDto, "User data retrieved successfully"));
+    }
+
 
     [HttpGet("confirm-email")]
     public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
@@ -112,17 +147,17 @@ public class AuthController : BaseController
 
         // Check if already confirmed
         if (user.EmailConfirmed)
-            return Content(GetEmailConfirmationPage(true, "Your email is already verified! You can login now.", frontendUrl), "text/html");
+            return Content(GetEmailConfirmationPage(true, "Your email is already verified! Please re-login to refresh your session.", frontendUrl, true), "text/html");
 
         // 🔹 DB-də email confirmed update
         user.EmailConfirmed = true;
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
-        return Content(GetEmailConfirmationPage(true, "Your email has been verified successfully!", frontendUrl), "text/html");
+        return Content(GetEmailConfirmationPage(true, "Your email has been verified successfully!", frontendUrl, true), "text/html");
     }
 
-    private static string GetEmailConfirmationPage(bool success, string message, string frontendUrl)
+    private static string GetEmailConfirmationPage(bool success, string message, string frontendUrl, bool shouldLogout = false)
     {
         var icon = success ? "✅" : "❌";
         var title = success ? "Email Verified!" : "Verification Failed";
@@ -130,7 +165,7 @@ public class AuthController : BaseController
         var borderColor = success ? "#22c55e" : "#ef4444";
         var textColor = success ? "#166534" : "#991b1b";
         var buttonText = success ? "Continue to Login" : "Back to Home";
-        var buttonLink = success ? $"{frontendUrl}/login?verified=true" : frontendUrl;
+        var buttonLink = success ? $"{frontendUrl}/login?verified=true{(shouldLogout ? "&logout=true" : "")}" : frontendUrl;
 
         return $@"
 <!DOCTYPE html>

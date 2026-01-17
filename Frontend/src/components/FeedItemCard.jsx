@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Heart,
@@ -23,7 +23,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 
 // Base URL for the backend API
-const API_BASE = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 const BASE_URL = API_BASE.endsWith('/') ? API_BASE : API_BASE + '/';
 
 // Helper to get full image URL

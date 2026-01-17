@@ -1,7 +1,7 @@
-import { X, User } from 'lucide-react';
+﻿import { X, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 // Helper to get full image URL
 const getImageUrl = (url) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   Plus,
   Trash2,
@@ -17,7 +17,7 @@ import { getAllAuthors, getAllGenres } from '../../api/admin';
 import { addGenresToBook } from '../../api/books';
 import { toast } from 'react-toastify';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 const AdminBooks = () => {
   const [books, setBooks] = useState([]);
