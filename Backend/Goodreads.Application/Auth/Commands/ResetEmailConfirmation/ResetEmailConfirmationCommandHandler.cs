@@ -6,15 +6,18 @@ internal class ResetEmailConfirmationCommandHandler : IRequestHandler<ResetEmail
     private readonly UserManager<User> _userManager;
     private readonly IEmailService _emailService;
     private readonly ILogger<ResetEmailConfirmationCommandHandler> _logger;
+    private readonly IConfiguration _configuration;
 
     public ResetEmailConfirmationCommandHandler(
         UserManager<User> userManager,
         IEmailService emailService,
-        ILogger<ResetEmailConfirmationCommandHandler> logger)
+        ILogger<ResetEmailConfirmationCommandHandler> logger,
+        IConfiguration configuration)
     {
         _userManager = userManager;
         _emailService = emailService;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public async Task<Result<string>> Handle(ResetEmailConfirmationCommand request, CancellationToken cancellationToken)
@@ -36,7 +39,8 @@ internal class ResetEmailConfirmationCommandHandler : IRequestHandler<ResetEmail
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = WebUtility.UrlEncode(token);
-        var confirmationLink = $"http://localhost:7050/api/auth/confirm-email?userId={user.Id}&token={encodedToken}";
+        var backendUrl = _configuration["BackendUrl"] ?? "http://localhost:7050";
+        var confirmationLink = $"{backendUrl}/api/auth/confirm-email?userId={user.Id}&token={encodedToken}";
 
         // Send verification email using clean email service
         try

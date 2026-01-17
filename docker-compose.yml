@@ -49,6 +49,8 @@ services:
       - JwtSettings__Issuer=GoodreadsAPI
       - JwtSettings__Audience=GoodreadsClient
       - JwtSettings__TokenExpirationInMinutes=43200
+      - FrontendUrl=${FRONTEND_URL}
+      - BackendUrl=${BACKEND_URL}
 
     depends_on:
       db:
