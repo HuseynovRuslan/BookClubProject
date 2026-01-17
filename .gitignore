@@ -7,3 +7,5 @@ Backend/Goodreads.API/appsettings.*.json
 [Oo]bj/
 /Backend/.vs
 /.vs
+# Environment Variables
+.env
