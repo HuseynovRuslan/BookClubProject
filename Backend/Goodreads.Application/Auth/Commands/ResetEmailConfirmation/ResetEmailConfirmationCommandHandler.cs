@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.Extensions.Configuration;
 
 namespace Goodreads.Application.Auth.Commands.ResetEmailConfirmation;
 internal class ResetEmailConfirmationCommandHandler : IRequestHandler<ResetEmailConfirmationCommand, Result<string>>
