@@ -40,7 +40,9 @@ public static class DependencyInjection
                         "http://localhost:5062",
                         "https://localhost:7050",
                         "http://localhost:15357",
-                        "https://localhost:44324")
+                        "https://localhost:44324",
+                        // AWS Production IP
+                        "http://98.89.30.178:5173")
                       .AllowAnyMethod()
                       .AllowAnyHeader()
                       .AllowCredentials();
