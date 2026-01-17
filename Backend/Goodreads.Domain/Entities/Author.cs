@@ -5,14 +5,13 @@ public class Author
     public string Name { get; set; } = default!;
     public string Bio { get; set; } = default!;
     public string? ProfilePictureUrl { get; set; } = default!;
-    public string? ProfilePictureBlobName { get; set; } = default!;
+    public string? ProfilePictureBlobName { get; set; } = default!;//geleceyine
 
-    // claimed by user
     public string? UserId { get; set; }
     public User? User { get; set; }
-    public DateTime? ClaimedAt { get; set; }
+    public DateTime? ClaimedAt { get; set; }//geleceyine
 
-    public bool IsClaimed => UserId != null;
+    public bool IsClaimed => UserId != null;//geleceyine
 
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }

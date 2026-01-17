@@ -29,7 +29,6 @@ internal class DeleteBookCommandHandler : IRequestHandler<DeleteBookCommand, Res
             return Result.Fail(BookErrors.NotFound(request.Id));
         }
 
-        // Delete cover image if exists
         if (!string.IsNullOrEmpty(book.CoverImageBlobName))
         {
             await _localStorageService.DeleteAsync(LocalContainer.Books, book.CoverImageBlobName);

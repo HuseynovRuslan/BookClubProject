@@ -12,7 +12,6 @@ public class QuoteDto
     public bool IsLiked { get; set; }
     public List<string> Tags { get; set; } = new();
     
-    // Navigation properties
     public BookDto? Book { get; set; }
     public UserDto? User { get; set; }
 }

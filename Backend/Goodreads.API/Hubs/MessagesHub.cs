@@ -16,7 +16,6 @@ public class MessagesHub : Hub
             
             lock (UserConnections)
             {
-                // Get current online users BEFORE adding this user
                 currentOnlineUsers = UserConnections.Keys.ToList();
                 
                 if (!UserConnections.ContainsKey(userId))
@@ -26,10 +25,8 @@ public class MessagesHub : Hub
                 UserConnections[userId].Add(Context.ConnectionId);
             }
 
-            // Send current online users to the newly connected user
             await Clients.Caller.SendAsync("OnlineUsersList", currentOnlineUsers);
             
-            // Notify others that this user is now online
             await Clients.Others.SendAsync("UserOnline", userId);
         }
 
@@ -49,7 +46,6 @@ public class MessagesHub : Hub
                     if (UserConnections[userId].Count == 0)
                     {
                         UserConnections.Remove(userId);
-                        // User offline olduğunu bildir
                         _ = Clients.Others.SendAsync("UserOffline", userId);
                     }
                 }
@@ -81,16 +77,12 @@ public class MessagesHub : Hub
 
     private static string GetConversationGroupName(string userId1, string userId2)
     {
-        // Consistent group name: always smaller ID first
         return string.Compare(userId1, userId2, StringComparison.Ordinal) < 0
             ? $"conversation_{userId1}_{userId2}"
             : $"conversation_{userId2}_{userId1}";
     }
 
-    /// <summary>
-    /// Get list of currently online users (excluding the caller)
-    /// Can be called by client to refresh online status
-    /// </summary>
+   
     public Task<List<string>> GetOnlineUsers()
     {
         var currentUserId = Context.UserIdentifier;

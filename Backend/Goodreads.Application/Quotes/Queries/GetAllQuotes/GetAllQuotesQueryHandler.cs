@@ -45,7 +45,6 @@ public class GetAllQuotesQueryHandler : IRequestHandler<GetAllQuotesQuery, Paged
             pageSize: p.PageSize
         );
 
-        // Convert to list for easier manipulation
         var quotesList = quotes.ToList();
 
         // Get unique book IDs and user IDs

@@ -6,6 +6,5 @@ public class ConversationDto
     public string? LastMessageText { get; set; }
     public int UnreadCount { get; set; }
     
-    // Navigation properties
     public UserDto? OtherUser { get; set; }
 }

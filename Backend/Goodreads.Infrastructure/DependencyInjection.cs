@@ -47,7 +47,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
              options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-        // Seeding
+        
         services.AddScoped<ISeeder, RolesSeeder>();
         services.AddScoped<ISeeder, AuthorsSeeder>();
         services.AddScoped<ISeeder, GenresSeeder>();
@@ -116,13 +116,11 @@ public static class DependencyInjection
         var emailSettings = configuration.GetSection(EmailSettings.Section).Get<EmailSettings>()
             ?? throw new InvalidOperationException("Email settings are not configured properly.");
 
-        // Konfiqurasiyanı yoxla
         var useSendGrid = configuration.GetValue<bool>("EmailSettings:UseSendGrid");
         var sendGridApiKey = configuration["EmailSettings:SendGridApiKey"];
         
         if (useSendGrid && !string.IsNullOrWhiteSpace(sendGridApiKey))
         {
-            // SendGrid istifadə et
             var fromEmail = configuration["EmailSettings:FromEmail"] ?? emailSettings.FromEmail;
             var fromName = configuration["EmailSettings:FromName"] ?? emailSettings.FromName;
             
@@ -131,7 +129,6 @@ public static class DependencyInjection
         }
         else if (emailSettings.UseSmtp4Dev)
         {
-            // SMTP4Dev development üçün
             emailSettings.Host = "localhost";
             emailSettings.Port = 25;
             emailSettings.FromEmail = "noreply@localhost";
@@ -140,7 +137,6 @@ public static class DependencyInjection
         }
         else
         {
-            // Standart SMTP
             services.AddFluentEmail(emailSettings.FromEmail, emailSettings.FromName)
                 .AddSmtpSender(emailSettings.Host, emailSettings.Port, emailSettings.Username, emailSettings.Password);
         }
@@ -165,11 +161,9 @@ public static class DependencyInjection
             throw new InvalidOperationException("OpenAI API key is not configured. Please add 'OpenAI:ApiKey' to appsettings.json");
         }
 
-        // Register ChatClient with gpt-4o-mini model using official OpenAI library
         services.AddSingleton<ChatClient>(sp =>
             new ChatClient(model: "gpt-4o-mini", apiKey: apiKey));
 
-        // Register the recommendation service
         services.AddScoped<Goodreads.Application.Common.Interfaces.AI.IAiRecommendationService, OpenAiRecommendationService>();
 
         return services;
@@ -179,7 +173,6 @@ public static class DependencyInjection
     {
         services.AddScoped<RefreshTokenCleanupJob>();
         
-        // Hangfire konfiqurasiyası - SQL Server istifadə edirik
         services.AddHangfire(cfg => cfg
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()

@@ -20,7 +20,7 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
         if (book is null)
             return Result<string>.Fail(BookErrors.NotFound(request.BookId));
 
-        // Check for existing review (Global Query Filter already excludes soft-deleted)
+        
         var existingReview = await _unitOfWork.BookReviews.GetSingleOrDefaultAsync(
             r => r.BookId == request.BookId && r.UserId == userId);
 
@@ -37,11 +37,11 @@ public class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, R
 
         await _unitOfWork.BookReviews.AddAsync(review);
 
-        // Update book's average rating (Global Query Filter excludes soft-deleted)
+      
         var (allReviews, _) = await _unitOfWork.BookReviews.GetAllAsync(
             r => r.BookId == request.BookId);
         var reviewsList = allReviews.ToList();
-        reviewsList.Add(review); // Include the new review in calculation
+        reviewsList.Add(review); 
         
         if (reviewsList.Any())
         {

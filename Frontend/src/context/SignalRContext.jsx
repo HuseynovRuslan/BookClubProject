@@ -40,19 +40,19 @@ export const SignalRProvider = ({ children }) => {
     try {
       // IMPORTANT: Subscribe to events BEFORE starting connection
       // Otherwise we miss the initial OnlineUsersList event
-      
+
       // Subscribe to messages
       const unsubMessage = signalRService.onMessage((message) => {
         // Prevent duplicate processing - same message can come from ReceiveMessage and NewMessage
         if (lastProcessedMessageIdRef.current === message.id) {
           return; // Already processed this message
         }
-        
+
         // Mark this message as processed
         lastProcessedMessageIdRef.current = message.id;
-        
+
         setNewMessage(message);
-        
+
         // Increment unread count ONLY if:
         // 1. Message is from someone else
         // 2. We're NOT currently viewing that conversation
@@ -68,7 +68,7 @@ export const SignalRProvider = ({ children }) => {
       const unsubStatus = signalRService.onUserStatus((userId, isOnline) => {
         // Don't track current user's status
         if (userId === user?.id) return;
-        
+
         setOnlineUserIds((prev) => {
           if (isOnline) {
             // Add if not already in list

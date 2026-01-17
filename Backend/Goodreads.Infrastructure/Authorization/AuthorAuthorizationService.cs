@@ -13,7 +13,6 @@ internal class AuthorAuthorizationService(
         if (string.IsNullOrEmpty(userId))
             return false;
 
-        // Check if user is admin
         if (userContext.IsInRole(Roles.Admin))
             return true;
 

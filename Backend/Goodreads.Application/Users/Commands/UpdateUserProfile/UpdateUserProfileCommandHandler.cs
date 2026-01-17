@@ -27,7 +27,6 @@ internal class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfi
             return Result.Fail(UserErrors.NotFound(userId));
         }
 
-        // Ignore Swagger default "string" values - only update if meaningful value provided
         if (!string.IsNullOrWhiteSpace(request.FirstName) && request.FirstName != "string")
             user.FirstName = request.FirstName;
 
@@ -37,10 +36,6 @@ internal class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfi
         if (!string.IsNullOrWhiteSpace(request.Bio) && request.Bio != "string")
             user.Bio = request.Bio;
 
-        // WebsiteUrl: Update only if provided (not null)
-        // If null in JSON, it means field was not sent, so don't update
-        // If empty string, it means user wants to clear it, so set to null
-        // Ignore Swagger default "string" value
         if (request.WebsiteUrl != null && request.WebsiteUrl != "string")
             user.WebsiteUrl = string.IsNullOrWhiteSpace(request.WebsiteUrl) ? null : request.WebsiteUrl;
 

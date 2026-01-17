@@ -11,11 +11,9 @@ internal class QuoteAuthorizationService(IUnitOfWork unitOfWork, IUserContext us
         if (string.IsNullOrEmpty(userId))
             return false;
 
-        // Check if user is admin
         if (userContext.IsInRole(Roles.Admin))
             return true;
 
-        // Check if user is the owner of the quote
         var quote = await unitOfWork.Quotes.GetByIdAsync(quoteId);
         if (quote is null || quote.CreatedByUserId != userId) return false;
 

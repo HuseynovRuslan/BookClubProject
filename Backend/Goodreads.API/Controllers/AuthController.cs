@@ -9,7 +9,6 @@ using Goodreads.Application.Auth.Commands.ResetEmailConfirmation;
 using Goodreads.Application.Auth.Commands.ResetPassword;
 using Goodreads.Application.Common.Interfaces;
 
-//using Goodreads.Application.Auth.Commands.ResetPassword;
 using Goodreads.Application.Common.Responses;
 using Goodreads.Application.DTOs;
 using Goodreads.Domain.Entities;
@@ -147,11 +146,11 @@ public class AuthController : BaseController
         if (!isTokenValid)
             return Content(GetEmailConfirmationPage(false, "Invalid or expired token. Please request a new verification email.", frontendUrl), "text/html");
 
-        // Check if already confirmed
+        
         if (user.EmailConfirmed)
             return Content(GetEmailConfirmationPage(true, "Your email is already verified! Please re-login to refresh your session.", frontendUrl, true), "text/html");
 
-        // 🔹 DB-də email confirmed update
+      
         user.EmailConfirmed = true;
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync();
@@ -319,13 +318,11 @@ public class AuthController : BaseController
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
             return Content(GetPasswordResetPage(false, "Invalid Link", "The password reset link is invalid or incomplete.", frontendUrl), "text/html");
 
-        // Check if user exists
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
         if (user == null)
             return Content(GetPasswordResetPage(false, "User Not Found", "The user associated with this link no longer exists.", frontendUrl), "text/html");
 
-        // ASP.NET Core auto-decodes URL params, so 'token' here is the raw token
-        // We need to URL-encode it for the redirect URL (browser will decode it when reading from searchParams)
+
         var encodedToken = System.Net.WebUtility.UrlEncode(token);
         return Redirect($"{frontendUrl}/reset-password?userId={userId}&token={encodedToken}");
     }
@@ -339,8 +336,7 @@ public class AuthController : BaseController
         if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.Token))
             return BadRequest(ApiResponse.Failure("Invalid request parameters", "Validation error"));
 
-        // Token comes from frontend URL params (already decoded by browser)
-        // Just use it directly - ResetPasswordAsync expects the raw token
+        
         var command = new ResetPasswordCommand(request.UserId, request.Token, request.NewPassword);
         var result = await Sender.Send(command);
 

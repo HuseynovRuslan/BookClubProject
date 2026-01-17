@@ -9,7 +9,6 @@ public class MessageDto
     public DateTime? ReadAt { get; set; }
     public DateTime CreatedAt { get; set; }
     
-    // Navigation properties
     public UserDto? Sender { get; set; }
     public UserDto? Receiver { get; set; }
 }

@@ -19,10 +19,10 @@ public static class MigrationExtensions
                 logger.LogInformation("Starting database migration for {DbContext} (attempt {Attempt}/{MaxRetries})", 
                     typeof(TContext).Name, retry + 1, maxRetries);
                 
-                // Attempt to migrate directly (this will create the DB if it doesn't exist)
+                
                 await dbContext.Database.MigrateAsync();
                 logger.LogInformation("Database migration completed successfully for {DbContext}", typeof(TContext).Name);
-                return; // Success - exit the method
+                return;
             }
             catch (Exception ex)
             {
@@ -37,7 +37,6 @@ public static class MigrationExtensions
             }
         }
 
-        // All retries failed - log but don't crash the app
         logger.LogError("All {MaxRetries} migration attempts failed for {DbContext}. The application will continue without migrations. " +
             "Please ensure the database is available and run migrations manually.", maxRetries, typeof(TContext).Name);
     }

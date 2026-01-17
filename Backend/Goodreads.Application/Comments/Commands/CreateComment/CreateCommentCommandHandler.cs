@@ -50,7 +50,6 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
         await _unitOfWork.Comments.AddAsync(comment);
         await _unitOfWork.SaveChangesAsync();
 
-        // Create notification for target owner (Quote or Review)
         if (!string.IsNullOrEmpty(request.TargetId))
         {
             string? targetOwnerId = null;
@@ -64,10 +63,8 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
                     : commenter.UserName ?? "Someone")
                 : "Someone";
 
-            // Determine target type and owner
             if (request.TargetType?.ToLower() == "quote" || string.IsNullOrEmpty(request.TargetType))
             {
-                // Try Quote first
                 var quote = await _unitOfWork.Quotes.GetByIdAsync(request.TargetId);
                 if (quote != null)
                 {
@@ -79,7 +76,6 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
 
             if (targetOwnerId == null && (request.TargetType?.ToLower() == "review" || string.IsNullOrEmpty(request.TargetType)))
             {
-                // Try Review
                 var review = await _unitOfWork.BookReviews.GetByIdAsync(request.TargetId);
                 if (review != null)
                 {
@@ -89,7 +85,6 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
                 }
             }
 
-            // Create notification if target owner found and not self-comment
             if (targetOwnerId != null && targetOwnerId != userId)
             {
                 var createNotificationResult = await _mediator.Send(new CreateNotificationCommand(
@@ -101,7 +96,6 @@ public class CreateCommentCommandHandler : IRequestHandler<CreateCommentCommand,
                     RelatedEntityType: request.TargetType ?? "Quote"
                 ));
 
-                // Send real-time notification
                 if (createNotificationResult.IsSuccess && !string.IsNullOrEmpty(createNotificationResult.Data))
                 {
                     var notification = await _unitOfWork.Notifications.GetByIdAsync(createNotificationResult.Data);

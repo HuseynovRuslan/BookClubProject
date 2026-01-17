@@ -25,27 +25,23 @@ public class OpenAiRecommendationService : IAiRecommendationService
 
             var userPrompt = BuildUserPrompt(userFavoriteBooks, userQuery);
 
-            // Create messages using concrete classes (OpenAI v2.0.0+)
-            // ChatMessage is abstract, so we use SystemChatMessage and UserChatMessage
+            
             List<ChatMessage> messages = new()
             {
                 new SystemChatMessage(systemPrompt),
                 new UserChatMessage(userPrompt)
             };
 
-            // CompleteChatAsync returns ClientResult<ChatCompletion>
-            // Access the actual ChatCompletion via .Value property
+          
             var response = await _chatClient.CompleteChatAsync(messages);
             var chatCompletion = response.Value;
 
-            // In v2.0.0+, content is accessed via Content collection, not Choices
             if (chatCompletion?.Content == null || chatCompletion.Content.Count == 0)
             {
                 _logger.LogWarning("OpenAI returned no content");
                 return GetDefaultRecommendations();
             }
 
-            // Get the text from the first content part
             var content = chatCompletion.Content[0].Text;
 
             if (string.IsNullOrWhiteSpace(content))
@@ -54,7 +50,6 @@ public class OpenAiRecommendationService : IAiRecommendationService
                 return GetDefaultRecommendations();
             }
 
-            // Clean the content - remove markdown code blocks if present
             content = content.Trim();
             if (content.StartsWith("```json"))
             {

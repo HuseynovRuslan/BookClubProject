@@ -42,15 +42,14 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
         if (string.IsNullOrEmpty(targetUserId))
             throw new ArgumentException("Target user ID cannot be null or empty");
 
-        // Verify target user exists
+      
         var targetUser = await _userManager.FindByIdAsync(targetUserId);
         if (targetUser == null)
             throw new NotFoundException("User", targetUserId);
 
-        // Get current user ID for like status (can be null if viewing publicly)
+    
         var currentUserId = _userContext.UserId;
 
-        // Get quotes from target user only
         var (quotes, _) = await _unitOfWork.Quotes
             .GetAllAsync(
                 filter: q => q.CreatedByUserId == targetUserId,
@@ -58,7 +57,7 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
         
         var quotesList = quotes.ToList();
         
-        // Get books for quotes to include book and author info
+       
         var quoteBookIds = quotesList.Where(q => !string.IsNullOrEmpty(q.BookId)).Select(q => q.BookId).Distinct().ToList();
         var quoteBooks = new Dictionary<string, Book>();
         if (quoteBookIds.Any())
@@ -72,7 +71,6 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
         
         _logger.LogInformation("Fetched {Count} books for {QuoteCount} quotes", quoteBooks.Count, quotesList.Count);
 
-        // Get reviews from target user only
         var (reviews, ___) = await _unitOfWork.BookReviews
             .GetAllAsync(
                 filter: r => r.UserId == targetUserId,
@@ -81,7 +79,7 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
         var reviewsList = reviews.ToList();
         var reviewIds = reviewsList.Select(r => r.Id).ToList();
         
-        // Get current user's likes for reviews (if authenticated)
+        
         var userReviewLikes = new HashSet<string>();
         if (currentUserId != null && reviewIds.Any())
         {
@@ -90,7 +88,7 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
             userReviewLikes = likes.Select(l => l.TargetId).ToHashSet();
         }
         
-        // Get like counts for reviews
+        
         var reviewLikeCounts = new Dictionary<string, int>();
         if (reviewIds.Any())
         {
@@ -101,14 +99,14 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
                 .ToDictionary(g => g.Key, g => g.Count());
         }
 
-        // Get shelves from target user only
+      
         var (shelves, ____) = await _unitOfWork.Shelves
             .GetAllAsync(filter: s => s.UserId == targetUserId);
         
         var shelvesList = shelves.ToList();
         var shelfIds = shelvesList.Select(s => s.Id).ToList();
 
-        // Get book additions from target user (BookShelf) - include Book and Author
+        
         var bookShelvesList = await _context.BookShelves
             .AsNoTracking()
             .IgnoreQueryFilters()
@@ -121,10 +119,10 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
         
         _logger.LogInformation("Fetched {Count} bookShelves for user feed", bookShelvesList.Count);
 
-        // Get BookShelf IDs (composite format: BookId-ShelfId)
+     
         var bookShelfIds = bookShelvesList.Select(bs => $"{bs.BookId}-{bs.ShelfId}").ToList();
         
-        // Get current user's likes for all quotes (if authenticated)
+       
         var quoteIds = quotesList.Select(q => q.Id).ToList();
         var userLikes = new HashSet<string>();
         
@@ -135,7 +133,7 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
             userLikes = likes.Select(l => l.QuoteId).ToHashSet();
         }
         
-        // Get current user's likes for BookShelves (if authenticated)
+       
         var userBookShelfLikes = new HashSet<string>();
         if (currentUserId != null && bookShelfIds.Any())
         {
@@ -144,7 +142,6 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
             userBookShelfLikes = likes.Select(l => l.TargetId).ToHashSet();
         }
         
-        // Get like counts for BookShelves
         var bookShelfLikeCounts = new Dictionary<string, int>();
         if (bookShelfIds.Any())
         {
@@ -155,17 +152,13 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
                 .ToDictionary(g => g.Key, g => g.Count());
         }
 
-        // Combine all activities
         var feedItems = new List<FeedItemDto>();
 
-        // Get like counts for quotes (from included Likes navigation property)
         var quoteLikeCounts = quotesList.ToDictionary(q => q.Id, q => q.Likes?.Count ?? 0);
 
-        // Add quotes
         foreach (var quote in quotesList)
         {
             var quoteDto = _mapper.Map<QuoteDto>(quote);
-            // Set IsLiked based on current user's likes (false if not authenticated)
             quoteDto.IsLiked = currentUserId != null && userLikes.Contains(quote.Id);
             quoteDto.LikesCount = quoteLikeCounts.GetValueOrDefault(quote.Id, 0);
 
@@ -182,7 +175,6 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
             {
                 var bookDto = _mapper.Map<BookDto>(book);
                 
-                // Set CoverImageUrl using IBookImageService
                 bookDto.CoverImageUrl = _bookImageService.GetCoverImageUrl(
                     book.CoverImageUrl,
                     book.ISBN,
@@ -217,7 +209,6 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
             });
         }
 
-        // Load all shelves upfront for better performance
         var shelfIdsToLoad = bookShelvesList.Select(bs => bs.ShelfId).Distinct().ToList();
         var shelvesDict = new Dictionary<string, Shelf>();
         if (shelfIdsToLoad.Any())
@@ -231,7 +222,6 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
 
         foreach (var bookShelf in bookShelvesList)
         {
-            // Defensive null check
             if (bookShelf.Book == null)
             {
                 _logger.LogWarning("Book is null for BookShelf BookId={BookId}, ShelfId={ShelfId}", 
@@ -239,7 +229,6 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
                 continue;
             }
 
-            // Ensure Author is loaded
             if (bookShelf.Book.Author == null)
             {
                 _logger.LogWarning("Author is null for Book BookId={BookId} in BookShelf, skipping", bookShelf.BookId);
@@ -254,7 +243,6 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
 
             var bookDto = _mapper.Map<BookDto>(bookShelf.Book);
 
-            // Set CoverImageUrl using IBookImageService
             bookDto.CoverImageUrl = _bookImageService.GetCoverImageUrl(
                 bookShelf.Book.CoverImageUrl,
                 bookShelf.Book.ISBN,
@@ -279,10 +267,8 @@ public class GetUserFeedQueryHandler : IRequestHandler<GetUserFeedQuery, PagedRe
             });
         }
 
-        // Sort by CreatedAt descending
         feedItems = feedItems.OrderByDescending(f => f.CreatedAt).ToList();
 
-        // Apply pagination
         var pageNumber = request.PageNumber ?? 1;
         var pageSize = request.PageSize ?? 10;
         var totalCount = feedItems.Count;

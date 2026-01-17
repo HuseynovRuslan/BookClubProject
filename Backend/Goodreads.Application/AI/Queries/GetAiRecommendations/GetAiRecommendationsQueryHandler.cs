@@ -41,7 +41,7 @@ public class GetAiRecommendationsQueryHandler : IRequestHandler<GetAiRecommendat
 
             try
             {
-                // Get high-rated books (4 or 5 stars) from BookReviews
+               
                 var (highRatedReviews, _) = await _unitOfWork.BookReviews.GetAllAsync(
                     filter: r => r.UserId == userId && r.Rating >= 4,
                     includes: new[] { "Book" }
@@ -55,7 +55,7 @@ public class GetAiRecommendationsQueryHandler : IRequestHandler<GetAiRecommendat
 
                 favoriteBookTitles.AddRange(highRatedTitles);
 
-                // Get books from "Read" shelf
+              
                 var readShelf = await _unitOfWork.Shelves.GetSingleOrDefaultAsync(
                     filter: s => s.UserId == userId && 
                                  s.IsDefault && 
@@ -81,12 +81,10 @@ public class GetAiRecommendationsQueryHandler : IRequestHandler<GetAiRecommendat
                     favoriteBookTitles.AddRange(readBooks);
                 }
 
-                // Remove duplicates
                 favoriteBookTitles = favoriteBookTitles.Distinct().ToList();
 
                 _logger.LogInformation("Found {Count} favorite books for user {UserId}", favoriteBookTitles.Count, userId);
 
-                // Get AI recommendations
                 recommendations = await _aiRecommendationService.GetRecommendationsAsync(favoriteBookTitles, request.UserQuery);
             }
             catch (Exception ex)
@@ -96,10 +94,8 @@ public class GetAiRecommendationsQueryHandler : IRequestHandler<GetAiRecommendat
             }
         }
 
-        // Cross-reference recommendations with database
         recommendations = await CrossReferenceWithDatabaseAsync(recommendations);
 
-        // Sort: existing books first, then non-existing
         return recommendations
             .OrderByDescending(r => r.ExistsInDb)
             .ToList();
@@ -111,7 +107,6 @@ public class GetAiRecommendationsQueryHandler : IRequestHandler<GetAiRecommendat
         {
             try
             {
-                // Search for book by title (case-insensitive contains match)
                 var matchingBook = await _unitOfWork.Books.GetSingleOrDefaultAsync(
                     filter: b => !b.IsDeleted && 
                                  b.Title.ToLower().Contains(recommendation.Title.ToLower()));

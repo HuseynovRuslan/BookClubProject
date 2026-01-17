@@ -24,7 +24,6 @@ internal class DeleteAuthorCommandHandler : IRequestHandler<DeleteAuthorCommand,
             return Result.Fail(AuthorErrors.NotFound(authorId));
         }
 
-        // Delete profile picture if exists
         if (!string.IsNullOrEmpty(author.ProfilePictureBlobName))
         {
             var imagesFolder = Path.Combine(_webHostEnvironment.WebRootPath ?? _webHostEnvironment.ContentRootPath, "images", "authors");

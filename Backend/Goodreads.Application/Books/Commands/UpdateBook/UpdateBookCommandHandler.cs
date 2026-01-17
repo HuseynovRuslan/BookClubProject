@@ -47,7 +47,6 @@ internal class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Res
             book.Author = author;
         }
 
-        // Check if ISBN already exists (excluding current book)
         if (!string.IsNullOrEmpty(request.ISBN) && request.ISBN != book.ISBN)
         {
             var existingBookByIsbn = await _unitOfWork.Books.GetSingleOrDefaultAsync(
@@ -59,7 +58,6 @@ internal class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Res
             }
         }
 
-        // Check if book with same title already exists (excluding current book)
         if (!string.IsNullOrEmpty(request.Title) && request.Title.ToLower() != book.Title.ToLower())
         {
             var existingBookByTitle = await _unitOfWork.Books.GetSingleOrDefaultAsync(
@@ -71,16 +69,13 @@ internal class UpdateBookCommandHandler : IRequestHandler<UpdateBookCommand, Res
             }
         }
 
-        // Update cover image if provided
         if (request.CoverImage != null)
         {
-            // Delete old cover image if exists
             if (!string.IsNullOrEmpty(book.CoverImageBlobName))
             {
                 await _localStorageService.DeleteAsync(LocalContainer.Books, book.CoverImageBlobName);
             }
 
-            // Upload new cover image
             using var stream = request.CoverImage.OpenReadStream();
             var (url, blobName) = await _localStorageService.UploadAsync(request.CoverImage.FileName, stream, LocalContainer.Books);
             book.CoverImageUrl = url;

@@ -36,7 +36,6 @@ internal class UpdateProfilePictureCommandHandler : IRequestHandler<UpdateProfil
             return Result.Fail(UserErrors.NotFound(userId));
         }
 
-        // Validate file extension
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
         var fileExtension = Path.GetExtension(request.File.FileName).ToLowerInvariant();
         if (!allowedExtensions.Contains(fileExtension))
@@ -44,21 +43,18 @@ internal class UpdateProfilePictureCommandHandler : IRequestHandler<UpdateProfil
             return Result.Fail(UserErrors.InvalidFileExtension());
         }
 
-        // Validate file size (max 2MB)
         const long maxFileSize = 2 * 1024 * 1024; // 2MB
         if (request.File.Length > maxFileSize)
         {
             return Result.Fail(UserErrors.FileTooLarge());
         }
 
-        // Create images directory if it doesn't exist
         var imagesFolder = Path.Combine(_webHostEnvironment.WebRootPath ?? _webHostEnvironment.ContentRootPath, "images", "profiles");
         if (!Directory.Exists(imagesFolder))
         {
             Directory.CreateDirectory(imagesFolder);
         }
 
-        // Delete old profile picture if exists
         if (!string.IsNullOrEmpty(user.ProfilePictureBlobName))
         {
             var oldFilePath = Path.Combine(imagesFolder, user.ProfilePictureBlobName);
@@ -68,17 +64,14 @@ internal class UpdateProfilePictureCommandHandler : IRequestHandler<UpdateProfil
             }
         }
 
-        // Generate unique file name
         var fileName = $"{userId}_{Guid.NewGuid()}{fileExtension}";
         var filePath = Path.Combine(imagesFolder, fileName);
 
-        // Save file
         using (var stream = new FileStream(filePath, FileMode.Create))
         {
             await request.File.CopyToAsync(stream, cancellationToken);
         }
 
-        // Update user
         user.ProfilePictureUrl = $"/images/profiles/{fileName}";
         user.ProfilePictureBlobName = fileName;
 

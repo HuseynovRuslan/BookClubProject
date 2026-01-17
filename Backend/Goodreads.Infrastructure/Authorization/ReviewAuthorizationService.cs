@@ -11,7 +11,6 @@ internal class ReviewAuthorizationService(IUnitOfWork unitOfWork, IUserContext u
         if (string.IsNullOrEmpty(userId))
             return false;
 
-        // Check if user is admin - admin can access any review
         if (userContext.IsInRole(Roles.Admin))
             return true;
 

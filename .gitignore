@@ -2,7 +2,7 @@
 Backend/Goodreads.API/appsettings.json
 Backend/Goodreads.API/appsettings.*.json
 
-# Build results (bin/ və obj/ qovluqları real appsettings.json ehtiva edə bilər)
+# Build results 
 [Bb]in/
 [Oo]bj/
 /Backend/.vs

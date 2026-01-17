@@ -42,12 +42,10 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
         if (userId == null)
             throw new UnauthorizedAccessException("User is not authenticated");
 
-        // Get following user IDs
         var following = await _userFollowRepository.GetFollowingAsync(userId, null, null);
         
         var followingIds = following.Select(f => f.Id).ToList();
         
-        // Add current user to see their own posts in the feed
         if (!followingIds.Contains(userId))
         {
             followingIds.Add(userId);
@@ -63,13 +61,11 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             );
         }
 
-        // Get quotes from following users (include Likes for LikesCount)
         var (quotes, _) = await _unitOfWork.Quotes
             .GetAllAsync(filter: q => followingIds.Contains(q.CreatedByUserId), includes: new[] { "Likes" });
         
         var quotesList = quotes.ToList();
         
-        // Get books for quotes to include book and author info
         var quoteBookIds = quotesList.Where(q => !string.IsNullOrEmpty(q.BookId)).Select(q => q.BookId).Distinct().ToList();
         var quoteBooks = new Dictionary<string, Book>();
         if (quoteBookIds.Any())
@@ -83,10 +79,8 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
         
         _logger.LogInformation("Fetched {Count} books for {QuoteCount} quotes", quoteBooks.Count, quotesList.Count);
 
-        // Get quote IDs for like queries
         var quoteIds = quotesList.Select(q => q.Id).ToList();
         
-        // Get current user's likes for quotes
         var userQuoteLikes = new HashSet<string>();
         if (quoteIds.Any())
         {
@@ -95,10 +89,8 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             userQuoteLikes = likes.Select(l => l.QuoteId).ToHashSet();
         }
         
-        // Get like counts for quotes (from included Likes navigation property)
         var quoteLikeCounts = quotesList.ToDictionary(q => q.Id, q => q.Likes?.Count ?? 0);
         
-        // Get comment counts for quotes
         var quoteCommentCounts = new Dictionary<string, int>();
         if (quoteIds.Any())
         {
@@ -110,14 +102,12 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
                 .ToDictionary(g => g.Key, g => g.Count());
         }
 
-        // Get reviews from following users (include Book for BookTitle)
         var (reviews, ___) = await _unitOfWork.BookReviews
             .GetAllAsync(filter: r => followingIds.Contains(r.UserId), includes: new[] { "Book", "User" });
         
         var reviewsList = reviews.ToList();
         var reviewIds = reviewsList.Select(r => r.Id).ToList();
         
-        // Get current user's likes for reviews
         var userReviewLikes = new HashSet<string>();
         if (reviewIds.Any())
         {
@@ -126,7 +116,6 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             userReviewLikes = likes.Select(l => l.TargetId).ToHashSet();
         }
         
-        // Get like counts for reviews
         var reviewLikeCounts = new Dictionary<string, int>();
         if (reviewIds.Any())
         {
@@ -137,7 +126,6 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
                 .ToDictionary(g => g.Key, g => g.Count());
         }
         
-        // Get comment counts for reviews
         var reviewCommentCounts = new Dictionary<string, int>();
         if (reviewIds.Any())
         {
@@ -149,16 +137,12 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
                 .ToDictionary(g => g.Key, g => g.Count());
         }
 
-        // Get shelves from following users first
         var (shelves, ____) = await _unitOfWork.Shelves
             .GetAllAsync(filter: s => followingIds.Contains(s.UserId));
         
         var shelvesList = shelves.ToList();
         var shelfIds = shelvesList.Select(s => s.Id).ToList();
 
-        // Get book additions from following users (BookShelf) - include Book and Author
-        // Use IgnoreQueryFilters to include soft-deleted books in feed
-        // Note: IgnoreQueryFilters applies to all entities in the query, including included navigation properties
         var bookShelvesList = await _context.BookShelves
             .AsNoTracking()
             .IgnoreQueryFilters()
@@ -171,15 +155,12 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
         
         _logger.LogInformation("Fetched {Count} bookShelves for following feed", bookShelvesList.Count);
 
-        // Get BookShelf IDs (composite format: BookId-ShelfId)
         var bookShelfIds = bookShelvesList.Select(bs => $"{bs.BookId}-{bs.ShelfId}").ToList();
         
-        // Parse BookShelf data for likes queries
         var bookShelfPairs = bookShelvesList.Select(bs => new { bs.BookId, bs.ShelfId }).ToList();
         var bsBookIds = bookShelfPairs.Select(p => p.BookId).Distinct().ToList();
         var bsShelfIds = bookShelfPairs.Select(p => p.ShelfId).Distinct().ToList();
         
-        // Get current user's likes for BookShelves using BookShelfLikes table
         var userBookShelfLikes = new HashSet<string>();
         if (bookShelfIds.Any())
         {
@@ -188,7 +169,6 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             userBookShelfLikes = likes.Select(l => $"{l.BookId}-{l.ShelfId}").ToHashSet();
         }
         
-        // Get like counts for BookShelves using BookShelfLikes table
         var bookShelfLikeCounts = new Dictionary<string, int>();
         if (bookShelfIds.Any())
         {
@@ -199,7 +179,6 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
                 .ToDictionary(g => g.Key, g => g.Count());
         }
         
-        // Get comment counts for BookShelves
         var bookShelfCommentCounts = new Dictionary<string, int>();
         if (bookShelfIds.Any())
         {
@@ -211,10 +190,8 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
                 .ToDictionary(g => g.Key, g => g.Count());
         }
 
-        // Combine all activities
         var feedItems = new List<FeedItemDto>();
 
-        // Add quotes
         foreach (var quote in quotesList)
         {
             var user = await _userManager.FindByIdAsync(quote.CreatedByUserId);
@@ -238,7 +215,6 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
                 {
                     var bookDto = _mapper.Map<BookDto>(book);
                     
-                    // Set CoverImageUrl using IBookImageService
                     bookDto.CoverImageUrl = _bookImageService.GetCoverImageUrl(
                         book.CoverImageUrl,
                         book.ISBN,
@@ -281,7 +257,6 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
 
         foreach (var bookShelf in bookShelvesList)
         {
-            // Defensive null check (query filters nulls, but this adds extra safety)
             if (bookShelf.Book == null)
                 continue;
 
@@ -293,10 +268,8 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             if (user == null)
                 continue;
 
-            // Direct access to bookShelf.Book - no dictionaries needed
             var bookDto = _mapper.Map<BookDto>(bookShelf.Book);
             
-            // Set CoverImageUrl using IBookImageService
             bookDto.CoverImageUrl = _bookImageService.GetCoverImageUrl(
                 bookShelf.Book.CoverImageUrl,
                 bookShelf.Book.ISBN,
@@ -319,10 +292,9 @@ public class GetFeedQueryHandler : IRequestHandler<GetFeedQuery, PagedResult<Fee
             });
         }
 
-        // Sort by CreatedAt descending
         feedItems = feedItems.OrderByDescending(f => f.CreatedAt).ToList();
 
-        // Apply pagination
+
         var pageNumber = request.PageNumber ?? 1;
         var pageSize = request.PageSize ?? 10;
         var totalCount = feedItems.Count;

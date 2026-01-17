@@ -45,23 +45,6 @@ public static class CustomResults
         };
     }
 
-    /*
-        public static IActionResult FromResult<T>(Result<T> result)
-        {
-            return result.Match(
-                onSuccess: data => new OkObjectResult(data),
-                onFailure: failure => Problem(failure)
-            );
-        }
-
-        public static IActionResult FromResult(Result result)
-        {
-            return result.Match(
-                onSuccess: () => new OkResult(),
-                onFailure: failure => Problem(failure)
-            );
-        }
-    */
 
 
     private static int GetStatusCode(ErrorType type) =>

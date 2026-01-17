@@ -21,13 +21,13 @@ public static class DependencyInjection
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
-        // CORS configuration
+       
         services.AddCors(options =>
         {
             options.AddPolicy("AllowFrontend", policy =>
             {
                 policy.WithOrigins(
-                        // Frontend origins
+                        
                         "http://localhost:5173", 
                         "https://localhost:5173",
                         "http://localhost:3000", 
@@ -41,7 +41,7 @@ public static class DependencyInjection
                         "https://localhost:7050",
                         "http://localhost:15357",
                         "https://localhost:44324",
-                        // AWS Production IP
+                     
                         "http://98.89.30.178:5173")
                       .AllowAnyMethod()
                       .AllowAnyHeader()
@@ -49,17 +49,15 @@ public static class DependencyInjection
             });
         });
 
-        // SignalR configuration
+        
         services.AddSignalR(options =>
         {
             options.EnableDetailedErrors = true; 
         });
         services.AddSingleton<IUserIdProvider, UserIdProvider>();
         
-        // Message notification service
-        services.AddScoped<IMessageNotificationService, MessageNotificationService>();
         
-        // Notification service
+        services.AddScoped<IMessageNotificationService, MessageNotificationService>();
         services.AddScoped<INotificationService, NotificationService>();
 
         return services;
