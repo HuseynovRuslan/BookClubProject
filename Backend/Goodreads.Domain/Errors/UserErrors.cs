@@ -22,7 +22,7 @@ public static class UserErrors
 
     public static Error EmailAlreadyConfirmed(string userId) => Error.Failure(
         "Users.EmailAlreadyConfirmed",
-        $"The email for user '{userId}' is already confirmed.");
+        "Your email is already confirmed. Please logout and login again to access all features.");
 
     public static Error UpdateFailed(string userId) => Error.Failure(
         "Users.UpdateFailed",
@@ -34,5 +34,5 @@ public static class UserErrors
 
     public static Error FileTooLarge() => Error.Validation(
         "Users.FileTooLarge",
-        "File size exceeds the maximum allowed size of 5 MB.");
+        "File is too big (Max 2MB).");
 }

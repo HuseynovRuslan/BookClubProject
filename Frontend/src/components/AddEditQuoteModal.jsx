@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { X, Quote, BookOpen, Search, Loader2, Sparkles, Hash, Pencil } from 'lucide-react';
 import { getAllBooks, getBookById } from '../api/books';
 import { addQuote, updateQuote } from '../api/quotes';
 import { toast } from 'react-toastify';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 // Helper to get book cover URL
 const getBookCoverUrl = (book) => {

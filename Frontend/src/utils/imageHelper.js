@@ -1,5 +1,5 @@
-// API Base URL - environment variable ilə konfiqurasiya olunur
-const API_BASE = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+﻿// API Base URL - environment variable ilə konfiqurasiya olunur
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 const API_BASE_URL = API_BASE.endsWith('/') ? API_BASE : API_BASE + '/';
 
 /**

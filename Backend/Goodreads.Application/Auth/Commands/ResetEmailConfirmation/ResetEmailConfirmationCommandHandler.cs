@@ -36,7 +36,7 @@ internal class ResetEmailConfirmationCommandHandler : IRequestHandler<ResetEmail
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = WebUtility.UrlEncode(token);
-        var confirmationLink = $"https://localhost:7050/api/auth/confirm-email?userId={user.Id}&token={encodedToken}";
+        var confirmationLink = $"http://localhost:7050/api/auth/confirm-email?userId={user.Id}&token={encodedToken}";
 
         // Send verification email using clean email service
         try

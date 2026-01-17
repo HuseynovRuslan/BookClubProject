@@ -192,7 +192,8 @@ public static class DependencyInjection
                     SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
                     QueuePollInterval = TimeSpan.Zero,
                     UseRecommendedIsolationLevel = true,
-                    DisableGlobalLocks = true
+                    DisableGlobalLocks = true,
+                    PrepareSchemaIfNecessary = true
                 }));
 
         services.AddHangfireServer();

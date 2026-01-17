@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X, Check, Loader2, Heart, MessageCircle, UserPlus, Star, BookMarked } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +10,7 @@ import {
   deleteNotification 
 } from '../api/notifications';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 // Helper to get profile picture URL
 const getProfilePictureUrl = (url) => {

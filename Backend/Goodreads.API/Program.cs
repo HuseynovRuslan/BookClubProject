@@ -59,7 +59,7 @@ app.UseExceptionHandler();
 app.UseCors("AllowFrontend");
 
 // HTTPS redirection
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseAuthentication();
@@ -82,7 +82,14 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
     }
 });
 
-HangfireJobsConfigurator.ConfigureRecurringJobs();
+try 
+{
+    HangfireJobsConfigurator.ConfigureRecurringJobs();
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning("Hangfire recurring jobs could not be configured: {Message}. They will be configured on next app restart.", ex.Message);
+}
 
 app.Logger.LogInformation("Application startup complete. Starting web server on {Urls}", 
     builder.Configuration["ASPNETCORE_URLS"] ?? "default ports");

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+﻿import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SignalRProvider } from './context/SignalRContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import BrowseBooksPage from './pages/BrowseBooksPage';
 import BookDetailsPage from './pages/BookDetailsPage';
 import MyShelvesPage from './pages/MyShelvesPage';
@@ -33,7 +34,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 // Layout component to show banner on relevant pages
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const hideOnRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  const hideOnRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
   const isAdminRoute = location.pathname.startsWith('/admin');
   const showBanner = !hideOnRoutes.includes(location.pathname) && !isAdminRoute;
 
@@ -59,9 +60,9 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/news" element={<NewsPage />} />
-              <Route path="/feedback" element={<FeedbackPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-              {/* Protected Routes - Require Authentication */}
+              {/* Protected Routes - Require Authentication AND Email Verification */}
               <Route
                 path="/books"
                 element={
@@ -139,6 +140,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AiRecommendationsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/feedback"
+                element={
+                  <ProtectedRoute>
+                    <FeedbackPage />
                   </ProtectedRoute>
                 }
               />

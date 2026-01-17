@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   User,
@@ -52,21 +52,21 @@ import BookCard from '../components/BookCard';
 import UserListModal from '../components/UserListModal';
 import FeedItemCard from '../components/FeedItemCard';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 
 // Helper to get full image URL
 const getImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http')) return url;
-  
+
   // Normalize path separators (convert Windows backslashes to forward slashes)
   let normalizedPath = url.replace(/\\/g, '/');
-  
+
   // Remove leading slash if present
-  const cleanPath = normalizedPath.startsWith('/') 
-    ? normalizedPath.substring(1) 
+  const cleanPath = normalizedPath.startsWith('/')
+    ? normalizedPath.substring(1)
     : normalizedPath;
-  
+
   return `${BASE_URL}/${cleanPath}`;
 };
 
@@ -89,7 +89,7 @@ const formatDate = (dateStr) => {
 const ShelfPreviewCard = ({ shelf }) => {
   const books = shelf?.books || [];
   const displayBooks = books.slice(0, 4);
-  
+
   return (
     <div className="bg-white rounded-xl border border-stone-200 p-5 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
@@ -108,7 +108,7 @@ const ShelfPreviewCard = ({ shelf }) => {
           </Link>
         )}
       </div>
-      
+
       {displayBooks.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {displayBooks.map((book) => (
@@ -221,7 +221,7 @@ const ProfilePage = () => {
   // Fetch user feed for Activity tab
   const fetchUserFeed = useCallback(async (pageNum = 1, append = false) => {
     if (!profile?.id) return;
-    
+
     try {
       if (pageNum === 1 && !append) {
         setFeedLoading(true);
@@ -246,7 +246,7 @@ const ProfilePage = () => {
 
       // Filter out items from admin users (shouldn't happen but just in case)
       const filteredItems = items.filter(item => !isAdmin(item?.user));
-      
+
       if (append) {
         setFeedItems((prev) => [...prev, ...filteredItems]);
       } else {
@@ -338,14 +338,14 @@ const ProfilePage = () => {
         } else if (Array.isArray(data?.items)) {
           shelvesList = data.items;
         }
-        
+
         // For other users, show only default shelves
         if (!isOwnProfile) {
           shelvesList = shelvesList.filter(s => s.isDefault);
         }
-        
+
         setShelves(shelvesList);
-        
+
         // Count books read
         const readShelf = shelvesList.find(s => s.name === 'Read');
         setBooksReadCount(readShelf?.bookCount || readShelf?.books?.length || 0);
@@ -414,14 +414,14 @@ const ProfilePage = () => {
   // Handle follow/unfollow
   const handleFollowToggle = async () => {
     if (followLoading || isOwnProfile || !profile?.id || isAdmin(profile)) return;
-    
+
     setFollowLoading(true);
     const wasFollowing = isFollowing;
-    
+
     // Optimistic update
     setIsFollowing(!wasFollowing);
     setFollowersCount(prev => wasFollowing ? prev - 1 : prev + 1);
-    
+
     try {
       if (wasFollowing) {
         await unfollowUser(profile.id);
@@ -454,7 +454,7 @@ const ProfilePage = () => {
   // Navigate to messages
   const handleMessage = async () => {
     if (!profile?.id) return;
-    
+
     try {
       await startConversation(profile.id);
       navigate('/messages', { state: { selectedUserId: profile.id } });
@@ -467,11 +467,11 @@ const ProfilePage = () => {
   // Handle opening followers modal
   const handleOpenFollowers = async () => {
     if (!profile?.id || loadingFollowers) return;
-    
+
     setLoadingFollowers(true);
     try {
       const response = await getUserFollowers(profile.id, 1, 100);
-      
+
       let users = [];
       if (Array.isArray(response)) {
         users = response;
@@ -480,7 +480,7 @@ const ProfilePage = () => {
       } else if (Array.isArray(response?.items)) {
         users = response.items;
       }
-      
+
       // No need to filter here - backend already filters admins
       setFollowersList(users);
       setIsFollowersModalOpen(true);
@@ -495,11 +495,11 @@ const ProfilePage = () => {
   // Handle opening following modal
   const handleOpenFollowing = async () => {
     if (!profile?.id || loadingFollowing) return;
-    
+
     setLoadingFollowing(true);
     try {
       const response = await getUserFollowing(profile.id, 1, 100);
-      
+
       let users = [];
       if (Array.isArray(response)) {
         users = response;
@@ -508,7 +508,7 @@ const ProfilePage = () => {
       } else if (Array.isArray(response?.items)) {
         users = response.items;
       }
-      
+
       // No need to filter here - backend already filters admins
       setFollowingList(users);
       setIsFollowingModalOpen(true);
@@ -524,11 +524,25 @@ const ProfilePage = () => {
     e.preventDefault();
     try {
       setSaving(true);
-      await updateUserProfile(profileForm);
+
+      // Sanitize payload: Convert empty strings to null for optional fields
+      // Backend expects null for nullable types like DateOnly?, implies JSON serialization error if "" is sent
+      const payload = {
+        ...profileForm,
+        dateOfBirth: profileForm.dateOfBirth || null,
+        websiteUrl: profileForm.websiteUrl || null,
+        bio: profileForm.bio || null,
+        firstName: profileForm.firstName || null,
+        lastName: profileForm.lastName || null,
+        country: profileForm.country || null
+      };
+
+      await updateUserProfile(payload);
       toast.success('Profile updated successfully');
       setProfile(prev => ({ ...prev, ...profileForm }));
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      toast.error(error.response?.data?.message || error.response?.data?.title || 'Failed to update profile');
+      console.error('Profile update error:', error);
     } finally {
       setSaving(false);
     }
@@ -587,9 +601,28 @@ const ProfilePage = () => {
       await fetchAllData();
     } catch (error) {
       console.error('Upload error:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.title ||
-                          'Failed to upload picture';
+      console.error('Upload error:', error);
+
+      // Extract specific error message
+      let errorMessage = 'Failed to upload picture';
+      const errorData = error.response?.data;
+
+      if (errorData) {
+        if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.errors) {
+          // Handle ValidationProblemDetails format
+          if (Array.isArray(errorData.errors)) {
+            errorMessage = errorData.errors[0]?.description || errorData.errors[0];
+          } else if (typeof errorData.errors === 'object') {
+            const values = Object.values(errorData.errors).flat();
+            errorMessage = values[0] || 'Validation error';
+          }
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      }
+
       toast.error(errorMessage);
     } finally {
       setUploadingPicture(false);
@@ -728,7 +761,7 @@ const ProfilePage = () => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Upload/Delete Buttons - Only for own profile */}
                 {isOwnProfile && (
                   <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -776,7 +809,7 @@ const ProfilePage = () => {
                 {profile?.bio && (
                   <p className="text-stone-600 mb-4">{profile.bio}</p>
                 )}
-                
+
                 {/* Meta Info */}
                 {!isOwnProfile && (
                   <div className="flex flex-wrap gap-4 text-sm text-stone-500 mb-4">
@@ -841,11 +874,10 @@ const ProfilePage = () => {
                     <button
                       onClick={handleFollowToggle}
                       disabled={followLoading}
-                      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
-                        isFollowing
-                          ? 'bg-stone-100 text-stone-700 hover:bg-red-50 hover:text-red-600'
-                          : 'bg-stone-900 text-white hover:bg-stone-800'
-                      }`}
+                      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${isFollowing
+                        ? 'bg-stone-100 text-stone-700 hover:bg-red-50 hover:text-red-600'
+                        : 'bg-stone-900 text-white hover:bg-stone-800'
+                        }`}
                     >
                       {followLoading ? (
                         <Loader className="w-4 h-4 animate-spin" />
@@ -906,7 +938,7 @@ const ProfilePage = () => {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <h3 className="font-semibold text-stone-800">Profile Information</h3>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {profile?.country && (
                     <div className="flex items-center gap-3 text-stone-600">
@@ -1032,7 +1064,7 @@ const ProfilePage = () => {
                         }
                       />
                     ))}
-                    
+
                     {/* Load More Button */}
                     {hasMoreFeed && (
                       <div className="text-center py-4">
@@ -1058,8 +1090,8 @@ const ProfilePage = () => {
                     <BookOpen className="w-12 h-12 mx-auto mb-3 text-stone-300" />
                     <h3 className="font-medium text-stone-800 mb-1">No activity yet</h3>
                     <p className="text-sm text-stone-500">
-                      {isOwnProfile 
-                        ? "You haven't shared any quotes, reviews, or added books yet." 
+                      {isOwnProfile
+                        ? "You haven't shared any quotes, reviews, or added books yet."
                         : "This user hasn't shared any activity yet."}
                     </p>
                   </div>
@@ -1080,7 +1112,7 @@ const ProfilePage = () => {
                       value={profileForm.firstName}
                       onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
                       className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                      placeholder="John"
+                      placeholder="Elçin"
                     />
                   </div>
                   <div>
@@ -1092,7 +1124,7 @@ const ProfilePage = () => {
                       value={profileForm.lastName}
                       onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
                       className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                      placeholder="Doe"
+                      placeholder="Məmmədov"
                     />
                   </div>
                 </div>
@@ -1120,7 +1152,7 @@ const ProfilePage = () => {
                       value={profileForm.country}
                       onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
                       className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                      placeholder="New York, USA"
+                      placeholder="Bakı, Azərbaycan"
                     />
                   </div>
                   <div>
@@ -1314,7 +1346,7 @@ const ProfilePage = () => {
                   <p className="text-sm text-red-700 mb-4">
                     Once you delete your account, there is no going back. Please be certain.
                   </p>
-                  
+
                   {!showDeleteConfirm ? (
                     <button
                       onClick={() => setShowDeleteConfirm(true)}

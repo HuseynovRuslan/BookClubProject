@@ -1,4 +1,4 @@
-import * as signalR from '@microsoft/signalr';
+﻿import * as signalR from '@microsoft/signalr';
 
 class SignalRService {
   constructor() {
@@ -32,7 +32,7 @@ class SignalRService {
       return;
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:7050';
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(`${apiUrl}/hubs/messages`, {
         accessTokenFactory: () => token,
@@ -92,7 +92,7 @@ class SignalRService {
       return;
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:7050';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:7050';
     this.notificationConnection = new signalR.HubConnectionBuilder()
       .withUrl(`${apiUrl}/hubs/notifications`, {
         accessTokenFactory: () => token,

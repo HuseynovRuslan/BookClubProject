@@ -1,89 +1,78 @@
-# =============================================================================
-# Docker Compose - BookClub Project
-# =============================================================================
-# Usage:
-#   Development:  docker-compose up --build
-#   Production:   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-#   Stop:         docker-compose down
-#   With logs:    docker-compose up --build -d && docker-compose logs -f
-# =============================================================================
+version: '3.8'
 
 services:
-  # ---------------------------------------------------------------------------
-  # Backend API Service (ASP.NET Core 8)
-  # ---------------------------------------------------------------------------
+  # SQL Server Database
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bookclub-db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=MyStrongPass123!
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "MyStrongPass123!" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - bookclub-network
+
+  # .NET Backend API
   backend:
     build:
       context: ./Backend
       dockerfile: Dockerfile
     container_name: bookclub-backend
+    restart: always
     ports:
-      - "5000:8080"
+      - "7050:8080"
+    volumes:
+      - ./Backend/Goodreads.API/wwwroot/uploads:/app/wwwroot/uploads
+      - ./Backend/Goodreads.API/wwwroot/images:/app/wwwroot/images
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+
+      - ConnectionStrings__DefaultConnection=Server=db;Database=GoodreadsDb;User Id=sa;Password=MyStrongPass123!;TrustServerCertificate=True;
+      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      # Database connection - override in docker-compose.override.yml for local dev
-      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING:-Server=host.docker.internal;Database=GoodReads;Trusted_Connection=False;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True}
-      # JWT Settings
-      - JwtSettings__Secret=${JWT_SECRET:-BookClub2025SecretKeyForJWTTokenGeneration!@#$%^&*()}
-      - JwtSettings__TokenExpirationInMinutes=60
+      - RunMigrations=true
+      - EmailSettings__UseSendGrid=true
+      - OpenAI__ApiKey=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
+      - EmailSettings__SendGridApiKey=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
+      - EmailSettings__FromEmail=huseynovruslan999@gmail.com
+      - EmailSettings__FromName=BookClub
+      - JwtSettings__Secret=BookClub2025SecretKeyForJWTTokenGeneration!@#$%^&*()
       - JwtSettings__Issuer=GoodreadsAPI
       - JwtSettings__Audience=GoodreadsClient
-      # Disable auto migrations in production (run manually)
-      - RunMigrations=false
-      # Email Settings (override via .env file)
-      - EmailSettings__UseSendGrid=${USE_SENDGRID:-false}
-      - EmailSettings__SendGridApiKey=${SENDGRID_API_KEY:-}
-      - EmailSettings__FromEmail=${FROM_EMAIL:-noreply@bookclub.local}
-      - EmailSettings__FromName=BookClub
-    volumes:
-      # Persist uploaded files
-      - backend-uploads:/app/wwwroot/uploads
+      - JwtSettings__TokenExpirationInMinutes=43200
+
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - bookclub-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
 
-  # ---------------------------------------------------------------------------
-  # Frontend Service (React + Nginx)
-  # ---------------------------------------------------------------------------
+  # React Frontend
   frontend:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
-      args:
-        # API URL that will be baked into the frontend build
-        VITE_API_URL: ${API_URL:-http://localhost:5000}
     container_name: bookclub-frontend
+    restart: always
     ports:
-      - "3000:80"
+      - "5173:80"
     depends_on:
       - backend
     networks:
       - bookclub-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
 
-# =============================================================================
-# Networks
-# =============================================================================
 networks:
   bookclub-network:
     driver: bridge
 
-# =============================================================================
-# Volumes
-# =============================================================================
 volumes:
-  backend-uploads:
-    driver: local
+  sqlserver_data:

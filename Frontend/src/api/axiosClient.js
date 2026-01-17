@@ -1,8 +1,8 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 // Create axios instance with base configuration
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'https://localhost:7050/api',
+  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:7050/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -31,20 +31,20 @@ axiosClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Don't redirect if we're already on login or register pages
       // This allows proper error handling for login/register failures
-      const isAuthPage = window.location.pathname === '/login' || 
-                        window.location.pathname === '/register';
-      
+      const isAuthPage = window.location.pathname === '/login' ||
+        window.location.pathname === '/register';
+
       if (!isAuthPage) {
         // Clear authentication data
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        
+
         // Redirect to login page
         window.location.href = '/login';
       }
     }
-    
+
     // Suppress 404 errors for user year challenge endpoints (expected when no challenge exists)
     if (error.response?.status === 404) {
       const url = error.config?.url || '';
@@ -59,7 +59,7 @@ axiosClient.interceptors.response.use(
         return Promise.reject(silentError);
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

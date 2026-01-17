@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Mail, Lock, LogIn, BookOpen, Eye, EyeOff, ArrowRight, Loader, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -21,13 +21,27 @@ const LoginPage = () => {
 
   // Check for email verification success
   useEffect(() => {
-    if (searchParams.get('verified') === 'true') {
+    const verified = searchParams.get('verified') === 'true';
+    const shouldLogout = searchParams.get('logout') === 'true';
+
+    if (verified) {
       setEmailVerified(true);
-      toast.success('Email verified successfully! You can now login.');
+
+      // If shouldLogout is true, logout the user to force fresh token on next login
+      if (shouldLogout && isAuthenticated) {
+        // Logout silently without toast
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        window.location.reload(); // Reload to clear state
+        return;
+      }
+
+      toast.success('Email verified successfully! Please login to continue with full access.');
       // Clean up the URL
       window.history.replaceState({}, '', '/login');
     }
-  }, [searchParams]);
+  }, [searchParams, isAuthenticated]);
 
   // Redirect if already authenticated
   useEffect(() => {

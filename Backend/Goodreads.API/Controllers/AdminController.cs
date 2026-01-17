@@ -12,6 +12,7 @@ using Goodreads.Application.FeedBacks.Queries.GetAllFeedBacks;
 using Goodreads.Application.FeedBacks.Queries.GetFeedBackById;
 using Goodreads.Application.News.Commands.DeleteInformation;
 using Goodreads.Application.Users.Commands.DeleteUser;
+using Goodreads.Application.Users.Commands.AdminUpdateUser;
 using Goodreads.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -102,6 +103,18 @@ public class AdminController : BaseController
         var result = await Sender.Send(new DeleteUserCommand(id));
         return result.Match(
             () => NoContent(),
+            failure => CustomResults.Problem(failure));
+    }
+
+    [HttpPut("users/{id}")]
+    public async Task<IActionResult> UpdateUser(string id, [FromBody] AdminUpdateUserCommand command)
+    {
+        if (id != command.UserId)
+            return BadRequest("ID mismatch");
+
+        var result = await Sender.Send(command);
+        return result.Match(
+            () => Ok(),
             failure => CustomResults.Problem(failure));
     }
 
