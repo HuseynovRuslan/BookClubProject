@@ -35,12 +35,14 @@ public class AuthController : BaseController
 {
     private readonly UserManager<User> _userManager;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IConfiguration _configuration;
 
 
-    public AuthController(UserManager<User> userManager, IUnitOfWork unitOfWork)
+    public AuthController(UserManager<User> userManager, IUnitOfWork unitOfWork, IConfiguration configuration)
     {
         _userManager = userManager;
         _unitOfWork = unitOfWork;
+        _configuration = configuration;
     }
 
     [HttpPost("register")]
@@ -133,7 +135,7 @@ public class AuthController : BaseController
     [HttpGet("confirm-email")]
     public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
     {
-        const string frontendUrl = "http://localhost:5173";
+        var frontendUrl = _configuration["FrontendUrl"] ?? "http://localhost:5173";
         
         // user-u DB-dən götür
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
@@ -312,7 +314,7 @@ public class AuthController : BaseController
     [HttpGet("reset-password")]
     public async Task<IActionResult> ValidateResetPasswordToken([FromQuery] string userId, [FromQuery] string token)
     {
-        const string frontendUrl = "http://localhost:5173";
+        var frontendUrl = _configuration["FrontendUrl"] ?? "http://localhost:5173";
         
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
             return Content(GetPasswordResetPage(false, "Invalid Link", "The password reset link is invalid or incomplete.", frontendUrl), "text/html");
