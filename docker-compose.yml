@@ -7,14 +7,14 @@ services:
     container_name: bookclub-db
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=MyStrongPass123!
+      - SA_PASSWORD=${SA_PASSWORD}
       - MSSQL_PID=Express
     ports:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "MyStrongPass123!" -C -Q "SELECT 1" || exit 1
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${SA_PASSWORD}" -C -Q "SELECT 1" || exit 1
       interval: 10s
       timeout: 5s
       retries: 10
@@ -36,16 +36,16 @@ services:
       - ./Backend/Goodreads.API/wwwroot/images:/app/wwwroot/images
     environment:
 
-      - ConnectionStrings__DefaultConnection=Server=db;Database=GoodreadsDb;User Id=sa;Password=MyStrongPass123!;TrustServerCertificate=True;
+      - ConnectionStrings__DefaultConnection=Server=db;Database=GoodreadsDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - RunMigrations=true
       - EmailSettings__UseSendGrid=true
-      - OpenAI__ApiKey=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
-      - EmailSettings__SendGridApiKey=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
+      - OpenAI__ApiKey=${OPENAI_API_KEY}
+      - EmailSettings__SendGridApiKey=${SENDGRID_API_KEY}
       - EmailSettings__FromEmail=huseynovruslan999@gmail.com
       - EmailSettings__FromName=BookClub
-      - JwtSettings__Secret=BookClub2025SecretKeyForJWTTokenGeneration!@#$%^&*()
+      - JwtSettings__Secret=${JWT_SECRET}
       - JwtSettings__Issuer=GoodreadsAPI
       - JwtSettings__Audience=GoodreadsClient
       - JwtSettings__TokenExpirationInMinutes=43200
