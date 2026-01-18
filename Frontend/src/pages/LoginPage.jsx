@@ -92,7 +92,7 @@ const LoginPage = () => {
             <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
               <BookOpen className="w-7 h-7 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">BookClub</span>
+            <span className="text-2xl font-bold text-white">Bookla</span>
           </div>
 
           {/* Quote Section */}
@@ -132,7 +132,7 @@ const LoginPage = () => {
             <div className="w-10 h-10 rounded-lg bg-stone-900 flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-stone-900">BookClub</span>
+            <span className="text-xl font-bold text-stone-900">Bookla</span>
           </div>
 
           {/* Header */}
@@ -289,7 +289,7 @@ const LoginPage = () => {
                 <div className="w-full border-t border-stone-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-stone-50 text-stone-500">New to BookClub?</span>
+                <span className="px-4 bg-stone-50 text-stone-500">New to Bookla?</span>
               </div>
             </div>
           </div>

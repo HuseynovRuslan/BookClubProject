@@ -24,7 +24,7 @@ const FeedbackPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.subject.trim()) {
       toast.error('Please enter a subject');
       return;
@@ -46,10 +46,10 @@ const FeedbackPage = () => {
         subject: formData.subject.trim(),
         message: formData.message.trim(),
       });
-      
+
       setSubmitted(true);
       toast.success('Thank you! Your feedback has been sent successfully.');
-      
+
       // Reset form after 3 seconds
       setTimeout(() => {
         setFormData({ subject: '', message: '' });
@@ -57,8 +57,8 @@ const FeedbackPage = () => {
       }, 3000);
     } catch (error) {
       console.error('Error sending feedback:', error);
-      const errorMessage = 
-        error.response?.data?.message || 
+      const errorMessage =
+        error.response?.data?.message ||
         error.response?.data?.errors?.[0]?.description ||
         'Failed to send feedback. Please try again.';
       toast.error(errorMessage);
@@ -119,7 +119,7 @@ const FeedbackPage = () => {
                   <div>
                     <p className="text-sm text-amber-900 font-medium mb-1">We value your feedback!</p>
                     <p className="text-xs text-amber-700">
-                      Share your thoughts, suggestions, or report any issues. We read every message and use your feedback to improve BookClub.
+                      Share your thoughts, suggestions, or report any issues. We read every message and use your feedback to improve Bookla.
                     </p>
                   </div>
                 </div>

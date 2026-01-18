@@ -55,7 +55,7 @@ const VerifyEmailPage = () => {
 
                 {/* Description */}
                 <p className="text-stone-600 mb-6">
-                    To access all features of BookClub, please verify your email address.
+                    To access all features of Bookla, please verify your email address.
                     {user?.email && (
                         <span className="block mt-2 font-medium text-stone-800">
                             {user.email}

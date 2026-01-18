@@ -78,7 +78,7 @@ const AdminLayout = () => {
             </div>
             <div>
               <h1 className="text-lg font-bold text-white">Admin Panel</h1>
-              <p className="text-xs text-slate-400">BookClub Management</p>
+              <p className="text-xs text-slate-400">Bookla Management</p>
             </div>
           </div>
         </div>
@@ -91,10 +91,9 @@ const AdminLayout = () => {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  isActive
-                    ? 'bg-amber-500/20 text-amber-500 font-medium'
-                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
+                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
+                  ? 'bg-amber-500/20 text-amber-500 font-medium'
+                  : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
                 }`
               }
             >

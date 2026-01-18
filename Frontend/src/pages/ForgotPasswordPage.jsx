@@ -18,7 +18,7 @@ const ForgotPasswordPage = () => {
   const onSubmit = async (data) => {
     setApiError('');
     const result = await forgotPassword(data.email);
-    
+
     if (result.success) {
       setSubmittedEmail(data.email);
       setIsSubmitted(true);
@@ -48,7 +48,7 @@ const ForgotPasswordPage = () => {
             <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
               <BookOpen className="w-7 h-7 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">BookClub</span>
+            <span className="text-2xl font-bold text-white">Bookla</span>
           </Link>
 
           {/* Icon Section */}
@@ -75,12 +75,12 @@ const ForgotPasswordPage = () => {
             <div className="w-10 h-10 rounded-lg bg-stone-900 flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-stone-900">BookClub</span>
+            <span className="text-xl font-bold text-stone-900">Bookla</span>
           </div>
 
           {/* Back Link */}
-          <Link 
-            to="/login" 
+          <Link
+            to="/login"
             className="inline-flex items-center gap-2 text-stone-600 hover:text-stone-900 transition-colors mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -104,7 +104,7 @@ const ForgotPasswordPage = () => {
               </div>
               <p className="text-stone-500 text-sm mb-8">
                 Didn't receive the email? Check your spam folder or{' '}
-                <button 
+                <button
                   onClick={() => setIsSubmitted(false)}
                   className="text-stone-900 font-medium hover:underline"
                 >

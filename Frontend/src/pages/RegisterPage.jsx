@@ -68,7 +68,7 @@ const RegisterPage = () => {
             <div className="w-10 h-10 rounded-lg bg-stone-900 flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-stone-900">BookClub</span>
+            <span className="text-xl font-bold text-stone-900">Bookla</span>
           </div>
 
           {/* Header */}
@@ -402,7 +402,7 @@ const RegisterPage = () => {
             <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
               <BookOpen className="w-7 h-7 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">BookClub</span>
+            <span className="text-2xl font-bold text-white">Bookla</span>
           </div>
 
           {/* Main Content */}
@@ -444,7 +444,7 @@ const RegisterPage = () => {
           {/* Testimonial */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
             <p className="text-white/80 italic mb-4">
-              "BookClub transformed my reading habits. I've read more books this year than ever before!"
+              "Bookla transformed my reading habits. I've read more books this year than ever before!"
             </p>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center text-amber-300 font-bold">

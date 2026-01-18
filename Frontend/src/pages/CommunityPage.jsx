@@ -30,15 +30,15 @@ const getImageUrl = (url) => {
 const isAdmin = (user) => {
   if (!user) return false;
   // Check multiple possible field names for role
-  const isAdminByRole = user?.role === 'Admin' || 
-         user?.roles?.includes('Admin') ||
-         user?.userRole === 'Admin' ||
-         (Array.isArray(user?.roles) && user.roles.some(r => r === 'Admin' || r?.name === 'Admin'));
-  
+  const isAdminByRole = user?.role === 'Admin' ||
+    user?.roles?.includes('Admin') ||
+    user?.userRole === 'Admin' ||
+    (Array.isArray(user?.roles) && user.roles.some(r => r === 'Admin' || r?.name === 'Admin'));
+
   // Also check by username (common admin username patterns)
   const isAdminByUsername = user?.username?.toLowerCase() === 'admin' ||
-                            user?.username?.toLowerCase().startsWith('admin_');
-  
+    user?.username?.toLowerCase().startsWith('admin_');
+
   return isAdminByRole || isAdminByUsername;
 };
 
@@ -60,12 +60,12 @@ const UserCardSkeleton = () => (
 const UserCard = ({ user, isFollowing, onFollowToggle, isCurrentUser }) => {
   const [loading, setLoading] = useState(false);
   const [following, setFollowing] = useState(isFollowing);
-  
+
   // Sync local state with prop when it changes
   useEffect(() => {
     setFollowing(isFollowing);
   }, [isFollowing]);
-  
+
   const profilePicUrl = getImageUrl(user?.profilePictureUrl);
   const initials = user?.firstName && user?.lastName
     ? `${user.firstName[0]}${user.lastName[0]}`
@@ -73,12 +73,12 @@ const UserCard = ({ user, isFollowing, onFollowToggle, isCurrentUser }) => {
 
   const handleFollowToggle = async () => {
     if (loading || isCurrentUser || isAdmin(user)) return;
-    
+
     // Optimistic UI update
     setLoading(true);
     const wasFollowing = following;
     setFollowing(!following);
-    
+
     try {
       if (wasFollowing) {
         await unfollowUser(user.id);
@@ -148,11 +148,10 @@ const UserCard = ({ user, isFollowing, onFollowToggle, isCurrentUser }) => {
           <button
             onClick={handleFollowToggle}
             disabled={loading}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all shrink-0 ${
-              following
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all shrink-0 ${following
                 ? 'bg-stone-100 text-stone-600 hover:bg-red-50 hover:text-red-600'
                 : 'bg-stone-900 text-white hover:bg-stone-800'
-            }`}
+              }`}
           >
             {loading ? (
               <Loader className="w-4 h-4 animate-spin" />
@@ -192,7 +191,7 @@ const EmptyState = ({ searchTerm, onClear }) => (
     <p className="text-stone-500 mb-6 max-w-sm mx-auto">
       {searchTerm
         ? `We couldn't find any users matching "${searchTerm}". Try a different search term.`
-        : 'Be the first to invite friends to BookClub!'}
+        : 'Be the first to invite friends to Bookla!'}
     </p>
     {searchTerm && (
       <button
@@ -210,7 +209,7 @@ const EmptyState = ({ searchTerm, onClear }) => (
 const CommunityPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   // State
   const [users, setUsers] = useState([]);
   const [followingIds, setFollowingIds] = useState(new Set());
@@ -235,7 +234,7 @@ const CommunityPage = () => {
   const fetchFollowingList = useCallback(async () => {
     try {
       const response = await getMyFollowing(1, 1000);
-      
+
       // Handle different response formats
       let following = [];
       if (response) {
@@ -247,7 +246,7 @@ const CommunityPage = () => {
           following = response.items;
         }
       }
-      
+
       const ids = new Set(following.map((u) => u.id));
       setFollowingIds(ids);
     } catch (error) {
@@ -265,12 +264,12 @@ const CommunityPage = () => {
       }
 
       const response = await getAllUsers(pageNum, 12, debouncedSearch);
-      
+
       // Handle response format
       let items = [];
       let total = 0;
       let totalPages = 1;
-      
+
       if (response) {
         if (Array.isArray(response)) {
           items = response;
@@ -288,17 +287,17 @@ const CommunityPage = () => {
 
       // Filter out admin users
       const filteredItems = items.filter(u => !isAdmin(u));
-      
+
       // Recalculate total count after filtering (subtract admin count)
       const adminCount = items.length - filteredItems.length;
       const adjustedTotal = Math.max(0, total - adminCount);
-      
+
       if (append) {
         setUsers((prev) => [...prev, ...filteredItems]);
       } else {
         setUsers(filteredItems);
       }
-      
+
       setTotalCount(adjustedTotal);
       setHasMore(pageNum < totalPages && filteredItems.length > 0);
       setPage(pageNum);

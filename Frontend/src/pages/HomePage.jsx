@@ -451,7 +451,7 @@ const HomePage = () => {
               <div className="w-9 h-9 rounded-lg bg-stone-900 flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-stone-900">BookClub</span>
+              <span className="text-xl font-bold text-stone-900">Bookla</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-6">
@@ -658,7 +658,7 @@ const HomePage = () => {
                 <div className="w-9 h-9 rounded-lg bg-stone-900 flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-stone-900">BookClub</span>
+                <span className="text-xl font-bold text-stone-900">Bookla</span>
               </Link>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -1236,10 +1236,10 @@ const HomePage = () => {
               <div className="w-8 h-8 rounded-lg bg-stone-900 flex items-center justify-center">
                 <BookOpen className="w-4 h-4 text-white" />
               </div>
-              <span className="font-semibold text-stone-900">BookClub</span>
+              <span className="font-semibold text-stone-900">Bookla</span>
             </div>
             <p className="text-sm text-stone-500">
-              © 2026 BookClub. Your personal reading companion.
+              © 2026 Bookla. Your personal reading companion.
             </p>
           </div>
         </div>
