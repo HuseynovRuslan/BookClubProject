@@ -26,6 +26,7 @@ import {
   Loader2,
   Shield,
   Sparkles,
+  Menu,
 } from 'lucide-react';
 import BookCard from '../components/BookCard';
 import ReadingChallengeCard from '../components/ReadingChallengeCard';
@@ -87,7 +88,7 @@ const FeedItemSkeleton = () => (
 const Section = ({ title, icon: Icon, books, loading, onSeeAll, count = 5 }) => {
   // Safety check: ensure books is an array
   const safeBooks = Array.isArray(books) ? books : [];
-  
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -129,9 +130,9 @@ const Section = ({ title, icon: Icon, books, loading, onSeeAll, count = 5 }) => 
 
 const HomePage = () => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { 
-    unreadCount: signalRUnread, 
-    newMessage, 
+  const {
+    unreadCount: signalRUnread,
+    newMessage,
     setTotalUnreadCount,
     newNotification,
     notificationUnreadCount,
@@ -139,7 +140,7 @@ const HomePage = () => {
     setNotificationCount
   } = useSignalR();
   const navigate = useNavigate();
-  
+
   // Data states
   const [allBooks, setAllBooks] = useState([]);
   const [shelves, setShelves] = useState([]);
@@ -148,16 +149,17 @@ const HomePage = () => {
   const [conversations, setConversations] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Use ref instead of state to avoid re-render loops
   const addNotificationCallbackRef = useRef(null);
-  
+
   // Loading states
   const [loadingBooks, setLoadingBooks] = useState(true);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Challenge modal state
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [challengeBooks, setChallengeBooks] = useState([]);
@@ -189,17 +191,17 @@ const HomePage = () => {
         clearNewNotification();
         return;
       }
-      
+
       // For other notifications, add to dropdown
       if (addNotificationCallbackRef.current) {
         addNotificationCallbackRef.current(newNotification);
       }
       clearNewNotification();
-      
+
       // Refresh unread count from backend to ensure accuracy
       // This ensures we get the correct count from the server
       fetchNotificationUnreadCount();
-      
+
       // Optional: Play subtle sound (you can add a notification sound file)
       // new Audio('/notification-sound.mp3').play().catch(() => {});
     }
@@ -210,7 +212,7 @@ const HomePage = () => {
     // Always fetch books and quotes
     fetchAllBooks();
     fetchQuotes();
-    
+
     // Fetch dashboard data only if authenticated
     if (isAuthenticated && user) {
       fetchDashboardData();
@@ -224,11 +226,11 @@ const HomePage = () => {
       // Get all notifications to filter out MessageReceived (type 4)
       const response = await getNotifications(1, 100);
       const items = response?.items || response?.data || [];
-      
+
       // Count only non-message notifications (exclude type 4 - MessageReceived)
       const nonMessageNotifications = items.filter(n => n.type !== 4);
       const unreadCount = nonMessageNotifications.filter(n => !n.isRead).length;
-      
+
       setNotificationCount(unreadCount);
     } catch (error) {
       console.error('Error fetching notification unread count:', error);
@@ -265,7 +267,7 @@ const HomePage = () => {
       setLoadingBooks(true);
       // Fetch all books in a single call with large page size
       const response = await getAllBooks(1, 1000);
-      
+
       // Safe data extraction: handle both PagedResult and array responses
       const allBooksData = response?.items || (Array.isArray(response) ? response : []);
       setAllBooks(allBooksData);
@@ -281,7 +283,7 @@ const HomePage = () => {
     try {
       setLoadingDashboard(true);
       const currentYear = new Date().getFullYear();
-      
+
       // Fetch all dashboard data in parallel
       const results = await Promise.allSettled([
         getUserShelves(),
@@ -290,7 +292,7 @@ const HomePage = () => {
         getConversations(1, 10),
         getCurrentUserProfile(),
       ]);
-      
+
       // Process shelves
       if (results[0].status === 'fulfilled') {
         const shelvesData = results[0].value;
@@ -300,29 +302,29 @@ const HomePage = () => {
           setShelves(shelvesData.items);
         }
       }
-      
+
       // Process challenge
       if (results[1].status === 'fulfilled') {
         setChallenge(results[1].value);
       }
-      
+
       // Process feed
       if (results[2].status === 'fulfilled') {
         const feedData = results[2].value;
         setFeed(feedData?.items || feedData || []);
       }
-      
+
       // Process conversations
       if (results[3].status === 'fulfilled') {
         const convData = results[3].value;
         const convItems = convData?.items || convData || [];
         setConversations(convItems);
-        
+
         // Initial unread count-u SignalR context-ə set et
         const totalUnread = convItems.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
         setTotalUnreadCount(totalUnread);
       }
-      
+
       // Process user profile
       if (results[4].status === 'fulfilled') {
         setUserProfile(results[4].value);
@@ -381,7 +383,7 @@ const HomePage = () => {
   // Handle opening challenge modal
   const handleOpenChallengeModal = async () => {
     if (!challenge) return;
-    
+
     // Find "Read" shelf
     const readShelf = shelves.find(s => s.name === 'Read');
     if (readShelf?.id) {
@@ -482,139 +484,151 @@ const HomePage = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Hamburger Menu Button - Mobile Only */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 hover:bg-stone-100 rounded-lg transition-colors"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-6 h-6 text-stone-600" />
+                ) : (
+                  <Menu className="w-6 h-6 text-stone-600" />
+                )}
+              </button>
+
               {isAuthenticated ? (
                 <>
                   {/* Notification Dropdown */}
-                  <NotificationDropdown 
+                  <NotificationDropdown
                     unreadCount={notificationUnreadCount}
                     onNewNotification={handleNewNotification}
                   />
-                  
+
                   <div className="relative user-menu-container">
                     {/* User Menu Button */}
                     <button
                       onClick={() => setShowUserMenu(!showUserMenu)}
                       className="flex items-center gap-2 px-3 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
                     >
-                    <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
-                      {userProfile?.profilePictureUrl ? (
-                        <img
-                          src={getProfilePictureUrl(userProfile.profilePictureUrl)}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        userProfile?.firstName?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'
-                      )}
-                    </div>
-                    <span className="hidden sm:block text-sm font-medium text-stone-700 max-w-[120px] truncate">
-                      {userProfile?.firstName || user?.username || 'User'}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-stone-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-stone-200 py-2 z-50">
-                      {/* User Info Header */}
-                      <div className="px-4 py-3 border-b border-stone-100 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-stone-700 flex items-center justify-center text-white font-medium overflow-hidden flex-shrink-0">
-                          {userProfile?.profilePictureUrl ? (
-                            <img
-                              src={getProfilePictureUrl(userProfile.profilePictureUrl)}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            userProfile?.firstName?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-stone-900 truncate">
-                            {userProfile?.firstName 
-                              ? `${userProfile.firstName} ${userProfile.lastName || ''}`.trim()
-                              : user?.username || 'User'}
-                          </p>
-                          <p className="text-xs text-stone-500 truncate">{user?.email}</p>
-                        </div>
-                      </div>
-
-                      {/* Menu Items */}
-                      <div className="py-1">
-                        <Link
-                          to="/profile"
-                          onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                        >
-                          <User className="w-4 h-4 text-stone-500" />
-                          <span className="text-sm">My Profile</span>
-                        </Link>
-                        <Link
-                          to="/my-shelves"
-                          onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                        >
-                          <Library className="w-4 h-4 text-stone-500" />
-                          <span className="text-sm">My Library</span>
-                        </Link>
-                        <Link
-                          to="/feed"
-                          onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                        >
-                          <TrendingUp className="w-4 h-4 text-stone-500" />
-                          <span className="text-sm">Activity Feed</span>
-                        </Link>
-                        <Link
-                          to="/community"
-                          onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                        >
-                          <Users className="w-4 h-4 text-stone-500" />
-                          <span className="text-sm">Community</span>
-                        </Link>
-                        <Link
-                          to="/messages"
-                          onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                        >
-                          <MessageCircle className="w-4 h-4 text-stone-500" />
-                          <span className="text-sm">Messages</span>
-                          {unreadMessages > 0 && (
-                            <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full">
-                              {unreadMessages}
-                            </span>
-                          )}
-                        </Link>
-                        {user?.role === 'Admin' && (
-                          <Link
-                            to="/admin"
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-amber-700 hover:bg-amber-50 transition-colors"
-                          >
-                            <Shield className="w-4 h-4 text-amber-600" />
-                            <span className="text-sm font-medium">Admin Panel</span>
-                          </Link>
+                      <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+                        {userProfile?.profilePictureUrl ? (
+                          <img
+                            src={getProfilePictureUrl(userProfile.profilePictureUrl)}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          userProfile?.firstName?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'
                         )}
                       </div>
+                      <span className="hidden sm:block text-sm font-medium text-stone-700 max-w-[120px] truncate">
+                        {userProfile?.firstName || user?.username || 'User'}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-stone-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                    </button>
 
-                      {/* Logout */}
-                      <div className="border-t border-stone-100 pt-1 mt-1">
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          <span className="text-sm font-medium">Log Out</span>
-                        </button>
+                    {/* Dropdown Menu */}
+                    {showUserMenu && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-stone-200 py-2 z-50">
+                        {/* User Info Header */}
+                        <div className="px-4 py-3 border-b border-stone-100 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-stone-700 flex items-center justify-center text-white font-medium overflow-hidden flex-shrink-0">
+                            {userProfile?.profilePictureUrl ? (
+                              <img
+                                src={getProfilePictureUrl(userProfile.profilePictureUrl)}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              userProfile?.firstName?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-stone-900 truncate">
+                              {userProfile?.firstName
+                                ? `${userProfile.firstName} ${userProfile.lastName || ''}`.trim()
+                                : user?.username || 'User'}
+                            </p>
+                            <p className="text-xs text-stone-500 truncate">{user?.email}</p>
+                          </div>
+                        </div>
+
+                        {/* Menu Items */}
+                        <div className="py-1">
+                          <Link
+                            to="/profile"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
+                          >
+                            <User className="w-4 h-4 text-stone-500" />
+                            <span className="text-sm">My Profile</span>
+                          </Link>
+                          <Link
+                            to="/my-shelves"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
+                          >
+                            <Library className="w-4 h-4 text-stone-500" />
+                            <span className="text-sm">My Library</span>
+                          </Link>
+                          <Link
+                            to="/feed"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
+                          >
+                            <TrendingUp className="w-4 h-4 text-stone-500" />
+                            <span className="text-sm">Activity Feed</span>
+                          </Link>
+                          <Link
+                            to="/community"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
+                          >
+                            <Users className="w-4 h-4 text-stone-500" />
+                            <span className="text-sm">Community</span>
+                          </Link>
+                          <Link
+                            to="/messages"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
+                          >
+                            <MessageCircle className="w-4 h-4 text-stone-500" />
+                            <span className="text-sm">Messages</span>
+                            {unreadMessages > 0 && (
+                              <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full">
+                                {unreadMessages}
+                              </span>
+                            )}
+                          </Link>
+                          {user?.role === 'Admin' && (
+                            <Link
+                              to="/admin"
+                              onClick={() => setShowUserMenu(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 text-amber-700 hover:bg-amber-50 transition-colors"
+                            >
+                              <Shield className="w-4 h-4 text-amber-600" />
+                              <span className="text-sm font-medium">Admin Panel</span>
+                            </Link>
+                          )}
+                        </div>
+
+                        {/* Logout */}
+                        <div className="border-t border-stone-100 pt-1 mt-1">
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span className="text-sm font-medium">Log Out</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                   </div>
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="px-4 py-2 text-stone-600 hover:text-stone-900 text-sm font-medium">
+                  <Link to="/login" className="hidden sm:block px-4 py-2 text-stone-600 hover:text-stone-900 text-sm font-medium">
                     Sign In
                   </Link>
                   <Link to="/register" className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium rounded-lg">
@@ -626,6 +640,167 @@ const HomePage = () => {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-40">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          {/* Drawer */}
+          <div className="absolute top-0 left-0 w-72 h-full bg-white shadow-xl overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-stone-200">
+              <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-lg bg-stone-900 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-stone-900">BookClub</span>
+              </Link>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 hover:bg-stone-100 rounded-lg"
+              >
+                <X className="w-5 h-5 text-stone-500" />
+              </button>
+            </div>
+
+            {/* Navigation Links */}
+            <div className="p-4 space-y-1">
+              <Link
+                to="/news"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
+              >
+                <Bell className="w-5 h-5 text-stone-500" />
+                <span className="font-medium">News</span>
+              </Link>
+
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/feed"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
+                  >
+                    <TrendingUp className="w-5 h-5 text-stone-500" />
+                    <span className="font-medium">Feed</span>
+                  </Link>
+                  <Link
+                    to="/community"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
+                  >
+                    <Users className="w-5 h-5 text-stone-500" />
+                    <span className="font-medium">Community</span>
+                  </Link>
+                  <Link
+                    to="/books"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
+                  >
+                    <BookOpen className="w-5 h-5 text-stone-500" />
+                    <span className="font-medium">Browse Books</span>
+                  </Link>
+                  <Link
+                    to="/my-shelves"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
+                  >
+                    <Library className="w-5 h-5 text-stone-500" />
+                    <span className="font-medium">My Shelves</span>
+                  </Link>
+                  <Link
+                    to="/ai-recommendations"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+                  >
+                    <Sparkles className="w-5 h-5 text-purple-500" />
+                    <span className="font-medium">AI Picks</span>
+                  </Link>
+                  <Link
+                    to="/messages"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
+                  >
+                    <MessageCircle className="w-5 h-5 text-stone-500" />
+                    <span className="font-medium">Messages</span>
+                    {unreadMessages > 0 && (
+                      <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full">
+                        {unreadMessages}
+                      </span>
+                    )}
+                  </Link>
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
+                  >
+                    <User className="w-5 h-5 text-stone-500" />
+                    <span className="font-medium">My Profile</span>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/books"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
+                  >
+                    <BookOpen className="w-5 h-5 text-stone-500" />
+                    <span className="font-medium">Browse Books</span>
+                  </Link>
+                </>
+              )}
+
+              <Link
+                to="/feedback"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
+              >
+                <MessageCircle className="w-5 h-5 text-stone-500" />
+                <span className="font-medium">Feedback</span>
+              </Link>
+            </div>
+
+            {/* Auth Actions */}
+            <div className="p-4 border-t border-stone-200">
+              {isAuthenticated ? (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-medium">Log Out</span>
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block w-full px-4 py-3 text-center text-stone-700 border border-stone-300 hover:bg-stone-50 rounded-lg font-medium transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block w-full px-4 py-3 text-center text-white bg-stone-900 hover:bg-stone-800 rounded-lg font-medium transition-colors"
+                  >
+                    Get Started
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Authenticated User Dashboard */}
@@ -641,7 +816,7 @@ const HomePage = () => {
                   Here's what's happening in your reading world
                 </p>
               </div>
-              
+
               {/* Search */}
               <form onSubmit={handleSearch} className="flex gap-2">
                 <div className="flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-lg">
@@ -708,7 +883,7 @@ const HomePage = () => {
                               {challenge.completedBooksCount || 0}/{challenge.targetBooksCount || 0}
                             </p>
                             <div className="w-full h-1.5 bg-stone-100 rounded-full mt-1">
-                              <div 
+                              <div
                                 className="h-full bg-emerald-500 rounded-full transition-all"
                                 style={{ width: `${challengeProgress}%` }}
                               ></div>
@@ -799,8 +974,8 @@ const HomePage = () => {
               {/* Sidebar - 1/4 width */}
               <div className="space-y-6">
                 {/* Reading Challenge */}
-                <ReadingChallengeCard 
-                  year={new Date().getFullYear()} 
+                <ReadingChallengeCard
+                  year={new Date().getFullYear()}
                   onUpdate={fetchDashboardData}
                 />
 
@@ -819,7 +994,7 @@ const HomePage = () => {
                       Add
                     </button>
                   </div>
-                  
+
                   <div className="p-3 overflow-y-auto flex-1">
                     {loadingQuotes ? (
                       <div className="flex items-center justify-center py-8">
@@ -900,12 +1075,12 @@ const HomePage = () => {
                     <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                     Discover great reads
                   </div>
-                  
+
                   <h1 className="text-3xl lg:text-4xl font-bold text-stone-900 leading-tight">
                     Your personal library,{' '}
                     <span className="text-stone-500">anywhere you go</span>
                   </h1>
-                  
+
                   <p className="text-stone-600 text-lg leading-relaxed">
                     Track your reading, discover new books, and connect with fellow readers.
                   </p>
@@ -1004,7 +1179,7 @@ const HomePage = () => {
                   Create custom shelves and organize your reading list the way you want.
                 </p>
               </div>
-              
+
               <div className="bg-white rounded-xl border border-stone-200 p-6">
                 <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-4">
                   <Target className="w-6 h-6 text-stone-600" />
@@ -1014,7 +1189,7 @@ const HomePage = () => {
                   Challenge yourself with yearly reading goals and track your progress.
                 </p>
               </div>
-              
+
               <div className="bg-white rounded-xl border border-stone-200 p-6">
                 <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-4">
                   <Heart className="w-6 h-6 text-stone-600" />
@@ -1074,11 +1249,11 @@ const HomePage = () => {
       {showChallengeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowChallengeModal(false)}
           />
-          
+
           {/* Modal */}
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
             {/* Header */}
@@ -1121,7 +1296,7 @@ const HomePage = () => {
             {/* Books List */}
             <div className="p-5 overflow-y-auto max-h-[50vh]">
               <h3 className="text-sm font-semibold text-stone-700 mb-3">Books Read This Year</h3>
-              
+
               {challengeBooks.length === 0 ? (
                 <div className="text-center py-10">
                   <BookOpen className="w-12 h-12 text-stone-300 mx-auto mb-3" />
@@ -1161,7 +1336,7 @@ const HomePage = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Book Info */}
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-stone-900 truncate group-hover:text-emerald-600 transition-colors">
@@ -1171,7 +1346,7 @@ const HomePage = () => {
                           {book.author?.name || book.authorName || 'Unknown Author'}
                         </p>
                       </div>
-                      
+
                       {/* Check Icon */}
                       <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
                         <CheckCircle className="w-4 h-4 text-emerald-600" />
