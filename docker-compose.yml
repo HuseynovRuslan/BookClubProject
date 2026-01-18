@@ -30,9 +30,8 @@ services:
     container_name: bookclub-backend
     restart: always
     volumes:
-      - ./Backend/Goodreads.API/wwwroot/users:/app/wwwroot/users
       - ./Backend/Goodreads.API/wwwroot/books:/app/wwwroot/books
-      - ./Backend/Goodreads.API/wwwroot/authors:/app/wwwroot/authors
+      - ./Backend/Goodreads.API/wwwroot/images:/app/wwwroot/images
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=GoodreadsDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
       - ASPNETCORE_ENVIRONMENT=Development
