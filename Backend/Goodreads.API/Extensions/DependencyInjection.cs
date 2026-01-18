@@ -42,7 +42,9 @@ public static class DependencyInjection
                         "http://localhost:15357",
                         "https://localhost:44324",
                      
-                        "http://98.89.30.178:5173")
+                        "http://98.89.30.178:5173",
+                        "https://bookla.org",
+                        "https://www.bookla.org")
                       .AllowAnyMethod()
                       .AllowAnyHeader()
                       .AllowCredentials();

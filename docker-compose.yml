@@ -29,13 +29,10 @@ services:
       dockerfile: Dockerfile
     container_name: bookclub-backend
     restart: always
-    ports:
-      - "7050:8080"
     volumes:
       - ./Backend/Goodreads.API/wwwroot/uploads:/app/wwwroot/uploads
       - ./Backend/Goodreads.API/wwwroot/images:/app/wwwroot/images
     environment:
-
       - ConnectionStrings__DefaultConnection=Server=db;Database=GoodreadsDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
@@ -58,16 +55,32 @@ services:
     networks:
       - bookclub-network
 
-  # React Frontend
+  # React Frontend (Internal only now)
   frontend:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
     container_name: bookclub-frontend
     restart: always
-    ports:
-      - "5173:80"
+    # Ports removed - accessed via Nginx Gateway
     depends_on:
+      - backend
+    networks:
+      - bookclub-network
+
+  # Gateway Nginx (The only public entry point)
+  nginx:
+    image: nginx:alpine
+    container_name: bookclub-gateway
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - frontend
       - backend
     networks:
       - bookclub-network

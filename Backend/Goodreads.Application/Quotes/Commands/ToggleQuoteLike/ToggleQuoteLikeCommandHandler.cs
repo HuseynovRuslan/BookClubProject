@@ -78,7 +78,7 @@ public class ToggleQuoteLikeCommandHandler : IRequestHandler<ToggleQuoteLikeComm
                     RelatedEntityType: "Quote"
                 ));
 
-                // Send real-time notification if user is online
+               
                 if (createNotificationResult.IsSuccess && !string.IsNullOrEmpty(createNotificationResult.Data))
                 {
                     var notification = await _unitOfWork.Notifications.GetByIdAsync(createNotificationResult.Data);
