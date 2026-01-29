@@ -2,7 +2,7 @@ name: Deploy to AWS
 on:
   push:
     branches:
-      - main  # Kodu main-ə atanda işə düşəcək
+      - main # Kodu main-ə atanda işə düşəcək
 
 jobs:
   deploy:
@@ -20,12 +20,15 @@ jobs:
           script: |
             # 1. Layihə qovluğuna gir
             cd BookClubProject
-            
+
             # 2. Ən son kodu GitHub-dan çək
             git pull origin main
-            
-            # 3. Docker-i yenidən qaldır (dəyişiklikləri tətbiq et)
+
+            # 3. Köhnə container-ləri dayandır (crash-ların qarşısını alır)
+            sudo docker-compose down
+
+            # 4. Docker-i yenidən qaldır (dəyişiklikləri tətbiq et)
             sudo docker-compose up -d --build
-            
+
             # 4. Artıq yer tutan köhnə "zibil" faylları təmizlə (Serverin dolmasın!)
             sudo docker system prune -f
