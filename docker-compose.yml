@@ -34,7 +34,7 @@ services:
       - ./Backend/Goodreads.API/wwwroot/images:/app/wwwroot/images
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=GoodreadsDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
       - RunMigrations=true
       - EmailSettings__UseSendGrid=true
