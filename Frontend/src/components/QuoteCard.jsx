@@ -1,11 +1,11 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Quote, 
-  Heart, 
-  Pencil, 
-  Trash2, 
-  BookOpen, 
+import {
+  Quote,
+  Heart,
+  Pencil,
+  Trash2,
+  BookOpen,
   User,
   Loader2,
   AlertTriangle,
@@ -27,18 +27,18 @@ const getProfilePictureUrl = (url) => {
 // Helper to get book cover URL
 const getBookCoverUrl = (book) => {
   if (!book) return null;
-  
+
   const isbn = book.isbn || book.ISBN;
   if (isbn) {
     const cleanISBN = isbn.replace(/[-\s]/g, '');
     return `https://covers.openlibrary.org/b/isbn/${cleanISBN}-S.jpg`;
   }
-  
+
   if (book.coverImageUrl) {
     if (book.coverImageUrl.startsWith('http')) return book.coverImageUrl;
     return `${BASE_URL}${book.coverImageUrl.startsWith('/') ? '' : '/'}${book.coverImageUrl}`;
   }
-  
+
   return null;
 };
 
@@ -91,7 +91,7 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
     }
   };
 
-  const userName = quote.user?.firstName 
+  const userName = quote.user?.firstName
     ? `${quote.user.firstName} ${quote.user.lastName || ''}`.trim()
     : quote.user?.userName || 'Anonymous';
 
@@ -138,6 +138,7 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
               <img
                 src={getBookCoverUrl(quote.book)}
                 alt={bookTitle}
+                loading="lazy"
                 className="w-full h-full object-cover"
                 onError={(e) => e.target.style.display = 'none'}
               />
@@ -148,7 +149,7 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <Link 
+            <Link
               to={`/books/${quote.bookId}`}
               className="font-medium text-stone-900 hover:text-amber-600 truncate block text-sm transition-colors"
             >
@@ -197,12 +198,12 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
             <div>
               <p className="text-xs font-medium text-stone-700">{userName}</p>
               <p className="text-[10px] text-stone-400">
-                {quote.createdAt 
-                  ? new Date(quote.createdAt).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    }) 
+                {quote.createdAt
+                  ? new Date(quote.createdAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })
                   : ''}
               </p>
             </div>
@@ -212,11 +213,10 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
           <button
             onClick={handleToggleLike}
             disabled={likeLoading}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all ${
-              isLiked 
-                ? 'bg-red-50 text-red-600' 
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all ${isLiked
+                ? 'bg-red-50 text-red-600'
                 : 'bg-stone-50 text-stone-500 hover:bg-stone-100'
-            }`}
+              }`}
           >
             {likeLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -231,7 +231,7 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div 
+          <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => !deleting && setShowDeleteConfirm(false)}
           />
@@ -245,7 +245,7 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
                 <p className="text-sm text-stone-500">This action cannot be undone</p>
               </div>
             </div>
-            
+
             <p className="text-sm text-stone-600 mb-6">
               Are you sure you want to delete this quote? It will be permanently removed.
             </p>

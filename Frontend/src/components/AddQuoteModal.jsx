@@ -8,20 +8,20 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
 // Helper to get book cover URL
 const getBookCoverUrl = (book) => {
   if (!book) return null;
-  
+
   // Try OpenLibrary first
   const isbn = book.isbn || book.ISBN;
   if (isbn) {
     const cleanISBN = isbn.replace(/[-\s]/g, '');
     return `https://covers.openlibrary.org/b/isbn/${cleanISBN}-M.jpg`;
   }
-  
+
   // Fallback to backend
   if (book.coverImageUrl) {
     if (book.coverImageUrl.startsWith('http')) return book.coverImageUrl;
     return `${BASE_URL}${book.coverImageUrl.startsWith('/') ? '' : '/'}${book.coverImageUrl}`;
   }
-  
+
   return null;
 };
 
@@ -36,17 +36,17 @@ const AddQuoteModal = ({ isOpen, onClose, onQuoteAdded }) => {
   const [quoteText, setQuoteText] = useState('');
   const [selectedBook, setSelectedBook] = useState(null);
   const [tags, setTags] = useState('');
-  
+
   // Book search state
   const [searchQuery, setSearchQuery] = useState('');
   const [books, setBooks] = useState([]);
   const [showBookDropdown, setShowBookDropdown] = useState(false);
   const [loadingBooks, setLoadingBooks] = useState(false);
-  
+
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  
+
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -57,13 +57,13 @@ const AddQuoteModal = ({ isOpen, onClose, onQuoteAdded }) => {
         setBooks([]);
         return;
       }
-      
+
       setLoadingBooks(true);
       try {
         // Use server-side search with max pageSize (50) - much more efficient!
         const response = await getAllBooks(1, 50, searchQuery.trim());
         const allBooks = response?.items || response?.data || response || [];
-        
+
         // Show up to 8 results (already filtered by backend)
         setBooks(allBooks.slice(0, 8));
       } catch (err) {
@@ -104,7 +104,7 @@ const AddQuoteModal = ({ isOpen, onClose, onQuoteAdded }) => {
   const handleBookSelect = async (book) => {
     // Handle both camelCase and PascalCase property names
     const authorId = book.authorId || book.AuthorId;
-    
+
     // If book doesn't have authorId, fetch full book details
     if (!authorId && book.id) {
       try {
@@ -190,7 +190,7 @@ const AddQuoteModal = ({ isOpen, onClose, onQuoteAdded }) => {
       onClose();
     } catch (err) {
       console.error('Error creating quote:', err);
-      const errorMessage = err.response?.data?.message 
+      const errorMessage = err.response?.data?.message
         || err.response?.data?.errors?.AuthorId?.[0]
         || err.response?.data?.errors?.BookId?.[0]
         || err.response?.data?.errors?.Text?.[0]
@@ -207,11 +207,11 @@ const AddQuoteModal = ({ isOpen, onClose, onQuoteAdded }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="relative bg-gradient-to-b from-amber-50 to-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-amber-200/50">
         {/* Decorative pattern */}
@@ -270,7 +270,7 @@ const AddQuoteModal = ({ isOpen, onClose, onQuoteAdded }) => {
             <label className="block text-sm font-semibold text-stone-700 mb-2">
               Select Book <span className="text-red-500">*</span>
             </label>
-            
+
             {selectedBook ? (
               <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                 {/* Book Cover */}
@@ -279,6 +279,7 @@ const AddQuoteModal = ({ isOpen, onClose, onQuoteAdded }) => {
                     <img
                       src={getBookCoverUrl(selectedBook)}
                       alt={selectedBook.title}
+                      loading="lazy"
                       className="w-full h-full object-cover"
                       onError={(e) => e.target.style.display = 'none'}
                     />
@@ -317,7 +318,7 @@ const AddQuoteModal = ({ isOpen, onClose, onQuoteAdded }) => {
                   placeholder="Search for a book..."
                   className="w-full pl-10 pr-4 py-3 bg-white border border-stone-200 rounded-xl text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400"
                 />
-                
+
                 {/* Dropdown */}
                 {showBookDropdown && (searchQuery.trim() || loadingBooks) && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-stone-200 rounded-xl shadow-xl z-10 max-h-64 overflow-y-auto">
@@ -345,6 +346,7 @@ const AddQuoteModal = ({ isOpen, onClose, onQuoteAdded }) => {
                                 <img
                                   src={getBookCoverUrl(book)}
                                   alt={book.title}
+                                  loading="lazy"
                                   className="w-full h-full object-cover"
                                   onError={(e) => e.target.style.display = 'none'}
                                 />

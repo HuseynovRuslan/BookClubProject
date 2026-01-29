@@ -30,15 +30,15 @@ const BASE_URL = API_BASE.endsWith('/') ? API_BASE : API_BASE + '/';
 const getImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http')) return url;
-  
+
   // Normalize path separators (convert Windows backslashes to forward slashes)
   let normalizedPath = url.replace(/\\/g, '/');
-  
+
   // Remove leading slash if present (BASE_URL already ends with /)
-  const cleanPath = normalizedPath.startsWith('/') 
-    ? normalizedPath.substring(1) 
+  const cleanPath = normalizedPath.startsWith('/')
+    ? normalizedPath.substring(1)
     : normalizedPath;
-  
+
   return `${BASE_URL}${cleanPath}`;
 };
 
@@ -198,7 +198,7 @@ const BookCoverMini = ({ book, size = 'sm', disableLink = false }) => {
     const openLibraryUrl = isbn
       ? `https://covers.openlibrary.org/b/isbn/${isbn.replace(/[-\s]/g, '')}-S.jpg`
       : null;
-    
+
     // If backend failed, try OpenLibrary as fallback
     if (imageSrc === backendUrl && openLibraryUrl) {
       setImageSrc(openLibraryUrl);
@@ -218,6 +218,7 @@ const BookCoverMini = ({ book, size = 'sm', disableLink = false }) => {
     <img
       src={imageSrc}
       alt={book?.title}
+      loading="lazy"
       className="w-full h-full object-cover"
       onError={handleImageError}
     />

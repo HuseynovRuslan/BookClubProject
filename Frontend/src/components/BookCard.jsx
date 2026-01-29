@@ -20,19 +20,19 @@ const BookCard = ({ book }) => {
   // Helper function to get OpenLibrary cover image
   const getOpenLibraryCover = (isbn) => {
     if (!isbn) return null;
-    
+
     // Clean ISBN (remove dashes and spaces)
     const cleanISBN = isbn.replace(/[-\s]/g, '');
-    
-    // OpenLibrary Covers API - Large size
-    return `https://covers.openlibrary.org/b/isbn/${cleanISBN}-L.jpg`;
+
+    // OpenLibrary Covers API - Medium size for faster loading
+    return `https://covers.openlibrary.org/b/isbn/${cleanISBN}-M.jpg`;
   };
 
   // Initialize current image source on mount or when book changes
   useEffect(() => {
     const backend = getImageUrl(book.coverImageUrl);
     const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
-    
+
     // Prioritize backend URL (our uploaded images) over OpenLibrary
     if (backend || openLib) {
       setCurrentImageSrc(backend || openLib);
@@ -76,7 +76,7 @@ const BookCard = ({ book }) => {
                 // Recalculate URLs
                 const backend = getImageUrl(book.coverImageUrl);
                 const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
-                
+
                 // If backend failed, try OpenLibrary as fallback
                 if (currentImageSrc === backend && openLib) {
                   setCurrentImageSrc(openLib);
@@ -96,7 +96,7 @@ const BookCard = ({ book }) => {
                 setImageLoaded(true); // Mark as loaded (for future use)
               }}
             />
-            
+
             {/* Hover Overlay - Only shows on hover, doesn't block image */}
             <div className="
               absolute inset-0 pointer-events-none z-10
@@ -136,7 +136,7 @@ const BookCard = ({ book }) => {
               {book.averageRating ? book.averageRating.toFixed(1) : '0.0'}
             </span>
           </div>
-          
+
           {book.ratingCount > 0 && (
             <span className="text-xs text-gray-500">
               ({book.ratingCount} {book.ratingCount === 1 ? 'rating' : 'ratings'})

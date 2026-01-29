@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Star, BookOpen, Calendar, Globe, FileText, 
+import {
+  ArrowLeft, Star, BookOpen, Calendar, Globe, FileText,
   ChevronDown, Plus, Check, Loader, BookMarked,
   Folder, CheckCircle, X
 } from 'lucide-react';
@@ -16,7 +16,7 @@ const BookDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  
+
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [shelves, setShelves] = useState([]);
@@ -51,7 +51,7 @@ const BookDetailsPage = () => {
 
     try {
       const shelvesData = await getUserShelves();
-      
+
       let shelvesList = [];
       if (Array.isArray(shelvesData)) {
         shelvesList = shelvesData;
@@ -62,7 +62,7 @@ const BookDetailsPage = () => {
       } else {
         shelvesList = [];
       }
-      
+
       setShelves(shelvesList);
       setShowShelfDropdown(true);
     } catch (error) {
@@ -85,7 +85,7 @@ const BookDetailsPage = () => {
       setShowShelfDropdown(false);
     } catch (error) {
       console.error('Error updating book status:', error);
-      const errorMessage = 
+      const errorMessage =
         error.response?.data?.errors?.[0]?.description ||
         error.response?.data?.message ||
         'Failed to update book status';
@@ -98,13 +98,13 @@ const BookDetailsPage = () => {
   const handleShelfClick = async (shelf) => {
     const defaultShelfNames = ['Want to Read', 'Currently Reading', 'Read'];
     const isDefault = shelf.isDefault === true || defaultShelfNames.includes(shelf.name);
-    
+
     if (isDefault) {
       await handleUpdateBookStatus(shelf.name);
       setShowShelfDropdown(false);
       return;
     }
-    
+
     await handleAddToShelf(shelf.id, shelf.name);
   };
 
@@ -116,15 +116,15 @@ const BookDetailsPage = () => {
       setShowShelfDropdown(false);
     } catch (error) {
       console.error('Error adding book to shelf:', error);
-      
+
       const status = error.response?.status;
       const errorData = error.response?.data;
-      
+
       let errorMessage = 'Failed to add book to shelf';
-      
+
       if (status === 409) {
         const errorCode = errorData?.errors?.[0]?.code || errorData?.errors?.[0]?.type;
-        
+
         if (errorCode === 'Shelf.AlreadyAdded' || errorData?.errors?.[0]?.description?.includes('already')) {
           errorMessage = `This book is already in "${shelfName}"`;
         } else if (errorCode === 'Shelf.DefaultShelfAddDenied' || errorData?.errors?.[0]?.description?.includes('default')) {
@@ -139,7 +139,7 @@ const BookDetailsPage = () => {
       } else {
         errorMessage = errorData?.errors?.[0]?.description || errorData?.message || 'Failed to add book to shelf';
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setAddingToShelf(false);
@@ -167,7 +167,7 @@ const BookDetailsPage = () => {
   const getOpenLibraryCover = (isbn) => {
     if (!isbn) return null;
     const cleanISBN = isbn.replace(/[-\s]/g, '');
-    return `https://covers.openlibrary.org/b/isbn/${cleanISBN}-L.jpg`;
+    return `https://covers.openlibrary.org/b/isbn/${cleanISBN}-M.jpg`;
   };
 
   // Priority: Backend (our uploaded images) > OpenLibrary > Placeholder
@@ -203,12 +203,13 @@ const BookDetailsPage = () => {
                     <img
                       src={coverImage}
                       alt={book.title}
+                      loading="lazy"
                       className="w-full h-auto max-h-96 object-contain"
                       onError={(e) => {
                         // If backend image failed, try OpenLibrary as fallback
                         const backend = getImageUrl(book.coverImageUrl);
                         const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
-                        
+
                         if (e.target.src === backend && openLib) {
                           e.target.src = openLib;
                           e.target.onerror = null; // Prevent infinite loop
@@ -264,18 +265,18 @@ const BookDetailsPage = () => {
                           className="fixed inset-0 z-40"
                           onClick={() => setShowShelfDropdown(false)}
                         />
-                        
+
                         <div className="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-stone-200 overflow-hidden">
                           <div className="px-2.5 py-1.5 border-b border-stone-100 bg-stone-50 flex items-center justify-between">
                             <p className="text-xs font-medium text-stone-600">Choose a shelf</p>
-                            <button 
+                            <button
                               onClick={() => setShowShelfDropdown(false)}
                               className="text-stone-400 hover:text-stone-600"
                             >
                               <X className="w-3 h-3" />
                             </button>
                           </div>
-                          
+
                           <div className="max-h-40 overflow-y-auto">
                             {(() => {
                               if (shelves.length === 0) {
@@ -286,16 +287,16 @@ const BookDetailsPage = () => {
                                   </div>
                                 );
                               }
-                              
+
                               const defaultShelfNames = ['Want to Read', 'Currently Reading', 'Read'];
-                              
+
                               const sortedShelves = [...shelves].sort((a, b) => {
                                 const aIsDefault = a.isDefault === true || defaultShelfNames.includes(a.name);
                                 const bIsDefault = b.isDefault === true || defaultShelfNames.includes(b.name);
-                                
+
                                 if (aIsDefault && !bIsDefault) return -1;
                                 if (!aIsDefault && bIsDefault) return 1;
-                                
+
                                 if (aIsDefault && bIsDefault) {
                                   const aIndex = defaultShelfNames.indexOf(a.name);
                                   const bIndex = defaultShelfNames.indexOf(b.name);
@@ -303,14 +304,14 @@ const BookDetailsPage = () => {
                                   if (aIndex !== -1) return -1;
                                   if (bIndex !== -1) return 1;
                                 }
-                                
+
                                 return a.name.localeCompare(b.name);
                               });
-                              
+
                               return sortedShelves.map((shelf) => {
                                 const isDefault = shelf.isDefault === true || defaultShelfNames.includes(shelf.name);
                                 const Icon = isDefault ? CheckCircle : Folder;
-                                
+
                                 return (
                                   <button
                                     key={shelf.id}

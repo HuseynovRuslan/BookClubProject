@@ -1,11 +1,11 @@
 ﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Library, 
-  BookOpen, 
-  Loader, 
-  Plus, 
-  ChevronRight, 
+import {
+  Library,
+  BookOpen,
+  Loader,
+  Plus,
+  ChevronRight,
   X,
   BookMarked,
   ArrowLeft
@@ -30,7 +30,7 @@ const MyShelvesPage = () => {
     try {
       setLoading(true);
       const response = await getUserShelves();
-      
+
       if (Array.isArray(response)) {
         setShelves(response);
       } else if (response.items) {
@@ -116,7 +116,7 @@ const MyShelvesPage = () => {
                 </p>
               </div>
             </div>
-            
+
             <button
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-medium rounded-xl transition-colors"
@@ -140,7 +140,7 @@ const MyShelvesPage = () => {
             <p className="text-stone-500 mb-6 text-center max-w-sm">
               Create your first shelf to start organizing your books
             </p>
-            <button 
+            <button
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white font-medium rounded-xl transition-colors"
             >
@@ -155,7 +155,7 @@ const MyShelvesPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {shelves.map((shelf) => {
               const bookCount = shelf.bookCount || shelf.books?.length || 0;
-              
+
               return (
                 <div
                   key={shelf.id}
@@ -182,7 +182,7 @@ const MyShelvesPage = () => {
                           </p>
                         </div>
                       </div>
-                      
+
                       {shelf.isDefault && (
                         <span className="text-xs font-medium bg-stone-100 text-stone-600 px-2 py-1 rounded-md shrink-0">
                           Default
@@ -201,7 +201,7 @@ const MyShelvesPage = () => {
                             const openLibraryCover = getOpenLibraryCover(book.isbn || book.ISBN);
                             // Prioritize backend URL (our uploaded images) over OpenLibrary
                             const coverImage = backendCover || openLibraryCover;
-                            
+
                             return (
                               <div
                                 key={book.id}
@@ -212,12 +212,13 @@ const MyShelvesPage = () => {
                                   <img
                                     src={coverImage}
                                     alt={book.title}
+                                    loading="lazy"
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
                                       const currentSrc = e.target.src;
                                       const backend = getImageUrl(book.coverImageUrl);
                                       const openLib = getOpenLibraryCover(book.isbn || book.ISBN);
-                                      
+
                                       // If backend failed, try OpenLibrary as fallback
                                       if (currentSrc === backend && openLib) {
                                         e.target.src = openLib;
@@ -256,7 +257,7 @@ const MyShelvesPage = () => {
                             </div>
                           )}
                         </div>
-                        
+
                         <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-stone-600 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     ) : (
@@ -269,7 +270,7 @@ const MyShelvesPage = () => {
                 </div>
               );
             })}
-            
+
             {/* Create New Shelf Card */}
             <div
               onClick={() => setShowCreateModal(true)}
@@ -303,15 +304,15 @@ const MyShelvesPage = () => {
 
       {/* Create Shelf Modal */}
       {showCreateModal && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={() => !creating && (setShowCreateModal(false), setNewShelfName(''))}
         >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm"></div>
-          
+
           {/* Modal */}
-          <div 
+          <div
             onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
           >
@@ -334,7 +335,7 @@ const MyShelvesPage = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            
+
             {/* Body */}
             <div className="p-5">
               <label className="block text-sm font-medium text-stone-600 mb-2">
