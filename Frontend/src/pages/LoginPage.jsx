@@ -46,7 +46,7 @@ const LoginPage = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
@@ -54,7 +54,7 @@ const LoginPage = () => {
     setApiError('');
     const result = await login(data.usernameOrEmail, data.password);
     if (result.success) {
-      navigate('/');
+      navigate('/dashboard');
     } else {
       setApiError(result.message || 'Login failed. Please check your credentials.');
     }

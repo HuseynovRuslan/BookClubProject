@@ -1,5 +1,5 @@
 ﻿import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { SignalRProvider } from './context/SignalRContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import EmailVerificationBanner from './components/EmailVerificationBanner';
@@ -35,7 +35,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 // Layout component to show banner on relevant pages
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const hideOnRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+  const hideOnRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
   const isAdminRoute = location.pathname.startsWith('/admin');
   const showBanner = !hideOnRoutes.includes(location.pathname) && !isAdminRoute;
 
@@ -47,16 +47,6 @@ const AppLayout = ({ children }) => {
   );
 };
 
-const HomeRoute = () => {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return <div className="min-h-screen bg-slate-950" />;
-  }
-
-  return isAuthenticated ? <HomePage /> : <LandingPage />;
-};
-
 function App() {
   return (
     <BrowserRouter>
@@ -65,7 +55,7 @@ function App() {
           <AppLayout>
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<HomeRoute />} />
+              <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -74,6 +64,14 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmailPage />} />
 
               {/* Protected Routes - Require Authentication AND Email Verification */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <HomePage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/books"
                 element={

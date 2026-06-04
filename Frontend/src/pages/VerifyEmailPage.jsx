@@ -28,7 +28,7 @@ const VerifyEmailPage = () => {
         if (result.success && result.emailConfirmed) {
             toast.success('Email verified! Redirecting...');
             setTimeout(() => {
-                navigate('/');
+                navigate('/dashboard');
             }, 1000);
         } else {
             toast.warning('Email not verified yet. Please check your inbox.');
