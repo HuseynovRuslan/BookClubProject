@@ -60,6 +60,8 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-https://bookla.org}
     container_name: bookclub-frontend
     restart: always
     # Ports removed - accessed via Nginx Gateway
