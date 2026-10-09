@@ -210,7 +210,7 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
       </button>
 
       {isOpen && (
-        <aside aria-label="Bildirişlər" className="notification-panel">
+        <section aria-label="Bildirişlər" className="notification-panel">
           <div className="panel-head">
             <strong>Bildirişlər</strong>
             <button aria-label="Bildirişləri bağla" onClick={() => setIsOpen(false)} type="button">
@@ -271,7 +271,7 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
               Hamısını oxunmuş et
             </Button>
           )}
-        </aside>
+        </section>
       )}
     </div>
   );
