@@ -15,6 +15,7 @@ import {
   PollCard,
   ProgressBlock,
   SampleCard,
+  StatusTag,
   focusRing,
   focusRingOnDark,
   forestButton,
@@ -106,11 +107,13 @@ const Header = () => {
           <Link to="/login" className={`hidden text-[13px]/[16px] whitespace-nowrap md:block ${textLink} ${focusRing}`}>
             Daxil ol
           </Link>
+          {/* Figma: "Klub yarat". Clubs aren't in the app yet, so the button names what /register does;
+              min-width keeps the Figma button size. */}
           <Link
             to="/register"
-            className={`flex h-[42px] items-center justify-center rounded-[8px] bg-bookla-forest px-[18px] text-[13px]/[16px] font-semibold whitespace-nowrap text-bookla-paper max-[340px]:hidden ${forestButton} ${focusRing}`}
+            className={`flex h-[42px] min-w-[100px] items-center justify-center rounded-[8px] bg-bookla-forest px-[18px] text-[13px]/[16px] font-semibold whitespace-nowrap text-bookla-paper max-[340px]:hidden ${forestButton} ${focusRing}`}
           >
-            Klub yarat
+            Qoşul
           </Link>
           <button
             ref={menuButtonRef}
@@ -143,13 +146,13 @@ const Header = () => {
           <Link to="/login" className={`md:hidden ${textLink} ${focusRing}`} onClick={() => setMenuOpen(false)}>
             Daxil ol
           </Link>
-          {/* Shown only where the header is too narrow for the "Klub yarat" button (< 340px). */}
+          {/* Shown only where the header is too narrow for the "Qoşul" button (< 340px). */}
           <Link
             to="/register"
             className={`font-semibold min-[340px]:hidden ${textLink} ${focusRing}`}
             onClick={() => setMenuOpen(false)}
           >
-            Klub yarat
+            Qoşul
           </Link>
         </nav>
       )}
@@ -222,11 +225,12 @@ const Hero = () => (
           Öz kitab klubunu yarat, dostlarınla birlikdə oxu, fikirlərini paylaş və yeni hekayələr kəşf et.
         </p>
         <div className="flex w-full flex-col items-start gap-3 md:flex-row">
+          {/* Figma: "Pulsuz klub yarat"; relabelled like the header button, at the Figma width. */}
           <Link
             to="/register"
-            className={`flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] bg-bookla-forest px-[22px] md:w-auto ${forestButton} ${focusRing}`}
+            className={`flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] bg-bookla-forest px-[22px] md:w-auto md:min-w-[189.03125px] ${forestButton} ${focusRing}`}
           >
-            <span className="text-[14px]/[17px] font-semibold whitespace-nowrap text-bookla-paper">Pulsuz klub yarat</span>
+            <span className="text-[14px]/[17px] font-semibold whitespace-nowrap text-bookla-paper">Pulsuz qoşul</span>
             <Icon src={icons.arrowUpRight17Light} width={17} />
           </Link>
           <Link
@@ -259,6 +263,7 @@ const steps = [
   {
     number: '01',
     title: 'Klubunu yarat',
+    status: 'soon',
     text: 'Dostlarını dəvət et və öz oxu icmanı formalaşdır.',
     preview: (
       <SampleCard>
@@ -276,12 +281,15 @@ const steps = [
   {
     number: '02',
     title: 'Kitabını seç',
+    status: 'soon',
     text: 'Təkliflər paylaşın, səsvermə keçirin və növbəti kitabı birlikdə seçin.',
     preview: <PollCard />,
   },
   {
     number: '03',
     title: 'Birlikdə oxuyun',
+    // Book reviews and comments exist; reading progress and notes don't have a UI yet.
+    status: 'partial',
     text: 'Oxu irəliləyişini izləyin, qeydlər paylaşın və kitabları müzakirə edin.',
     preview: <DiscussionCard />,
   },
@@ -312,7 +320,10 @@ const HowItWorks = () => (
         >
           <div className="flex w-full flex-col items-start gap-3 overflow-hidden md:min-w-px md:flex-1 xl:w-full xl:flex-none">
             <p className="font-lora text-[31px]/[40px] whitespace-nowrap text-bookla-clay">{step.number}</p>
-            <h3 className="font-lora text-[25px]/[32px] whitespace-nowrap">{step.title}</h3>
+            <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
+              <h3 className="font-lora text-[25px]/[32px] whitespace-nowrap">{step.title}</h3>
+              <StatusTag status={step.status} className="mt-1.5" />
+            </div>
             <p className="min-h-[74px] w-full text-[15px]/[25px] text-bookla-muted md:min-h-[50px] xl:min-h-[74px]">
               {step.text}
             </p>
@@ -383,12 +394,8 @@ const ClubCard = ({ club }) => (
       </div>
       <div className="flex w-full items-center justify-between pt-1">
         <AvatarStack group="club" size={26} />
-        <Link to="/register" className={`group flex items-center gap-2.5 rounded-[2px] ${focusRing}`}>
-          <span className={`text-[12px]/[15px] font-semibold whitespace-nowrap ${textLink} group-hover:underline`}>
-            Kluba bax
-          </span>
-          <Icon src={icons.arrowUpRight16} width={16} />
-        </Link>
+        {/* Figma: "Kluba bax ↗". These are sample clubs and clubs aren't in the app yet. */}
+        <StatusTag status="soon" label="Klublar tezliklə" />
       </div>
     </div>
   </article>
@@ -429,6 +436,7 @@ const featureBasis = {
 const features = [
   {
     title: 'Kitab rəfi',
+    status: 'available',
     text: 'Oxuduğun və oxumaq istədiyin kitabları bir yerdə saxla.',
     tint: 'bg-bookla-sage',
     basis: featureBasis.first,
@@ -448,6 +456,7 @@ const features = [
   },
   {
     title: 'Birgə səsvermə',
+    status: 'soon',
     text: 'Növbəti kitabı klub üzvləri ilə birlikdə seç.',
     tint: 'bg-bookla-sand',
     basis: featureBasis.rest,
@@ -455,6 +464,7 @@ const features = [
   },
   {
     title: 'Oxu irəliləyişi',
+    status: 'soon',
     text: 'Fəsillər üzrə irəliləyişi izləyin.',
     tint: 'bg-bookla-sand',
     basis: featureBasis.rest,
@@ -473,6 +483,8 @@ const features = [
   },
   {
     title: 'Qeydlər və sitatlar',
+    // Quotes exist; personal notes don't.
+    status: 'partial',
     text: 'Sevdiyin fikirləri yadda saxla və paylaş.',
     tint: 'bg-bookla-blush',
     basis: featureBasis.third,
@@ -491,6 +503,8 @@ const features = [
   },
   {
     title: 'Kitab müzakirələri',
+    // Book reviews and comments exist; club discussions don't.
+    status: 'partial',
     text: 'Fikirlərini klub üzvləri ilə bölüş.',
     tint: 'bg-bookla-sand',
     basis: featureBasis.third,
@@ -498,6 +512,7 @@ const features = [
   },
   {
     title: 'Klub görüşləri',
+    status: 'soon',
     text: 'Növbəti görüşlərinizi planlaşdırın.',
     tint: 'bg-bookla-sage',
     basis: featureBasis.third,
@@ -522,7 +537,10 @@ const ReadingTools = () => (
           className={`flex min-w-px basis-full flex-col items-start gap-[22px] overflow-hidden rounded-[16px] p-5 md:p-6 ${feature.tint} ${feature.basis}`}
         >
           <div className="flex min-h-[100px] w-full flex-col items-start gap-2.5 overflow-hidden xl:min-h-[105px]">
-            <h3 className="w-full font-lora text-[25px]/[31px]">{feature.title}</h3>
+            <div className="flex w-full flex-wrap items-start gap-x-2 gap-y-1">
+              <h3 className="min-w-0 font-lora text-[25px]/[31px]">{feature.title}</h3>
+              <StatusTag status={feature.status} className="mt-[5.5px]" />
+            </div>
             <p className="w-full text-[13px]/[21px] text-bookla-muted">{feature.text}</p>
           </div>
           <div aria-hidden="true" className="flex min-h-[176px] w-full flex-col items-start justify-center">
@@ -583,7 +601,7 @@ const ProductPreview = () => (
     </div>
 
     <div className="flex w-full flex-col items-start overflow-hidden xl:flex-row">
-      <aside className="hidden w-[190px] shrink-0 flex-col items-start gap-9 self-stretch overflow-hidden bg-bookla-paper p-5 shadow-[inset_-1px_0_0_0_var(--color-bookla-line)] xl:flex">
+      <div className="hidden w-[190px] shrink-0 flex-col items-start gap-9 self-stretch overflow-hidden bg-bookla-paper p-5 shadow-[inset_-1px_0_0_0_var(--color-bookla-line)] xl:flex">
         <Logo />
         <div className="flex w-full flex-col items-start gap-2 overflow-hidden">
           {sideMenu.map((item) => (
@@ -604,7 +622,7 @@ const ProductPreview = () => (
           <p className="text-[11px]/[13px] whitespace-nowrap">Aysel Məmmədova</p>
           <p className="text-[10px]/[12px] whitespace-nowrap text-bookla-muted">Nümunə hesab</p>
         </div>
-      </aside>
+      </div>
 
       <div className="flex w-full flex-col items-start gap-4 overflow-hidden bg-bookla-paper p-4 md:p-6 xl:hidden">
         <div className="flex w-full items-center justify-between overflow-hidden">
@@ -849,16 +867,28 @@ const Footer = () => (
 const pageTitle = 'Bookla — Hər kitab yeni bir söhbətin başlanğıcıdır.';
 
 const LandingPage = () => {
+  // The rest of the app is in English, so the Azerbaijani document language is set only while this
+  // page is shown.
   useEffect(() => {
+    const root = document.documentElement;
     const previousTitle = document.title;
+    const previousLang = root.lang;
     document.title = pageTitle;
+    root.lang = 'az';
     return () => {
       document.title = previousTitle;
+      root.lang = previousLang;
     };
   }, []);
 
+  // Lora's Azerbaijani "locl" glyphs have different widths than the ones Figma renders, so locale
+  // substitutions are turned off to keep the Figma text metrics.
   return (
-    <div id="top" className="min-h-screen bg-bookla-paper font-inter text-bookla-forest antialiased">
+    <div
+      id="top"
+      lang="az"
+      className="min-h-screen bg-bookla-paper font-inter text-bookla-forest antialiased [font-feature-settings:'locl'_0]"
+    >
       <Header />
       <main>
         <Hero />

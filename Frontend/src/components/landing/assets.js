@@ -1,7 +1,6 @@
 // Static assets exported from the Bookla Figma file (fileKey 8UDMyfuP2zWZIYfEjfRWYR).
 // Icons are the exact SVG exports; images are renders of the Figma image layers.
 
-import arrowUpRight16 from '../../assets/landing/icons/arrow-up-right-16.svg';
 import arrowUpRight17 from '../../assets/landing/icons/arrow-up-right-17.svg';
 import arrowUpRight17Light from '../../assets/landing/icons/arrow-up-right-17-light.svg';
 import arrowUpRight18 from '../../assets/landing/icons/arrow-up-right-18.svg';
@@ -44,7 +43,6 @@ import readingCircleMobile from '../../assets/landing/images/reading-circle-mobi
 import readingCircleTablet from '../../assets/landing/images/reading-circle-tablet.webp';
 
 export const icons = {
-  arrowUpRight16,
   arrowUpRight17,
   arrowUpRight17Light,
   arrowUpRight18,

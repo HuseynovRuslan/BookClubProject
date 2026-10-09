@@ -37,9 +37,43 @@ export const Logo = ({ className = '' }) => (
   </span>
 );
 
+// The page is lang="az", where CSS uppercase turns i into İ. Figma renders the eyebrows with English
+// casing (YENI), so the visible copy is uppercased as English and screen readers get the az text.
 export const Eyebrow = ({ children, className = 'text-bookla-forest' }) => (
-  <p className={`text-[11px]/[13px] font-semibold whitespace-nowrap uppercase ${className}`}>{children}</p>
+  <p className={`text-[11px]/[13px] font-semibold whitespace-nowrap ${className}`}>
+    <span className="sr-only">{children}</span>
+    <span aria-hidden="true" lang="en" className="uppercase">
+      {children}
+    </span>
+  </p>
 );
+
+// Not part of the Figma file: marks which advertised features the app already has.
+const statusTags = {
+  available: { label: 'Mövcuddur', dot: 'bg-bookla-forest' },
+  partial: { label: 'Qismən', srLabel: 'Qismən mövcuddur', dot: 'bg-bookla-clay' },
+  soon: { label: 'Tezliklə', dot: 'bg-bookla-muted' },
+};
+
+export const StatusTag = ({ status, label, className = '' }) => {
+  const tag = statusTags[status];
+  const text = label ?? tag.label;
+  return (
+    <span
+      className={`inline-flex h-5 shrink-0 items-center gap-1 rounded-full bg-white px-1.5 text-[10px]/[12px] font-semibold whitespace-nowrap text-bookla-forest ${stroke} ${className}`}
+    >
+      <span aria-hidden="true" className={`size-[6px] shrink-0 rounded-full ${tag.dot}`} />
+      {tag.srLabel && !label ? (
+        <>
+          <span aria-hidden="true">{text}</span>
+          <span className="sr-only">{tag.srLabel}</span>
+        </>
+      ) : (
+        text
+      )}
+    </span>
+  );
+};
 
 export const AvatarStack = ({ group, size }) => (
   <div className="flex shrink-0 items-start">
