@@ -120,6 +120,16 @@ const AppShell = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The profile page announces name/photo changes so the header avatar stays current.
+  useEffect(() => {
+    const reload = () =>
+      getCurrentUserProfile()
+        .then(setProfile)
+        .catch((error) => console.error('Error loading profile:', error));
+    window.addEventListener('bookla:profile-updated', reload);
+    return () => window.removeEventListener('bookla:profile-updated', reload);
+  }, []);
+
   // New notification from SignalR: add it to the open panel and refresh the count.
   useEffect(() => {
     if (!newNotification) return;

@@ -526,6 +526,11 @@
 .bk-app .activity-name:hover { text-decoration: underline; text-underline-offset: 3px; }
 .bk-app .pagination button:disabled { opacity: .35; }
 .bk-app .form-error { margin: 8px 0 0; color: var(--danger); font-size: 12px; }
+.bk-app .modal .form-error { padding: 12px 14px; border-radius: 9px; background: #f6e5df; }
+@media (max-width: 540px) {
+  .bk-app .modal-actions { flex-wrap: wrap; }
+  .bk-app .modal-actions .button { flex: 1 1 auto; }
+}
 @media (max-width: 1080px) {
   .bk-app .nav a { height: 48px; border-bottom: 1px solid var(--line); }
   .bk-app .nav a::after { display: none; }

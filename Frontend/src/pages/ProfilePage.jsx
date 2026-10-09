@@ -520,6 +520,7 @@ const ProfileView = ({ identifier }) => {
 
       await updateUserProfile(payload);
       toast.success('Profil yeniləndi');
+      window.dispatchEvent(new Event('bookla:profile-updated'));
       setProfile((prev) => ({ ...prev, ...profileForm }));
       setEditOpen(false);
     } catch (err) {
@@ -583,6 +584,7 @@ const ProfileView = ({ identifier }) => {
       setUploadingPicture(true);
       await updateProfilePicture(file);
       toast.success('Profil şəkli yeniləndi');
+      window.dispatchEvent(new Event('bookla:profile-updated'));
       await fetchAllData({ silent: true });
     } catch (err) {
       console.error('Upload error:', err);
@@ -623,6 +625,7 @@ const ProfileView = ({ identifier }) => {
       setDeletingPicture(true);
       await deleteProfilePicture();
       toast.success('Profil şəkli silindi');
+      window.dispatchEvent(new Event('bookla:profile-updated'));
       setProfile((prev) => ({ ...prev, profilePictureUrl: null }));
     } catch {
       toast.error('Şəkli silmək alınmadı');

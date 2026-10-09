@@ -156,7 +156,6 @@
 .bk-app .book-picker-results strong { overflow: hidden; color: var(--forest); font-family: var(--font-semibold); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
 .bk-app .book-picker-results small { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .bk-app .book-picker-status { margin: 8px 0 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--muted); font-size: 12px; text-align: center; }
-.bk-app .modal .form-error { padding: 12px 14px; border-radius: 9px; background: #f6e5df; }
 
 /* ---- Responsive ------------------------------------------------------------------------------- */
 @media (max-width: 1080px) {
@@ -174,6 +173,4 @@
   .bk-app .current-shelf-note { margin: 4px 0 14px; }
   .bk-app .dash-panel, .bk-app .dash-shortcuts { padding: 25px; }
   .bk-app .quote-nav button { width: 40px; height: 40px; }
-  .bk-app .modal-actions { flex-wrap: wrap; }
-  .bk-app .modal-actions .button { flex: 1 1 auto; }
 }
