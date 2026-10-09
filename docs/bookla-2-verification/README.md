@@ -42,6 +42,52 @@ Empty and error states of all ten routes (1440):
 
 ![Dashboard, Make vs app, 1440](dashboard-1440.jpg)
 
+## Integration test against the real backend
+
+The ten screens were also run end to end against the **real ASP.NET backend** (this repository's
+`Backend/`, unchanged) in an isolated local staging environment. Nothing touched production.
+
+- **Stack:** the backend was built with the .NET 8 SDK and started with `RunMigrations=true`, so the
+  real EF migrations and seeders ran (34 books). It used a fresh SQL Server database in a local
+  `mcr.microsoft.com/azure-sql-edge` container, a local SMTP sink (`EmailSettings:UseSmtp4Dev`) and a
+  throwaway JWT secret. The frontend was a production build (`VITE_API_URL=http://localhost:7050`)
+  served on `localhost:5175`. OpenAI had a placeholder key, because the API refuses to start without
+  one, so AI recommendations were not tested.
+- **Method:** Playwright drove two fresh users in two browser sessions through the real UI.
+  - Every API response with status 400 or higher, every failed request, and every console or page
+    error was recorded.
+  - Covered: registration, verification email, login, the reading challenge, catalogue paging and
+    search, book facts, reading status, shelves (create, add, rename, remove a book, delete), and
+    reviews (create, edit).
+  - Also covered: review comments, quotes, follow, feed likes and comments (edit, delete), and
+    notifications (live push, open, mark all read, delete).
+  - Also covered: profile edit and photo, password change (wrong and correct), other users'
+    shelves (read-only), live two-way messages (edit, delete), logout, and all routes at 390 px.
+- **Result:** 50/50 steps passed. The only 4xx response was the deliberate wrong-password check.
+  Before the fixes, the run found these real problems, now fixed in this PR:
+  1. The book page offered a review like button, but `/reviews/get-all-reviews` never reports likes
+     (always 0 and not liked), so a second click removed the stored like. The button is gone from
+     the book page. Review likes stay on the feed, whose endpoint reports them. The comment count
+     appears once the comments are loaded.
+  2. After reading or deleting notifications, the next live notification could leave the bell empty
+     until a reload. The bell's count is now kept in sync.
+  3. Opening a book from a scrolled catalogue landed mid-page under the sticky header. New pages now
+     open at the top.
+  4. Password errors read a response shape the API never sends, so a wrong current password showed a
+     generic failure. It now says "Cari şifrə yanlışdır", and the API's rules are checked first.
+  5. `/profile/<id>` links (from notifications and comments) logged a 404 before falling back. Ids
+     are now looked up by id first.
+- **Backend behaviour noted, not changed** (the backend is out of scope):
+  - Review likes create no notification (`ReviewLike` exists but is never emitted). Feed likes on
+    quotes create none either.
+  - Unread notifications of the same kind and target are merged for 5 minutes.
+  - Registration sends no email; users request it from `/verify-email`.
+  - The API does not start without an OpenAI key.
+
+![Real backend, 1440](staging-real-backend-1440.jpg)
+
+![Real backend, 390](staging-real-backend-390.jpg)
+
 ## Where the app differs from Make, and why
 
 Make's sample content is not reproduced. Anything Make shows that the API has no data for is left
