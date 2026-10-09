@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import '@fontsource-variable/inter';
 import '@fontsource-variable/lora';
 import '@fontsource-variable/lora/wght-italic.css';
@@ -47,6 +47,7 @@ const AppShell = () => {
   } = useSignalR();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const navigationType = useNavigationType();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -69,6 +70,12 @@ const AppShell = () => {
     setMenuOpen(false);
     setAccountOpen(false);
   }, [pathname]);
+
+  // A newly opened page starts at the top (the router keeps the previous page's scroll position);
+  // Back/Forward keep the position the browser restores.
+  useEffect(() => {
+    if (navigationType !== 'POP') window.scrollTo(0, 0);
+  }, [pathname, navigationType]);
 
   useEffect(() => {
     if (!accountOpen && !menuOpen) return undefined;
@@ -181,7 +188,11 @@ const AppShell = () => {
             ))}
           </nav>
           <div className="top-actions">
-            <NotificationDropdown onNewNotification={handleNewNotification} unreadCount={notificationUnreadCount} />
+            <NotificationDropdown
+              onNewNotification={handleNewNotification}
+              onUnreadCountChange={setNotificationCount}
+              unreadCount={notificationUnreadCount}
+            />
             <div className="contents" ref={accountRef}>
               <button
                 aria-expanded={accountOpen}

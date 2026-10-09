@@ -23,7 +23,7 @@ const actionText = {
 };
 
 // Bell button and notification panel of the application header (Make "notification-panel").
-const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotification }) => {
+const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotification, onUnreadCountChange }) => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -71,6 +71,13 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
     setUnreadCount(initialUnreadCount);
   }, [initialUnreadCount]);
 
+  // Reading or deleting here also updates the shared count; otherwise the next live notification can set
+  // the shared count back to its old value, which is "no change" for React, and the bell would stay empty.
+  const changeUnread = (next) => {
+    setUnreadCount(next);
+    onUnreadCountChange?.(next);
+  };
+
   const fetchNotifications = async (pageNum) => {
     try {
       setLoading(true);
@@ -109,7 +116,7 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
         setNotifications(prev =>
           prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
         );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        changeUnread(Math.max(0, unreadCount - 1));
       }
 
       setIsOpen(false);
@@ -152,7 +159,7 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
     try {
       await markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      changeUnread(0);
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
@@ -164,7 +171,7 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
       const deleted = notifications.find(n => n.id === notificationId);
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       if (deleted && !deleted.isRead) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        changeUnread(Math.max(0, unreadCount - 1));
       }
     } catch (error) {
       console.error('Error deleting notification:', error);
