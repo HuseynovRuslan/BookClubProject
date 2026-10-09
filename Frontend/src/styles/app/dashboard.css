@@ -1,0 +1,179 @@
+/* Dashboard (/dashboard) additions to the Bookla 2.0 design system (src/styles/bookla-app.css).
+   Only what the Make classes do not cover: real-data states (loading, empty, error), the live challenge
+   ring, the quotes carousel, recent conversations and the dialogs used on this page. */
+
+/* ---- Shared bits ---------------------------------------------------------------------------- */
+.bk-app .dash-skeleton { display: block; border-radius: 6px; background: linear-gradient(100deg, var(--sand) 35%, #f6f4ed 50%, var(--sand) 65%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+.bk-app .dash-note { margin: 0; color: var(--muted); font-size: 13px; }
+.bk-app .dash-error { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); color: var(--danger); font-size: 13px; }
+.bk-app .dash-error p { margin: 0; }
+.bk-app .book-cover.cover-thumb { width: 44px; padding: 0; border-radius: 3px 5px 5px 3px; box-shadow: 0 4px 10px rgba(24, 61, 53, .14); }
+.bk-app .book-cover.cover-thumb::before, .bk-app .book-cover.cover-thumb::after,
+.bk-app .book-cover.cover-thumb strong, .bk-app .book-cover.cover-thumb small,
+.bk-app .book-cover.cover-thumb .cover-mark, .bk-app .book-cover.cover-thumb i { display: none; }
+
+/* ---- Intro ------------------------------------------------------------------------------------ */
+.bk-app .dashboard-intro form { margin: 0; }
+
+/* ---- Currently reading ------------------------------------------------------------------------ */
+.bk-app .current-book h3 a { color: inherit; text-decoration: none; }
+.bk-app .current-book h3 a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.bk-app .current-cover { display: block; border-radius: 5px 9px 9px 5px; }
+.bk-app .current-cover:hover .book-cover { transform: translateY(-5px) rotate(.3deg); }
+.bk-app .current-shelf-note { display: block; margin: 18px 0 22px; color: var(--muted); font-size: 12px; }
+.bk-app .current-shelf-note strong { color: var(--forest); font-family: var(--font-semibold); font-weight: 400; }
+.bk-app .current-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; }
+.bk-app .reading-now-empty > p { max-width: 520px; margin-bottom: 26px; color: var(--muted); }
+.bk-app .reading-now-loading { display: grid; grid-template-columns: 155px 1fr; align-items: center; gap: clamp(25px, 4vw, 52px); }
+.bk-app .reading-now-loading > .dash-skeleton { aspect-ratio: 2 / 3; }
+.bk-app .reading-now-loading > div { display: grid; gap: 12px; }
+.bk-app .reading-now-loading > div .dash-skeleton { height: 14px; }
+.bk-app .reading-now-loading > div .dash-skeleton:nth-child(2) { width: 60%; height: 26px; }
+.bk-app .reading-now-loading > div .dash-skeleton:nth-child(3) { width: 85%; }
+
+/* ---- Yearly challenge (real numbers) ---------------------------------------------------------- */
+.bk-app .challenge-ring.is-live { position: relative; border-color: transparent; }
+.bk-app .challenge-ring.is-live::before { position: absolute; inset: -8px; border-radius: 50%; background: conic-gradient(var(--terracotta) var(--progress, 0%), rgba(255, 255, 255, .16) 0); content: ""; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7.5px)); }
+.bk-app .challenge-ring.is-live > * { position: relative; }
+.bk-app .challenge-ring.is-empty, .bk-app .challenge-ring.is-loading { border-color: rgba(255, 255, 255, .16); }
+.bk-app .challenge-ring.is-empty strong { font-size: 34px; }
+.bk-app .challenge .progress i { transition: width 400ms ease; }
+.bk-app .challenge > .challenge-books { display: flex; align-items: flex-end; justify-content: center; margin: 18px 0 0; padding: 0; list-style: none; }
+.bk-app .challenge-books li { margin: 0 2px; }
+.bk-app .challenge-books .book-cover.cover-thumb { width: 30px; box-shadow: 0 4px 10px rgba(0, 0, 0, .25); }
+.bk-app .challenge-books .challenge-more { display: grid; min-width: 34px; height: 45px; place-items: center; margin-left: 10px; color: #dce8e2; font-size: 11px; }
+.bk-app .challenge-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 20px; margin-top: 22px; }
+.bk-app .challenge .button-quiet { color: white; }
+.bk-app .challenge .button-secondary { border-color: transparent; }
+.bk-app .challenge :focus-visible { outline-color: white; }
+.bk-app .challenge .challenge-error { color: #f3d6cc; }
+.bk-app .challenge-dialog .chips { margin-top: 16px; }
+
+/* ---- Book rows -------------------------------------------------------------------------------- */
+.bk-app .book-row-empty { padding: 34px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+/* ---- Quotes ----------------------------------------------------------------------------------- */
+.bk-app .quote-card { display: flex; min-width: 0; flex-direction: column; }
+.bk-app .quote-card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.bk-app .quote-card-head .eyebrow { margin: 0; }
+.bk-app .quote-nav { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 11px; }
+.bk-app .quote-nav button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid rgba(24, 61, 53, .2); border-radius: 50%; background: transparent; color: var(--forest); }
+.bk-app .quote-nav button:hover { background: rgba(255, 253, 248, .6); }
+.bk-app .quote-card blockquote { overflow-wrap: anywhere; }
+.bk-app .quote-card blockquote.is-long { font-size: clamp(20px, 2.1vw, 26px); }
+.bk-app .quote-card > p.quote-source a { color: var(--forest); font-family: var(--font-semibold); text-decoration: none; }
+.bk-app .quote-card > p.quote-source a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bk-app .quote-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 20px; padding: 0; list-style: none; }
+.bk-app .quote-tags li { padding: 4px 10px; border-radius: 99px; background: rgba(255, 253, 248, .6); color: var(--forest); font-size: 11px; }
+.bk-app .quote-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: auto; padding-top: 18px; border-top: 1px solid rgba(24, 61, 53, .14); }
+.bk-app .quote-by { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
+.bk-app .quote-by > span { display: grid; min-width: 0; font-size: 12px; line-height: 1.35; }
+.bk-app .quote-by a { overflow: hidden; color: var(--forest); font-family: var(--font-semibold); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .quote-by a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bk-app .quote-by small { color: var(--muted); font-size: 11px; }
+.bk-app .quote-actions { display: flex; gap: 6px; }
+.bk-app .quote-action { display: inline-flex; min-width: 38px; height: 38px; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; border-radius: 99px; background: rgba(255, 253, 248, .6); color: var(--forest); font-family: var(--font-semibold); font-size: 12px; }
+.bk-app .quote-action:hover { background: var(--white); }
+.bk-app .quote-action.icon-only { width: 38px; padding: 0; }
+.bk-app .quote-action[aria-pressed="true"] { background: var(--terracotta-dark); color: white; }
+.bk-app .quote-action[aria-pressed="true"] .icon { fill: currentColor; }
+.bk-app .quote-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 26px; }
+.bk-app .quote-card-empty { margin: 25px 0 6px; }
+.bk-app .quote-card-empty h3 { font-family: "Lora:Italic", Lora, serif; font-size: clamp(22px, 2.4vw, 28px); font-weight: 400; }
+.bk-app .quote-card-empty p { margin: 0; color: var(--muted); font-size: 13px; }
+.bk-app .quote-card-loading { display: grid; gap: 14px; margin: 30px 0 10px; }
+.bk-app .quote-card-loading .dash-skeleton { height: 22px; background-color: rgba(255, 253, 248, .5); }
+.bk-app .quote-card-loading .dash-skeleton:nth-child(2) { width: 80%; }
+.bk-app .quote-card-loading .dash-skeleton:nth-child(3) { width: 45%; height: 12px; }
+.bk-app .quote-card .dash-error { margin: 25px 0 0; background: rgba(255, 253, 248, .6); }
+
+/* ---- Social preview --------------------------------------------------------------------------- */
+.bk-app .social-preview { min-width: 0; }
+.bk-app .social-preview .section-heading { margin-bottom: 18px; }
+.bk-app .social-preview .activity p a:not(.activity-name) { color: var(--forest); text-decoration: underline; text-decoration-color: rgba(24, 61, 53, .3); text-underline-offset: 3px; }
+.bk-app .social-preview .empty-state, .bk-app .dash-panel .empty-state { min-height: 0; margin: 10px auto 0; padding: 20px 0 0; }
+.bk-app .social-preview .empty-state h3, .bk-app .dash-panel .empty-state h3 { font-size: 22px; }
+.bk-app .social-preview .empty-books, .bk-app .dash-panel .empty-books { height: 62px; margin-bottom: 18px; }
+.bk-app .dash-activity-loading { display: grid; gap: 22px; padding: 12px 0; }
+.bk-app .dash-activity-loading > div { display: grid; grid-template-columns: 36px 1fr; align-items: center; gap: 12px; }
+.bk-app .dash-activity-loading > div > .dash-skeleton:first-child { height: 36px; border-radius: 50%; }
+.bk-app .dash-activity-loading > div > .dash-skeleton:last-child { width: 75%; height: 12px; }
+
+/* ---- Conversations and shortcuts -------------------------------------------------------------- */
+.bk-app .dash-extras { display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; }
+.bk-app .dash-panel { min-width: 0; padding: clamp(28px, 4vw, 52px); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--white); }
+.bk-app .dash-panel .section-heading { margin-bottom: 18px; }
+.bk-app .dash-unread { margin: -6px 0 14px; color: var(--muted); font-size: 12px; }
+.bk-app .dash-unread strong { color: var(--terracotta-dark); font-family: var(--font-semibold); font-weight: 400; }
+.bk-app .dash-conversations { margin: 0; padding: 0; list-style: none; }
+.bk-app .dash-conversations li + li { border-top: 1px solid var(--line); }
+.bk-app .dash-conversation { display: flex; align-items: center; gap: 12px; margin: 0 -10px; padding: 14px 10px; border-radius: var(--radius-sm); color: inherit; text-decoration: none; }
+.bk-app .dash-conversation:hover { background: var(--cream); }
+.bk-app .dash-conversation > span { display: grid; min-width: 0; flex: 1; }
+.bk-app .dash-conversation strong { color: var(--forest); font-family: var(--font-semibold); font-size: 13px; font-weight: 400; }
+.bk-app .dash-conversation small { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .dash-conversation time { flex: 0 0 auto; color: var(--muted); font-size: 11px; }
+.bk-app .dash-conversation .nav-badge { flex: 0 0 auto; }
+.bk-app .dash-conversation.is-unread small { color: var(--ink); }
+.bk-app .dash-shortcuts { min-width: 0; padding: clamp(28px, 4vw, 52px); border-radius: var(--radius-lg); background: var(--sage); }
+.bk-app .dash-shortcuts .section-heading { margin-bottom: 18px; }
+.bk-app .dash-shortcuts ul { margin: 0; padding: 0; list-style: none; }
+.bk-app .dash-shortcuts li + li { border-top: 1px solid rgba(24, 61, 53, .14); }
+.bk-app .dash-shortcuts a { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 0; color: var(--forest); text-decoration: none; }
+.bk-app .dash-shortcuts a > span { display: grid; }
+.bk-app .dash-shortcuts a strong { font-family: var(--font-semibold); font-size: 14px; font-weight: 400; }
+.bk-app .dash-shortcuts a small { color: var(--muted); font-size: 12px; }
+.bk-app .dash-shortcuts a:hover strong { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- Dialogs ---------------------------------------------------------------------------------- */
+.bk-app .modal.dash-modal-wide { width: min(620px, 100%); }
+.bk-app .modal .progress-label { margin-top: 18px; }
+.bk-app .modal h3.dash-dialog-subtitle { margin: 6px 0 4px; font-size: 17px; }
+.bk-app .dash-book-list { margin: 8px 0 0; padding: 0; list-style: none; }
+.bk-app .dash-book-list a { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 14px; margin: 0 -10px; padding: 10px; border-radius: var(--radius-sm); color: inherit; text-decoration: none; }
+.bk-app .dash-book-list a:hover { background: var(--sand); }
+.bk-app .dash-book-list a > span { display: grid; min-width: 0; }
+.bk-app .dash-book-list strong { overflow: hidden; color: var(--forest); font-family: var(--font-editorial-semibold); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .dash-book-list small { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .dash-check { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: var(--sage); color: var(--forest); }
+.bk-app .dash-dialog-empty { margin: 14px 0 0; padding: 26px; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center; }
+.bk-app .dash-dialog-empty p { margin-bottom: 16px; color: var(--muted); font-size: 13px; }
+.bk-app .modal-actions.is-split { justify-content: space-between; }
+.bk-app .text-field .field-hint { color: var(--muted); font-size: 11px; }
+.bk-app .text-field .field-label-note { color: var(--muted); font-family: var(--font-ui); }
+.bk-app .quote-form textarea { font-family: "Lora:Italic", Lora, serif; font-size: 17px; line-height: 1.5; }
+.bk-app .selected-book { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--ink); font-size: 13px; }
+.bk-app .selected-book .book-cover.cover-thumb { width: 40px; }
+.bk-app .selected-book > span { display: grid; min-width: 0; }
+.bk-app .selected-book strong { overflow: hidden; color: var(--forest); font-family: var(--font-editorial-semibold); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .selected-book small { color: var(--muted); font-size: 12px; }
+.bk-app .selected-book > button { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--sand); color: var(--forest); }
+.bk-app .book-picker-results { max-height: 264px; overflow-y: auto; margin: 8px 0 0; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); list-style: none; }
+.bk-app .book-picker-results button { display: grid; width: 100%; grid-template-columns: 34px 1fr; align-items: center; gap: 12px; padding: 8px; border-radius: 8px; background: none; color: var(--ink); text-align: left; }
+.bk-app .book-picker-results button:hover { background: var(--sand); }
+.bk-app .book-picker-results .book-cover.cover-thumb { width: 34px; }
+.bk-app .book-picker-results button > span { display: grid; min-width: 0; font-size: 13px; }
+.bk-app .book-picker-results strong { overflow: hidden; color: var(--forest); font-family: var(--font-semibold); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .book-picker-results small { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .book-picker-status { margin: 8px 0 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--muted); font-size: 12px; text-align: center; }
+.bk-app .modal .form-error { padding: 12px 14px; border-radius: 9px; background: #f6e5df; }
+
+/* ---- Responsive ------------------------------------------------------------------------------- */
+@media (max-width: 1080px) {
+  .bk-app .book-row-section .loading-books .skeleton-card:nth-child(5) { display: none; }
+  .bk-app .dash-extras { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 780px) {
+  .bk-app .book-row-section .loading-books .skeleton-card:nth-child(4) { display: none; }
+  .bk-app .dash-extras { grid-template-columns: 1fr; }
+  .bk-app .reading-now-loading { grid-template-columns: 100px 1fr; gap: 20px; }
+}
+@media (max-width: 540px) {
+  .bk-app .book-row-section .loading-books .skeleton-card:nth-child(4) { display: block; }
+  .bk-app .current-actions { gap: 8px 18px; }
+  .bk-app .current-shelf-note { margin: 4px 0 14px; }
+  .bk-app .dash-panel, .bk-app .dash-shortcuts { padding: 25px; }
+  .bk-app .quote-nav button { width: 40px; height: 40px; }
+  .bk-app .modal-actions { flex-wrap: wrap; }
+  .bk-app .modal-actions .button { flex: 1 1 auto; }
+}
