@@ -1,6 +1,9 @@
 // Formatting helpers shared by the Bookla 2.0 application screens.
 
-export const openLibraryCover = (isbn) => (isbn ? `https://covers.openlibrary.org/b/isbn/${isbn.replace(/[-\s]/g, '')}-M.jpg` : null);
+// default=false: a 404 instead of a blank 1×1 image when Open Library has no cover, so the
+// typographic cover is shown.
+export const openLibraryCover = (isbn) =>
+  isbn ? `https://covers.openlibrary.org/b/isbn/${isbn.replace(/[-\s]/g, '')}-M.jpg?default=false` : null;
 
 export const bookAuthor = (book) => book?.authorName || book?.author?.name || book?.author || '';
 export const bookGenre = (book) => book?.genres?.[0]?.name || book?.genreName || '';
