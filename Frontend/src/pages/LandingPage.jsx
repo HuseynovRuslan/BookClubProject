@@ -1,104 +1,571 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import '@fontsource-variable/inter';
+import '@fontsource-variable/lora';
+import '@fontsource-variable/lora/wght-italic.css';
+import { SiteFooter, SiteHeader } from '../components/landing/SiteChrome';
+import { books, icons, readingCircle } from '../components/landing/assets';
 import {
-  ArrowRight,
-  BookOpen,
-  CalendarDays,
-  Check,
-  LibraryBig,
-  MessageCircle,
-  Search,
-  Users,
-} from 'lucide-react';
+  AvatarStack,
+  BookCover,
+  DiscussionCard,
+  Eyebrow,
+  Icon,
+  Logo,
+  MeetingCard,
+  PollCard,
+  ProgressBlock,
+  SampleCard,
+  StatusTag,
+  focusRing,
+  focusRingOnDark,
+  forestButton,
+  outlineButton,
+  paperButton,
+  stroke,
+  strokeTop,
+  textLink,
+} from '../components/landing/primitives';
 
-const navLinks = [
-  { label: 'Why it works', href: '#benefits' },
-  { label: 'Inside the club', href: '#inside' },
-  { label: 'Reader notes', href: '#notes' },
-];
+// Layout follows the three Figma frames: base = "Bookla — Mobil" (390),
+// md = "Bookla — Planşet" (768), xl = "Bookla — Masaüstü" (1440).
 
-const benefits = [
-  {
-    icon: BookOpen,
-    title: 'A shared shelf that stays tidy',
-    description:
-      'Keep current reads, next picks, and finished books in one place without turning it into a spreadsheet.',
-    className: 'lg:col-span-7',
-  },
-  {
-    icon: MessageCircle,
-    title: 'Discussions with a little structure',
-    description:
-      'Add prompts, chapter threads, and spoiler-safe notes so the conversation starts naturally.',
-    className: 'lg:col-span-5',
-  },
-  {
-    icon: CalendarDays,
-    title: 'A reading pace people can follow',
-    description:
-      'Set gentle milestones and reminders that help the group keep moving without making reading feel assigned.',
-    className: 'lg:col-span-5',
-  },
-  {
-    icon: Search,
-    title: 'Better ways to choose the next book',
-    description:
-      'Collect suggestions, compare mood and length, then vote before the group chat gets too long.',
-    className: 'lg:col-span-7',
-  },
-];
+const sectionPadding = 'px-6 py-14 md:px-10 md:py-16 xl:p-[88px]';
+const sectionHeading = 'w-full font-lora';
 
-const details = [
-  'Monthly picks with notes and member votes',
-  'Private club rooms for friends, teams, or local groups',
-  'Quote saving for the lines everyone wants to talk about',
-  'Lightweight profiles that show what people actually read',
-];
+const HeroPreview = () => (
+  <div
+    role="img"
+    aria-label="Bookla nümunə görünüşü"
+    className="relative h-[734px] w-full shrink-0 overflow-hidden rounded-[24px] bg-bookla-sage max-[390px]:@container max-[390px]:aspect-[342/734] max-[390px]:h-auto md:h-[614px] xl:w-[624px]"
+  >
+    {/* Absolute composition from Figma; centred when the card is wider than the frame it was drawn in.
+        Below the 390px frame the card keeps its 342×734 proportions and the composition is scaled to
+        fit (tan(atan2(a, b)) = a / b turns the container width into a unitless scale factor). */}
+    <div className="absolute top-0 left-[max(0px,calc(50%-171px))] h-full w-[342px] max-[390px]:h-[734px] max-[390px]:origin-top-left max-[390px]:[scale:min(1,tan(atan2(100cqw,342px)))] md:left-[max(0px,calc(50%-344px))] md:w-[688px] xl:left-0 xl:w-[624px]">
+      <p className="absolute top-5 left-6 text-[9px]/[11px] whitespace-nowrap">
+        BOOKLA · NÜMUNƏ GÖRÜNÜŞ
+      </p>
 
-const testimonials = [
-  {
-    name: 'Leila M.',
-    role: 'Runs a small Sunday book club',
-    quote:
-      'We used to lose track of whose turn it was to pick. Now we keep the list in one place and spend more time talking about the book.',
-  },
-  {
-    name: 'Daniel R.',
-    role: 'Reads with coworkers',
-    quote:
-      'The reminders are useful without being noisy. It feels like a calm place for the group, not another busy feed.',
-  },
-  {
-    name: 'Nina A.',
-    role: 'Member of two clubs',
-    quote:
-      'I like that it does not try too hard. I can see the next meeting, save a note, and check what everyone thought.',
-  },
-];
+      <div className="absolute top-[56px] left-5 md:top-[65px] md:left-[60px]">
+        <BookCover book={books.aliVeNino} size="hero" />
+      </div>
 
-const PhotoPanel = () => (
-  <div className="relative">
-    <div className="absolute -left-4 top-8 hidden h-24 w-24 border border-[#C9A66B]/40 md:block" />
-    <div className="relative overflow-hidden rounded-lg bg-[#2B2A27] shadow-2xl shadow-[#2B2A27]/20 transition-all duration-300 hover:-translate-y-1">
-      <img
-        src="https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=85"
-        alt="A quiet reading room with shelves of books"
-        className="h-[420px] w-full object-cover sm:h-[520px]"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#1F1D1A]/80 via-transparent to-transparent" />
-      <div className="absolute bottom-5 left-5 right-5 rounded-lg border border-white/15 bg-[#1F1D1A]/75 p-4 text-[#F7F0E6] backdrop-blur-md">
-        <p className="text-xs font-medium uppercase tracking-[0.22em] text-[#C9A66B]">
-          This month
+      <div className="absolute top-[70px] left-[180px] flex w-[140px] flex-col items-start gap-2 overflow-hidden md:top-[54px] md:left-[318px] md:w-[255px]">
+        <p className="w-full font-lora text-[20px]/[26px] italic md:text-[25px]/[32px]">
+          Birlikdə oxuduğumuz hekayə.
         </p>
-        <div className="mt-3 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-lg font-semibold tracking-tight">The book everyone is reading</p>
-            <p className="mt-1 text-sm leading-6 text-[#E8DDCB]/80">
-              18 notes saved, 6 chapters left, meeting on Thursday.
+        <p className="text-[10px]/[12px] whitespace-nowrap text-bookla-muted-strong">Azərbaycan ədəbiyyatı</p>
+      </div>
+
+      <div className="absolute top-[202px] left-[82px] flex w-[242px] flex-col items-start gap-3.5 overflow-hidden rounded-[16px] bg-white p-[18px] shadow-[0px_16px_40px_0px_rgba(24,61,53,0.11)] md:top-[158px] md:left-[266px] md:w-[316px] md:p-6">
+        <div className="flex w-full items-start justify-between text-[10px]/[12px] whitespace-nowrap">
+          <p className="text-bookla-muted">OXU KLUBUM</p>
+          <p className="text-bookla-clay-strong">Nümunə</p>
+        </div>
+        <p className="font-lora text-[26px]/[33px] whitespace-nowrap">Səhifə arası</p>
+        <div className="flex w-full items-center gap-3 overflow-hidden">
+          <AvatarStack group="hero" size={28} />
+          <p className="min-w-px flex-1 text-[11px]/[13px] text-bookla-muted">Hazırda: Əli və Nino</p>
+        </div>
+        <ProgressBlock textSize="text-[11px]/[13px] md:text-[12px]/[15px]" fillWidth="w-[128px] md:w-[180px]" />
+        <p className="text-[11px]/[13px] font-medium whitespace-nowrap">8-ci fəsli müzakirə et →</p>
+      </div>
+
+      <div className="absolute top-[429px] left-4 flex w-[240px] items-start overflow-hidden drop-shadow-[0px_16px_20px_rgba(24,61,53,0.11)] md:top-[383px] md:left-6 md:w-[268px]">
+        <PollCard />
+      </div>
+
+      <div className="absolute top-[582px] left-[74px] flex w-[250px] items-start overflow-hidden drop-shadow-[0px_8px_14px_rgba(24,61,53,0.06)] md:top-[446px] md:left-[318px] md:w-[282px]">
+        <MeetingCard />
+      </div>
+    </div>
+  </div>
+);
+
+const Hero = () => (
+  <>
+    <section className="mx-auto flex max-w-[1440px] flex-col items-start justify-center gap-9 overflow-hidden px-6 pt-12 pb-10 md:px-10 xl:flex-row xl:items-center xl:justify-start xl:gap-10 xl:px-[88px] xl:pt-16 xl:pb-14">
+      <div className="flex w-full flex-col items-start gap-6 xl:w-auto xl:max-w-[600px] xl:min-w-0 xl:flex-1">
+        <div className="flex items-center gap-2.5 overflow-hidden">
+          <span className="h-px w-6 shrink-0 bg-bookla-clay" />
+          <Eyebrow>Oxumağın yeni sosial məkanı</Eyebrow>
+        </div>
+        <h1 className={`${sectionHeading} text-[38px]/[46px] md:text-[54px]/[66px] xl:text-[61px]/[74px]`}>
+          Hər kitab yeni bir söhbətin başlanğıcıdır.
+        </h1>
+        <p className="w-full text-[15px]/[25px] text-bookla-muted md:text-[17px]/[28px]">
+          Öz kitab klubunu yarat, dostlarınla birlikdə oxu, fikirlərini paylaş və yeni hekayələr kəşf et.
+        </p>
+        <div className="flex w-full flex-col items-start gap-3 md:flex-row">
+          {/* Figma: "Pulsuz klub yarat"; relabelled like the header button, at the Figma width (189.03125px;
+              written as 189.032 because the CSS minifier keeps three decimals). */}
+          <Link
+            to="/register"
+            className={`flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] bg-bookla-forest px-[22px] md:w-auto md:min-w-[189.032px] ${forestButton} ${focusRing}`}
+          >
+            <span className="text-[14px]/[17px] font-semibold whitespace-nowrap text-bookla-paper">Pulsuz qoşul</span>
+            <Icon src={icons.arrowUpRight17Light} width={17} />
+          </Link>
+          <Link
+            to="/books"
+            className={`flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] px-[22px] md:w-auto md:min-w-[180px] ${stroke} ${outlineButton} ${focusRing}`}
+          >
+            <span className="text-[14px]/[17px] font-semibold whitespace-nowrap">Kitabları kəşf et</span>
+            <Icon src={icons.arrowUpRight17} width={17} />
+          </Link>
+        </div>
+        <div className="flex w-full flex-col items-start gap-2 overflow-hidden pt-2">
+          <p className="w-full font-lora text-[19px]/[24px] italic">Kitablar bizi bir araya gətirir.</p>
+          <p className="w-full text-[11px]/[18px] text-bookla-muted">Oxu. Paylaş. Birlikdə kəşf et.</p>
+        </div>
+      </div>
+
+      <HeroPreview />
+    </section>
+
+    <div className="shadow-[inset_0_1px_0_0_var(--color-bookla-line),inset_0_-1px_0_0_var(--color-bookla-line)]">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between overflow-hidden px-6 py-[22px] md:px-10 xl:px-[88px]">
+        <p className="min-w-px flex-1 font-lora text-[17px]/[22px] md:text-[22px]/[28px]">Bir kitab. Fərqli baxışlar. Ortaq söhbət.</p>
+        <p className="hidden text-[11px]/[13px] whitespace-nowrap text-bookla-muted md:block">BOOKLA.ORG</p>
+      </div>
+    </div>
+  </>
+);
+
+const steps = [
+  {
+    number: '01',
+    title: 'Klubunu yarat',
+    status: 'unavailable',
+    text: 'Dostlarını dəvət et və öz oxu icmanı formalaşdır.',
+    preview: (
+      <SampleCard>
+        <p className="text-[11px]/[13px] whitespace-nowrap text-bookla-muted">Klubun adı</p>
+        <div className={`flex w-full items-start overflow-hidden rounded-[7px] p-3 ${stroke}`}>
+          <p className="text-[12px]/[15px] whitespace-nowrap">Səhifə arası</p>
+        </div>
+        <div className="flex w-full items-center justify-between overflow-hidden">
+          <AvatarStack group="invite" size={24} />
+          <p className="text-[11px]/[13px] font-semibold whitespace-nowrap">+ Dostunu dəvət et</p>
+        </div>
+      </SampleCard>
+    ),
+  },
+  {
+    number: '02',
+    title: 'Kitabını seç',
+    status: 'unavailable',
+    text: 'Təkliflər paylaşın, səsvermə keçirin və növbəti kitabı birlikdə seçin.',
+    preview: <PollCard />,
+  },
+  {
+    number: '03',
+    title: 'Birlikdə oxuyun',
+    // Book reviews and comments exist; reading progress and notes don't have a UI yet.
+    status: 'partial',
+    text: 'Oxu irəliləyişini izləyin, qeydlər paylaşın və kitabları müzakirə edin.',
+    preview: <DiscussionCard />,
+  },
+];
+
+const HowItWorks = () => (
+  <section
+    id="nece-isleyir"
+    className={`mx-auto flex max-w-[1440px] flex-col items-start gap-10 ${sectionPadding}`}
+  >
+    <div className="flex w-full flex-col items-start gap-4 overflow-hidden">
+      <Eyebrow>Sadə başlanğıc</Eyebrow>
+      <div className="flex w-full flex-col items-start justify-end gap-6 overflow-hidden xl:flex-row xl:items-end xl:justify-start">
+        <h2 className={`${sectionHeading} text-[31px]/[38px] md:text-[43px]/[52px] xl:w-[720px] xl:shrink-0`}>
+          Bookla ilə oxumaq daha maraqlıdır.
+        </h2>
+        <p className="w-full text-[15px]/[25px] text-bookla-muted xl:w-auto xl:min-w-px xl:flex-1">
+          İlk dəvətdən son səhifəyədək — oxu yolunuzun hər addımı bir yerdə.
+        </p>
+      </div>
+    </div>
+
+    <div className="flex w-full flex-col items-start gap-8 overflow-hidden md:gap-7 xl:flex-row">
+      {steps.map((step) => (
+        <div
+          key={step.number}
+          className={`flex w-full flex-col items-start gap-[22px] overflow-hidden pt-5 md:flex-row md:gap-8 xl:w-auto xl:min-w-px xl:flex-1 xl:flex-col xl:gap-[22px] ${strokeTop}`}
+        >
+          <div className="flex w-full flex-col items-start gap-3 overflow-hidden md:min-w-px md:flex-1 xl:w-full xl:flex-none">
+            <p className="font-lora text-[31px]/[40px] whitespace-nowrap text-bookla-clay">{step.number}</p>
+            <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
+              <h3 className="font-lora text-[25px]/[32px] whitespace-nowrap">{step.title}</h3>
+              <StatusTag status={step.status} className="mt-1.5" />
+            </div>
+            <p className="min-h-[74px] w-full text-[15px]/[25px] text-bookla-muted md:min-h-[50px] xl:min-h-[74px]">
+              {step.text}
             </p>
           </div>
-          <div className="hidden items-center gap-1 text-sm font-medium text-[#F7F0E6] sm:flex">
-            <Users className="h-4 w-4" />
-            24
+          <div
+            aria-hidden="true"
+            className="flex h-[188px] w-full shrink-0 flex-col items-start justify-center overflow-hidden md:w-[300px] xl:w-full"
+          >
+            {step.preview}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
+const clubs = [
+  {
+    book: books.aliVeNino,
+    tint: 'bg-bookla-sage',
+    mood: 'Doğma hekayələr, yeni baxışlar.',
+    genre: 'Azərbaycan ədəbiyyatı',
+    name: 'Səhifə arası',
+    description:
+      'Doğma hekayələrə yeni baxış. Birlikdə oxuyur, şəhərimizi və özümüzü yenidən kəşf edirik.',
+  },
+  {
+    book: books.kicikSahzade,
+    tint: 'bg-bookla-blush',
+    mood: 'Bir fincan çay, bir yaxşı kitab.',
+    genre: 'Dünya ədəbiyyatı',
+    name: 'Bazar günü oxuları',
+    description: 'Həftənin ən sakit vaxtını yaxşı bir kitaba və səmimi bir söhbətə ayıranların klubu.',
+  },
+  {
+    book: books.sefiller,
+    tint: 'bg-bookla-sand',
+    mood: 'Bəzi hekayələr həmişə yenidir.',
+    genre: 'Klassik ədəbiyyat',
+    name: 'Klassiklərə qayıdış',
+    description: 'Zamanı aşan əsərləri tələsmədən oxuyuruq. Hər görüşdə başqa bir məna tapırıq.',
+  },
+];
+
+const ClubCard = ({ club }) => (
+  <article className="flex w-full flex-col items-start overflow-hidden rounded-[16px] bg-white md:flex-row xl:w-auto xl:min-w-px xl:flex-1 xl:flex-col">
+    <div
+      className={`flex h-[240px] w-full shrink-0 items-center gap-5 p-6 md:h-auto md:min-h-[340px] md:w-[250px] md:flex-col md:justify-center md:self-stretch xl:h-[240px] xl:min-h-0 xl:w-full xl:flex-row xl:justify-start xl:self-auto ${club.tint}`}
+    >
+      <BookCover book={club.book} size="club" />
+      <div className="flex min-w-px flex-1 flex-col items-start gap-[18px] md:w-full md:flex-none xl:w-auto xl:flex-1">
+        <p className="text-[9px]/[11px] whitespace-nowrap">NÜMUNƏ KLUB</p>
+        <p className="w-full font-lora text-[21px]/[29px] italic md:text-[17px]/[24px] xl:text-[21px]/[29px]">{club.mood}</p>
+      </div>
+    </div>
+
+    <div className="flex w-full flex-col items-start gap-4 overflow-hidden p-6 md:min-w-px md:flex-1 xl:w-full xl:flex-none">
+      <p className="text-[10px]/[12px] font-semibold whitespace-nowrap text-bookla-clay-strong">{club.genre}</p>
+      <h3 className="w-full font-lora text-[25px]/[32px]">{club.name}</h3>
+      <p className="min-h-[76px] w-full text-[13px]/[21px] text-bookla-muted md:min-h-[50px] xl:min-h-[76px]">
+        {club.description}
+      </p>
+      <div className={`flex w-full flex-col items-start gap-[5px] overflow-hidden pt-3.5 ${strokeTop}`}>
+        <p className="text-[10px]/[12px] whitespace-nowrap text-bookla-muted">Hazırda oxunur</p>
+        <p className="w-full text-[12px]/[15px] font-medium">
+          {club.book.title} · {club.book.author}
+        </p>
+      </div>
+      <div className="flex w-full items-center justify-between pt-1">
+        <AvatarStack group="club" size={26} />
+        {/* Figma: "Kluba bax ↗". These are sample clubs and clubs aren't in the app. */}
+        <StatusTag status="unavailable" label="Klublar mövcud deyil" />
+      </div>
+    </div>
+  </article>
+);
+
+const BookClubs = () => (
+  <section id="kitab-klublari" className="bg-bookla-sand">
+    <div className={`mx-auto flex max-w-[1440px] flex-col items-start gap-9 ${sectionPadding}`}>
+      <div className="flex w-full flex-col items-start gap-4 overflow-hidden">
+        <Eyebrow>Öz oxu dairəni tap</Eyebrow>
+        <h2 className={`${sectionHeading} text-[31px]/[38px] md:text-[43px]/[52px] xl:w-[760px]`}>
+          Eyni kitabı sevən insanlarla tanış ol.
+        </h2>
+        <div className="flex w-full items-center gap-2 overflow-hidden">
+          <Icon src={icons.info15} width={15} />
+          <p className="min-w-px flex-1 text-[12px]/[20px] text-bookla-muted-strong">
+            Bu klublar platformanı göstərmək üçün hazırlanmış nümunələrdir.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col items-start gap-6 overflow-hidden xl:flex-row">
+        {clubs.map((club) => (
+          <ClubCard key={club.name} club={club} />
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+// Card widths per row: desktop 510px + 2 flexible / 3 equal, tablet 2 per row, mobile 1 per row.
+const featureBasis = {
+  first: 'md:basis-[calc(50%-10.1px)] md:grow xl:basis-[510px] xl:grow-0',
+  rest: 'md:basis-[calc(50%-10.1px)] md:grow xl:basis-[calc((100%-550.2px)/2)] xl:grow',
+  third: 'md:basis-[calc(50%-10.1px)] md:grow xl:basis-[calc((100%-40.2px)/3)] xl:grow',
+};
+
+const features = [
+  {
+    title: 'Kitab rəfi',
+    status: 'available',
+    text: 'Oxuduğun və oxumaq istədiyin kitabları bir yerdə saxla.',
+    tint: 'bg-bookla-sage',
+    basis: featureBasis.first,
+    preview: (
+      <SampleCard>
+        <div className="flex w-full items-start gap-4 overflow-hidden text-[11px]/[13px] whitespace-nowrap">
+          <p className="font-semibold">Oxuyuram</p>
+          <p className="text-bookla-muted">Oxumaq istəyirəm</p>
+        </div>
+        <div className="flex w-full items-start justify-center gap-3.5">
+          <BookCover book={books.aliVeNino} size="shelf" />
+          <BookCover book={books.kicikSahzade} size="shelf" />
+          <BookCover book={books.sefiller} size="shelf" />
+        </div>
+      </SampleCard>
+    ),
+  },
+  {
+    title: 'Birgə səsvermə',
+    status: 'unavailable',
+    text: 'Növbəti kitabı klub üzvləri ilə birlikdə seç.',
+    tint: 'bg-bookla-sand',
+    basis: featureBasis.rest,
+    preview: <PollCard />,
+  },
+  {
+    title: 'Oxu irəliləyişi',
+    // In development: the API exists, the app has no screen for it yet.
+    status: 'soon',
+    text: 'Fəsillər üzrə irəliləyişi izləyin.',
+    tint: 'bg-bookla-sand',
+    basis: featureBasis.rest,
+    preview: (
+      <SampleCard>
+        <div className="flex w-full items-center gap-3">
+          <BookCover book={books.aliVeNino} size="progress" />
+          <div className="flex min-w-px flex-1 flex-col items-start gap-1.5 overflow-hidden">
+            <p className="text-[13px]/[16px] font-semibold whitespace-nowrap">Əli və Nino</p>
+            <p className="w-full text-[11px]/[13px] text-bookla-muted">Oxumağa davam et</p>
+          </div>
+        </div>
+        <ProgressBlock textSize="text-[11px]/[13px]" fillWidth="w-[128px]" />
+      </SampleCard>
+    ),
+  },
+  {
+    title: 'Qeydlər və sitatlar',
+    // Quotes exist; personal notes don't.
+    status: 'partial',
+    text: 'Sevdiyin fikirləri yadda saxla və paylaş.',
+    tint: 'bg-bookla-blush',
+    basis: featureBasis.third,
+    preview: (
+      <SampleCard>
+        <p className="text-[10px]/[12px] whitespace-nowrap text-bookla-muted">ŞƏXSİ QEYDİM · 8-Cİ FƏSİL</p>
+        <p className="w-full font-lora text-[16px]/[24px] italic">
+          “Bu fəsil mənə doğma şəhərimə yenidən baxmağı öyrətdi.”
+        </p>
+        <div className="flex items-center gap-2 overflow-hidden">
+          <Icon src={icons.bookmark14} width={14} />
+          <p className="text-[10px]/[12px] whitespace-nowrap text-bookla-muted">Yadda saxlanıldı</p>
+        </div>
+      </SampleCard>
+    ),
+  },
+  {
+    title: 'Kitab müzakirələri',
+    // Book reviews and comments exist; club discussions don't.
+    status: 'partial',
+    text: 'Fikirlərini klub üzvləri ilə bölüş.',
+    tint: 'bg-bookla-sand',
+    basis: featureBasis.third,
+    preview: <DiscussionCard />,
+  },
+  {
+    title: 'Klub görüşləri',
+    status: 'unavailable',
+    text: 'Növbəti görüşlərinizi planlaşdırın.',
+    tint: 'bg-bookla-sage',
+    basis: featureBasis.third,
+    preview: <MeetingCard />,
+  },
+];
+
+const ReadingTools = () => (
+  <section className={`mx-auto flex max-w-[1440px] flex-col items-start gap-10 ${sectionPadding}`}>
+    <div className="flex w-full flex-col items-start gap-4 overflow-hidden xl:w-[810px]">
+      <Eyebrow>Oxu həyatın, bir yerdə</Eyebrow>
+      <h2 className={`${sectionHeading} text-[31px]/[38px] md:text-[43px]/[52px]`}>Yaxşı kitablar paylaşdıqca daha da dəyərlənir.</h2>
+      <p className="w-full text-[15px]/[25px] text-bookla-muted">
+        Kitablarını, fikirlərini və görüşlərini eyni məkanda topla. Sənə sadəcə oxumaq qalsın.
+      </p>
+    </div>
+
+    <div className="flex w-full flex-wrap items-stretch gap-5 overflow-hidden">
+      {features.map((feature) => (
+        <div
+          key={feature.title}
+          className={`flex min-w-px basis-full flex-col items-start gap-[22px] overflow-hidden rounded-[16px] p-5 md:p-6 ${feature.tint} ${feature.basis}`}
+        >
+          <div className="flex min-h-[100px] w-full flex-col items-start gap-2.5 overflow-hidden xl:min-h-[105px]">
+            <div className="flex w-full flex-wrap items-start gap-x-2 gap-y-1">
+              <h3 className="min-w-0 font-lora text-[25px]/[31px]">{feature.title}</h3>
+              <StatusTag status={feature.status} className="mt-[5.5px]" />
+            </div>
+            <p className="w-full text-[13px]/[21px] text-bookla-muted-strong">{feature.text}</p>
+          </div>
+          <div aria-hidden="true" className="flex min-h-[176px] w-full flex-col items-start justify-center">
+            {feature.preview}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
+const sideMenu = [
+  { label: 'İcmal', icon: icons.layoutDashboard16, active: true },
+  { label: 'Klublarım', icon: icons.users16 },
+  { label: 'Kitab rəfim', icon: icons.library16 },
+  { label: 'Qeydlərim', icon: icons.bookmark16 },
+  { label: 'Görüşlər', icon: icons.calendarDays16 },
+];
+
+const productTabs = ['İcmal', 'Klublarım', 'Kitab rəfim', 'Qeydlərim'];
+const myClubs = ['Səhifə arası', 'Bazar günü oxuları', 'Klassiklərə qayıdış'];
+
+const ReadingCard = () => (
+  <div className="flex w-full flex-col items-start gap-[18px] rounded-[16px] bg-bookla-paper p-4 md:p-5">
+    <div className="flex w-full items-start justify-between overflow-hidden whitespace-nowrap">
+      <p className="text-[11px]/[13px] font-semibold">Hazırda oxuyuram</p>
+      <p className="text-[10px]/[12px] text-bookla-muted">Səhifə arası</p>
+    </div>
+    <div className="flex w-full items-center gap-[18px]">
+      <BookCover book={books.aliVeNino} size="reading" />
+      <div className="flex min-w-px flex-1 flex-col items-start gap-3 overflow-hidden">
+        <p className="w-full font-lora text-[22px]/[28px] md:text-[28px]/[36px]">Əli və Nino</p>
+        <p className="text-[11px]/[13px] whitespace-nowrap text-bookla-muted">Qurban Səid</p>
+        <p className="w-full text-[11px]/[17px]">Bu həftə: 7–9-cu fəsillər</p>
+        <AvatarStack group="invite" size={24} />
+      </div>
+    </div>
+    <ProgressBlock textSize="text-[11px]/[13px] md:text-[12px]/[15px]" fillWidth="w-[128px] md:w-[180px]" />
+    <div className="flex h-9 w-full items-center justify-center overflow-hidden rounded-[8px] bg-bookla-forest">
+      <p className="text-[11px]/[13px] font-medium whitespace-nowrap text-bookla-paper">İrəliləyişi yenilə</p>
+    </div>
+  </div>
+);
+
+const ProductPreview = () => (
+  <div
+    role="img"
+    aria-label="Bookla məhsul görünüşü"
+    className="relative flex w-full flex-col items-start overflow-hidden rounded-[16px] bg-white shadow-[0px_16px_40px_0px_rgba(24,61,53,0.11)] after:pointer-events-none after:absolute after:inset-0 after:rounded-[16px] after:border after:border-[rgba(24,61,53,0.13)] after:content-['']">
+    <div className="flex h-[38px] w-full shrink-0 items-center justify-between overflow-hidden bg-bookla-paper px-4 shadow-[inset_0_-1px_0_0_var(--color-bookla-line)] md:px-6">
+      <div className="flex items-start gap-[5px] overflow-hidden">
+        {[0, 1, 2].map((dot) => (
+          <span key={dot} className="size-[6px] shrink-0 rounded-[6px] bg-bookla-line" />
+        ))}
+      </div>
+      <p className="text-[10px]/[12px] whitespace-nowrap text-bookla-muted">bookla.org · Nümunə hesab</p>
+      <Icon src={icons.lockKeyhole12} width={12} />
+    </div>
+
+    <div className="flex w-full flex-col items-start overflow-hidden xl:flex-row">
+      <div className="hidden w-[190px] shrink-0 flex-col items-start gap-9 self-stretch overflow-hidden bg-bookla-paper p-5 shadow-[inset_-1px_0_0_0_var(--color-bookla-line)] xl:flex">
+        <Logo />
+        <div className="flex w-full flex-col items-start gap-2 overflow-hidden">
+          {sideMenu.map((item) => (
+            <div
+              key={item.label}
+              className={`flex w-full items-center gap-2.5 overflow-hidden rounded-[8px] p-2.5 ${item.active ? 'bg-bookla-sage' : ''}`}
+            >
+              <Icon src={item.icon} width={16} />
+              <p className={`text-[11px]/[13px] whitespace-nowrap ${item.active ? 'font-semibold' : ''}`}>{item.label}</p>
+            </div>
+          ))}
+        </div>
+        <div className={`flex h-9 w-full items-center justify-center overflow-hidden rounded-[8px] ${stroke}`}>
+          <p className="text-[11px]/[13px] font-medium whitespace-nowrap">+ Yeni klub yarat</p>
+        </div>
+        <div className="flex w-full flex-col items-start gap-3 overflow-hidden pt-[155px]">
+          <AvatarStack group="club" size={26} />
+          <p className="text-[11px]/[13px] whitespace-nowrap">Aysel Məmmədova</p>
+          <p className="text-[10px]/[12px] whitespace-nowrap text-bookla-muted">Nümunə hesab</p>
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col items-start gap-4 overflow-hidden bg-bookla-paper p-4 md:p-6 xl:hidden">
+        <div className="flex w-full items-center justify-between overflow-hidden">
+          <Logo />
+          <Icon src={icons.bell19} width={19} />
+        </div>
+        <div className="flex w-full items-start gap-[18px] overflow-hidden text-[10px]/[12px] whitespace-nowrap md:gap-7 md:text-[12px]/[15px]">
+          {productTabs.map((tab, index) => (
+            <p key={tab} className={index === 0 ? 'font-semibold' : 'text-bookla-muted'}>
+              {tab}
+            </p>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col items-start gap-6 overflow-hidden p-4 md:p-7 xl:w-auto xl:min-w-px xl:flex-1">
+        <div className="flex w-full items-center justify-between overflow-hidden">
+          <div className="flex min-w-px flex-1 flex-col items-start gap-[7px] overflow-hidden">
+            <p className="font-lora text-[26px]/[33px] whitespace-nowrap md:text-[30px]/[38px]">Salam, Aysel.</p>
+            <p className="w-full text-[11px]/[17px] text-bookla-muted">Bu gün hansı hekayəyə davam edirik?</p>
+          </div>
+          <Icon src={icons.bell20} width={20} className="hidden xl:block" />
+        </div>
+
+        <div className="flex w-full flex-col items-start gap-3 overflow-hidden">
+          <p className="text-[12px]/[15px] font-semibold whitespace-nowrap">Mənim kitab klublarım</p>
+          <div className="flex w-full flex-col items-start gap-2.5 overflow-hidden md:flex-row">
+            {myClubs.map((club, index) => (
+              <div
+                key={club}
+                className={`flex w-full items-center gap-2 overflow-hidden rounded-[8px] p-3 md:w-auto md:min-w-px md:flex-1 md:flex-col md:items-start ${index === 0 ? 'bg-bookla-sage' : 'bg-bookla-paper'}`}
+              >
+                <Icon src={icons.bookOpen16} width={16} />
+                <p
+                  className={`min-w-px flex-1 text-[11px]/[15px] md:w-full md:flex-none ${index === 0 ? 'font-semibold' : ''}`}
+                >
+                  {club}
+                </p>
+                <Icon src={icons.chevronRight13} width={13} className="md:hidden" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex w-full flex-col items-start gap-5 xl:flex-row">
+          <div className="flex w-full flex-col items-start gap-5 xl:w-auto xl:min-w-px xl:flex-1">
+            <ReadingCard />
+            <div className="flex w-full flex-col items-start gap-3 overflow-hidden">
+              <p className="text-[12px]/[15px] font-semibold whitespace-nowrap">Klubda son söhbət</p>
+              <DiscussionCard />
+            </div>
+          </div>
+
+          <div className="flex w-full flex-col items-start gap-5 overflow-hidden xl:w-[270px] xl:shrink-0">
+            <div className="flex w-full flex-col items-start gap-3 overflow-hidden">
+              <p className="text-[12px]/[15px] font-semibold whitespace-nowrap">Növbəti görüş</p>
+              <MeetingCard />
+            </div>
+            <div className="flex w-full flex-col items-start gap-3 overflow-hidden">
+              <p className="text-[12px]/[15px] font-semibold whitespace-nowrap">Klubun seçimi</p>
+              <PollCard />
+            </div>
+            <div className="flex w-full flex-col items-start gap-2.5 overflow-hidden rounded-[16px] bg-bookla-blush p-4">
+              <p className="text-[10px]/[12px] whitespace-nowrap text-bookla-muted-strong">OXU QEYDİ</p>
+              <p className="w-full font-lora text-[16px]/[24px] italic">
+                Hər oxucu eyni kitabda başqa bir hekayə tapır.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -106,281 +573,138 @@ const PhotoPanel = () => (
   </div>
 );
 
-const SectionIntro = ({ eyebrow, title, text }) => (
-  <div className="max-w-2xl">
-    <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#2F5D46]">{eyebrow}</p>
-    <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-[#1F1D1A] sm:text-4xl lg:text-5xl">
-      {title}
-    </h2>
-    <p className="mt-5 text-base leading-8 text-[#625B50] sm:text-lg">{text}</p>
-  </div>
+const InsideBookla = () => (
+  <section className="bg-bookla-sage">
+    <div className={`mx-auto flex max-w-[1440px] flex-col items-start gap-10 ${sectionPadding}`}>
+      <div className="flex w-full flex-col items-start gap-4 overflow-hidden xl:w-[760px]">
+        <Eyebrow>Oxu məkanına xoş gəlmisən</Eyebrow>
+        <h2 className={`${sectionHeading} text-[31px]/[38px] md:text-[43px]/[52px]`}>Kitabın açıq, söhbətin davam edir.</h2>
+        <p className="w-full text-[15px]/[25px]">
+          Klubunun gündəliyi, oxuduğun kitab və paylaşmaq istədiyin fikirlər — hamısı bir baxışda.
+        </p>
+      </div>
+      <ProductPreview />
+      <p className="w-full text-[11px]/[18px]">
+        Nümunə məhsul görünüşü. Kitablar, klublar və söhbətlər tanışlıq məqsədilə göstərilir.
+      </p>
+    </div>
+  </section>
 );
 
-const BenefitCard = ({ benefit, index }) => {
-  const Icon = benefit.icon;
-  const isLarge = benefit.className.includes('7');
+const ReadingCommunity = () => (
+  <section
+    className={`mx-auto flex max-w-[1440px] flex-col items-start justify-center gap-8 xl:flex-row xl:items-center xl:justify-start xl:gap-[72px] ${sectionPadding}`}
+  >
+    <div className="flex w-full flex-col items-start gap-6 xl:w-[552px] xl:shrink-0">
+      <Eyebrow>Səhifələrin o tayında</Eyebrow>
+      <h2 className={`${sectionHeading} text-[32px]/[39px] md:text-[44px]/[54px]`}>
+        Tək oxumaq gözəldir. Birlikdə oxumaq isə başqa dünyadır.
+      </h2>
+      <p className="w-full text-[15px]/[25px] text-bookla-muted">
+        Bəzən bir kitabı bitirmək yox, onun haqqında danışmaq istəyirsən. Səni düşündürən bir cümləni, sevdiyin bir
+        obrazı, cavabını axtardığın sualı paylaşmaq.
+      </p>
+      <p className="w-full text-[15px]/[25px] text-bookla-muted">
+        Bookla həmin söhbətə yer açır. Tanış dostlarla və hələ tanımadığın oxucularla yeni hekayələrə birlikdə başlamaq
+        üçün.
+      </p>
+      <Link to="/community" className={`group flex items-center gap-3 rounded-[2px] ${focusRing}`}>
+        <span className={`text-[13px]/[16px] font-semibold whitespace-nowrap ${textLink} group-hover:underline`}>
+          Öz oxu dairəni tap
+        </span>
+        <Icon src={icons.arrowUpRight18} width={18} />
+      </Link>
+    </div>
 
-  return (
-    <article
-      className={`group rounded-lg border border-[#DDD0BC] bg-[#FFF9EF] p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#B86545]/40 hover:shadow-xl hover:shadow-[#2B2A27]/10 sm:p-8 ${benefit.className}`}
+    <figure className="flex w-full flex-col items-start gap-4 overflow-hidden xl:w-auto xl:min-w-px xl:flex-1">
+      <picture className="block h-[350px] w-full md:h-[430px] xl:h-[500px]">
+        <source media="(min-width: 80rem)" srcSet={readingCircle.desktop} />
+        <source media="(min-width: 48rem)" srcSet={readingCircle.tablet} />
+        <img
+          src={readingCircle.mobile}
+          alt="Kafedə bir masa arxasında kitab müzakirə edən oxucular"
+          loading="lazy"
+          className="block size-full rounded-[16px] object-cover"
+        />
+      </picture>
+      <figcaption className="flex w-full items-center justify-between overflow-hidden">
+        <p className="min-w-px flex-1 text-[11px]/[13px] text-bookla-muted">Yaxşı söhbətlər çox vaxt bir kitabla başlayır.</p>
+        <p className="font-lora text-[14px]/[18px] whitespace-nowrap text-bookla-clay-strong italic">Bookla</p>
+      </figcaption>
+    </figure>
+  </section>
+);
+
+const Invitation = () => (
+  <section className="bg-bookla-forest">
+    <div
+      className={`mx-auto flex max-w-[1440px] flex-col items-start gap-8 overflow-hidden xl:flex-row xl:items-center xl:gap-[100px] ${sectionPadding}`}
     >
-      <div className="flex h-full flex-col justify-between gap-10">
-        <div>
-          <div className="mb-7 flex h-11 w-11 items-center justify-center rounded-lg bg-[#2F5D46] text-[#F7F0E6] transition-all duration-300 group-hover:bg-[#B86545]">
-            <Icon className="h-5 w-5" />
-          </div>
-          <h3
-            className={`font-semibold tracking-[-0.02em] text-[#1F1D1A] ${
-              isLarge ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'
-            }`}
-          >
-            {benefit.title}
-          </h3>
-          <p className="mt-4 max-w-xl text-sm leading-7 text-[#625B50] sm:text-base">
-            {benefit.description}
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-[#E6D9C5] pt-5">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9B7B4D]">
-            0{index + 1}
-          </span>
-          <ArrowRight className="h-5 w-5 text-[#B86545] transition-transform duration-300 group-hover:translate-x-1" />
-        </div>
+      <div className="flex w-full flex-col items-start gap-5 overflow-hidden xl:w-auto xl:min-w-px xl:flex-1">
+        <Eyebrow className="text-bookla-sage">Növbəti səhifə səninlə başlayır</Eyebrow>
+        <h2 className={`${sectionHeading} text-[35px]/[43px] text-bookla-paper md:text-[45px]/[55px] xl:text-[52px]/[63px]`}>
+          Növbəti sevimli kitabını birlikdə kəşf et.
+        </h2>
+        <p className="w-full text-[16px]/[26px] text-bookla-sage">Öz oxu icmanı yaratmağa bu gün başla.</p>
       </div>
-    </article>
-  );
-};
+      <div className="flex w-full flex-col items-start gap-3.5 xl:w-[240px] xl:shrink-0">
+        <Link
+          to="/register"
+          className={`flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] bg-bookla-paper px-[22px] md:w-auto ${paperButton} ${focusRingOnDark}`}
+        >
+          <span className="text-[14px]/[17px] font-semibold whitespace-nowrap">Bookla-ya qoşul</span>
+          <Icon src={icons.arrowUpRight17} width={17} />
+        </Link>
+        <p className="text-[11px]/[13px] whitespace-nowrap text-bookla-sage">Bir kitab, yeni bir başlanğıc.</p>
+      </div>
+    </div>
+  </section>
+);
+
+const pageTitle = 'Bookla — Hər kitab yeni bir söhbətin başlanğıcıdır.';
 
 const LandingPage = () => {
+  // The rest of the app is in English, so the Azerbaijani document language is set only while this
+  // page is shown.
+  useEffect(() => {
+    const root = document.documentElement;
+    const previousTitle = document.title;
+    const previousLang = root.lang;
+    document.title = pageTitle;
+    root.lang = 'az';
+    return () => {
+      document.title = previousTitle;
+      root.lang = previousLang;
+    };
+  }, []);
+
+  // Coming from another page via /#section: show that section, otherwise start at the top.
+  const { hash } = useLocation();
+  useEffect(() => {
+    const target = hash && document.getElementById(hash.slice(1));
+    if (target) target.scrollIntoView();
+    else if (!hash) window.scrollTo(0, 0);
+  }, [hash]);
+
+  // Lora's Azerbaijani "locl" glyphs have different widths than the ones Figma renders, so locale
+  // substitutions are turned off to keep the Figma text metrics.
   return (
-    <div className="min-h-screen bg-[#F7F0E6] text-[#1F1D1A]">
-      <header className="sticky top-0 z-50 border-b border-[#E2D4BE]/80 bg-[#F7F0E6]/85 backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
-          <a
-            href="#top"
-            className="text-lg font-semibold tracking-[-0.03em] text-[#1F1D1A] transition-colors duration-300 hover:text-[#2F5D46]"
-          >
-            BookClub
-          </a>
-
-          <div className="hidden items-center gap-9 md:flex">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-sm font-medium text-[#625B50] transition-colors duration-300 hover:text-[#1F1D1A]"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-
-          <Link
-            to="/login"
-            className="rounded-lg border border-[#D6C6AD] px-4 py-2 text-sm font-medium text-[#1F1D1A] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#2F5D46] hover:bg-[#FDF8EF]"
-          >
-            Log in
-          </Link>
-        </nav>
-      </header>
-
-      <main id="top">
-        <section className="mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:px-10 lg:py-28">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#2F5D46]">
-              For readers who meet around books
-            </p>
-            <h1 className="mt-6 text-5xl font-semibold leading-[0.98] tracking-[-0.06em] text-[#1F1D1A] sm:text-6xl lg:text-7xl">
-              A calmer home for your book club.
-            </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-[#625B50] sm:text-xl sm:leading-9">
-              Pick what to read next, keep notes in one place, and give every meeting a little more shape.
-            </p>
-
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-              <Link
-                to="/register"
-                className="group inline-flex items-center justify-center gap-3 rounded-lg bg-[#2F5D46] px-6 py-4 text-sm font-semibold text-[#FFF9EF] shadow-lg shadow-[#2F5D46]/20 transition-all duration-300 hover:-translate-y-1 hover:bg-[#244936] hover:shadow-xl"
-              >
-                Join the club
-                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
-              <Link
-                to="/books"
-                className="inline-flex items-center justify-center rounded-lg border border-[#D6C6AD] px-6 py-4 text-sm font-semibold text-[#1F1D1A] transition-all duration-300 hover:-translate-y-1 hover:border-[#B86545] hover:bg-[#FFF9EF]"
-              >
-                Explore books
-              </Link>
-            </div>
-
-            <div className="mt-12 grid max-w-lg grid-cols-2 gap-5 border-t border-[#D8C9B3] pt-8 sm:grid-cols-3">
-              {[
-                ['2 min', 'to set up a club'],
-                ['24k', 'notes saved'],
-                ['430', 'clubs reading now'],
-              ].map(([value, label]) => (
-                <div key={label}>
-                  <p className="text-2xl font-semibold tracking-[-0.03em] text-[#1F1D1A]">{value}</p>
-                  <p className="mt-1 text-sm leading-6 text-[#756B5E]">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <PhotoPanel />
-        </section>
-
-        <section id="benefits" className="border-y border-[#E2D4BE] bg-[#EFE4D2] px-5 py-24 sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-7xl">
-            <div className="grid gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
-              <SectionIntro
-                eyebrow="Why it works"
-                title="Enough structure to help, not so much that it gets in the way."
-                text="BookClub is built for the ordinary parts of reading together: choosing the book, remembering the plan, and making room for everyone to say something."
-              />
-
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-                {benefits.map((benefit, index) => (
-                  <BenefitCard key={benefit.title} benefit={benefit} index={index} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="inside" className="px-5 py-24 sm:px-8 lg:px-10">
-          <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div className="rounded-lg border border-[#DDD0BC] bg-[#FFF9EF] p-5 shadow-xl shadow-[#2B2A27]/8 sm:p-8">
-              <div className="grid gap-5 md:grid-cols-[1fr_0.72fr]">
-                <div className="rounded-lg bg-[#2B2A27] p-6 text-[#F7F0E6]">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#C9A66B]">
-                        Current room
-                      </p>
-                      <h3 className="mt-4 text-2xl font-semibold tracking-[-0.03em]">
-                        Thursday fiction group
-                      </h3>
-                    </div>
-                    <LibraryBig className="h-7 w-7 text-[#C9A66B]" />
-                  </div>
-
-                  <div className="mt-10 space-y-4">
-                    {['Pick closes tonight', 'Chapter 8 thread is active', 'Meeting notes are ready'].map(
-                      (item) => (
-                        <div key={item} className="flex items-center gap-3 text-sm text-[#E8DDCB]">
-                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3F6F54]">
-                            <Check className="h-3.5 w-3.5" />
-                          </span>
-                          {item}
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  <div className="rounded-lg border border-[#E6D9C5] bg-[#F7F0E6] p-5">
-                    <p className="text-sm font-medium text-[#756B5E]">Next meeting</p>
-                    <p className="mt-2 text-3xl font-semibold tracking-[-0.04em]">Thu 7:30</p>
-                  </div>
-                  <div className="rounded-lg border border-[#E6D9C5] bg-[#F7F0E6] p-5">
-                    <p className="text-sm font-medium text-[#756B5E]">Book votes</p>
-                    <div className="mt-4 h-2 rounded-full bg-[#E4D6C0]">
-                      <div className="h-full w-2/3 rounded-full bg-[#B86545]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <SectionIntro
-                eyebrow="Inside the club"
-                title="The details that keep the group moving."
-                text="A few thoughtful tools make the club feel organized, even when everyone reads at a different pace."
-              />
-
-              <div className="mt-8 space-y-4">
-                {details.map((detail) => (
-                  <div
-                    key={detail}
-                    className="flex gap-4 rounded-lg border border-transparent p-3 transition-all duration-300 hover:-translate-y-1 hover:border-[#E2D4BE] hover:bg-[#FFF9EF]"
-                  >
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#2F5D46] text-[#FFF9EF]">
-                      <Check className="h-3.5 w-3.5" />
-                    </span>
-                    <p className="text-base leading-7 text-[#4D473F]">{detail}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="notes" className="bg-[#1F1D1A] px-5 py-24 text-[#F7F0E6] sm:px-8 lg:px-10">
-          <div className="mx-auto max-w-7xl">
-            <div className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
-              <div className="max-w-2xl">
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#C9A66B]">
-                  Reader notes
-                </p>
-                <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl lg:text-5xl">
-                  Quiet praise from real reading groups.
-                </h2>
-              </div>
-              <Link
-                to="/register"
-                className="inline-flex w-fit items-center gap-3 rounded-lg bg-[#F7F0E6] px-5 py-3 text-sm font-semibold text-[#1F1D1A] transition-all duration-300 hover:-translate-y-1 hover:bg-[#E8DDCB]"
-              >
-                Join the club
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <div className="mt-14 grid gap-5 lg:grid-cols-[1.1fr_0.9fr_1fr]">
-              {testimonials.map((testimonial, index) => (
-                <article
-                  key={testimonial.name}
-                  className={`rounded-lg border border-white/10 bg-white/[0.04] p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.07] sm:p-8 ${
-                    index === 1 ? 'lg:mt-10' : ''
-                  }`}
-                >
-                  <p className="text-lg leading-8 text-[#EFE4D2]">"{testimonial.quote}"</p>
-                  <div className="mt-8 border-t border-white/10 pt-5">
-                    <p className="font-semibold">{testimonial.name}</p>
-                    <p className="mt-1 text-sm text-[#CFC0AA]">{testimonial.role}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+    <div
+      id="top"
+      lang="az"
+      className="min-h-screen bg-bookla-paper font-inter text-bookla-forest antialiased [font-feature-settings:'locl'_0]"
+    >
+      <SiteHeader home />
+      <main>
+        <Hero />
+        <HowItWorks />
+        <BookClubs />
+        <ReadingTools />
+        <InsideBookla />
+        <ReadingCommunity />
+        <Invitation />
       </main>
-
-      <footer className="bg-[#F7F0E6] px-5 py-12 sm:px-8 lg:px-10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-8 border-t border-[#D8C9B3] pt-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-lg font-semibold tracking-[-0.03em]">BookClub</p>
-            <p className="mt-2 text-sm text-[#756B5E]">A quieter way to read together.</p>
-          </div>
-
-          <div className="flex flex-wrap gap-6 text-sm font-medium text-[#625B50]">
-            <a href="#benefits" className="transition-colors duration-300 hover:text-[#1F1D1A]">
-              Why it works
-            </a>
-            <a href="#inside" className="transition-colors duration-300 hover:text-[#1F1D1A]">
-              Inside the club
-            </a>
-            <Link to="/login" className="transition-colors duration-300 hover:text-[#1F1D1A]">
-              Log in
-            </Link>
-          </div>
-
-          <p className="text-sm text-[#756B5E]">&copy; 2026 BookClub</p>
-        </div>
-      </footer>
+      <SiteFooter home />
     </div>
   );
 };

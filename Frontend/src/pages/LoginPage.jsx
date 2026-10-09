@@ -235,6 +235,7 @@ const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-stone-400 hover:text-stone-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -312,13 +313,13 @@ const LoginPage = () => {
           {/* Footer */}
           <p className="mt-8 text-center text-sm text-stone-500">
             By signing in, you agree to our{' '}
-            <a href="#" className="font-medium text-stone-700 hover:text-stone-900 transition-colors">
+            <Link to="/terms" className="font-medium text-stone-700 hover:text-stone-900 transition-colors">
               Terms of Service
-            </a>{' '}
+            </Link>{' '}
             and{' '}
-            <a href="#" className="font-medium text-stone-700 hover:text-stone-900 transition-colors">
+            <Link to="/privacy" className="font-medium text-stone-700 hover:text-stone-900 transition-colors">
               Privacy Policy
-            </a>
+            </Link>
           </p>
         </div>
       </div>

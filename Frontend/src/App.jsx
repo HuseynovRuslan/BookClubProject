@@ -21,6 +21,9 @@ import CommunityPage from './pages/CommunityPage';
 import NewsPage from './pages/NewsPage';
 import FeedbackPage from './pages/FeedbackPage';
 import AiRecommendationsPage from './pages/AiRecommendationsPage';
+import AboutPage from './pages/info/AboutPage';
+import PrivacyPage from './pages/info/PrivacyPage';
+import TermsPage from './pages/info/TermsPage';
 
 // Admin imports
 import AdminLayout from './layouts/AdminLayout';
@@ -35,7 +38,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 // Layout component to show banner on relevant pages
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const hideOnRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+  const hideOnRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/about', '/privacy', '/terms'];
   const isAdminRoute = location.pathname.startsWith('/admin');
   const showBanner = !hideOnRoutes.includes(location.pathname) && !isAdminRoute;
 
@@ -62,6 +65,9 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/news" element={<NewsPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
 
               {/* Protected Routes - Require Authentication AND Email Verification */}
               <Route

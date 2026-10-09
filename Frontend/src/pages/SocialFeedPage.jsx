@@ -245,7 +245,7 @@ const EmptyState = ({ feedType, onSwitchFeed }) => (
         </button>
       )}
       <Link
-        to="/browse"
+        to="/community"
         className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium"
       >
         <Search className="w-4 h-4" />

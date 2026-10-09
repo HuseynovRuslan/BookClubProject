@@ -75,7 +75,7 @@ const RegisterPage = () => {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="w-6 h-6 text-amber-500" />
-              <span className="text-amber-600 font-medium text-sm">Start your journey</span>
+              <span className="text-amber-700 font-medium text-sm">Start your journey</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold text-stone-900 mb-2">
               Join the Club
@@ -263,6 +263,7 @@ const RegisterPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-stone-400 hover:text-stone-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -305,6 +306,7 @@ const RegisterPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-stone-400 hover:text-stone-600 transition-colors"
                 >
                   {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -372,13 +374,13 @@ const RegisterPage = () => {
           {/* Footer */}
           <p className="mt-6 text-center text-xs text-stone-500">
             By creating an account, you agree to our{' '}
-            <a href="#" className="font-medium text-stone-700 hover:text-stone-900">
+            <Link to="/terms" className="font-medium text-stone-700 hover:text-stone-900">
               Terms
-            </a>{' '}
+            </Link>{' '}
             and{' '}
-            <a href="#" className="font-medium text-stone-700 hover:text-stone-900">
+            <Link to="/privacy" className="font-medium text-stone-700 hover:text-stone-900">
               Privacy Policy
-            </a>
+            </Link>
           </p>
         </div>
       </div>
@@ -419,7 +421,7 @@ const RegisterPage = () => {
             </h2>
 
             <p className="text-white/70 text-lg leading-relaxed mb-8">
-              Track your reading progress, discover new books, connect with fellow readers, and build your digital bookshelf.
+              Discover new books, share reviews and quotes, connect with fellow readers, and build your digital bookshelf.
             </p>
 
             {/* Features List */}
