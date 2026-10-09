@@ -1,24 +1,6 @@
-﻿import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Send,
-  Search,
-  MessageCircle,
-  User,
-  Check,
-  CheckCheck,
-  Loader,
-  Circle,
-  X,
-  Trash2,
-  MoreVertical,
-  Pencil,
-  Save,
-  Lock,
-  Mail,
-  ShieldAlert,
-} from 'lucide-react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
   getConversations,
   getMessages,
@@ -32,39 +14,123 @@ import { getUserProfileById } from '../api/users';
 import signalRService from '../services/signalrService';
 import { useAuth } from '../context/AuthContext';
 import { useSignalR } from '../context/SignalRContext';
-import { toast } from 'react-toastify';
+import { Avatar, Button, ButtonLink, Dialog, EmptyState, Eyebrow, Icon, SearchField } from '../components/app/ui';
+import { displayName, formatDate } from '../components/app/format';
+import '../styles/app/messages.css';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
+// Bookla 2.0 "Mesajlar" (Make "Messages"): conversations from the API, real-time updates through
+// SignalR (new messages, online status, read receipts), edit/delete own messages, delete conversations
+// and start a new conversation from ?user=<id> or from navigation state ({ selectedUserId }).
+
+const pad = (value) => String(value).padStart(2, '0');
+
+const toDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+// Whole days between the date and today (0 = today, 1 = yesterday).
+const daysAgo = (date) => {
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((startOfDay(new Date()) - startOfDay(date)) / 86400000);
+};
+
+const clockTime = (value) => {
+  const date = toDate(value);
+  return date ? `${pad(date.getHours())}:${pad(date.getMinutes())}` : '';
+};
+
+const dayKey = (value) => toDate(value)?.toDateString() || '';
+
+// Day separator in the conversation: "Bu gün", "Dünən", "9 okt 2026".
+const dayLabel = (value) => {
+  const date = toDate(value);
+  if (!date) return '';
+  const days = daysAgo(date);
+  if (days === 0) return 'Bu gün';
+  if (days === 1) return 'Dünən';
+  return formatDate(date);
+};
+
+// Time of the last message in the conversation list: "14:05", "dünən", "9 okt".
+const listTime = (value) => {
+  const date = toDate(value);
+  if (!date) return '';
+  const days = daysAgo(date);
+  if (days === 0) return clockTime(date);
+  if (days === 1) return 'dünən';
+  const text = formatDate(date);
+  return date.getFullYear() === new Date().getFullYear() ? text.replace(/ \d{4}$/, '') : text;
+};
+
+const profilePath = (person) => `/profile/${person?.username || person?.id}`;
+
+// Read receipt: one tick when sent, two when the other reader has opened it.
+const ReceiptIcon = ({ read }) => (
+  <svg aria-hidden="true" className="icon" height="14" viewBox="0 0 24 24" width={read ? 17 : 14}>
+    {read ? (
+      <>
+        <path d="m2 12.5 4.5 4.5L16 7.5" />
+        <path d="m11.5 16.5.5.5 9.5-9.5" />
+      </>
+    ) : (
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    )}
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg aria-hidden="true" className="icon" height="30" viewBox="0 0 24 24" width="30">
+    <rect height="10" rx="2" width="14" x="5" y="11" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </svg>
+);
+
+const PageHeading = ({ children }) => (
+  <header className="page-heading-row">
+    <div>
+      <Eyebrow>ŞƏXSİ SÖHBƏTLƏR</Eyebrow>
+      <h1>Mesajlar</h1>
+      <p>Oxuduqlarınız haqqında sakit və şəxsi söhbətlər.</p>
+    </div>
+    {children}
+  </header>
+);
 
 const ChatPage = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const { user, emailConfirmed, resendConfirmationEmail } = useAuth();
   const [sendingVerification, setSendingVerification] = useState(false);
-  const { 
-    newMessage, 
-    clearNewMessage, 
-    onlineUserIds, 
+  const {
+    newMessage,
+    clearNewMessage,
+    onlineUserIds,
     resetUnreadCount,
+    setTotalUnreadCount,
     joinConversation: signalRJoin,
     leaveConversation: signalRLeave,
     isConnected: signalRConnected,
-    setCurrentConversationUser
+    setCurrentConversationUser,
   } = useSignalR();
-  const messagesEndRef = useRef(null);
+  const messagesBoxRef = useRef(null);
   const inputRef = useRef(null);
+  // The other reader of the conversation on screen. Lets a late history response for a conversation the
+  // reader already left be ignored, and lets the unmount cleanup leave the right SignalR group.
+  const activeUserRef = useRef(null);
 
   // State
   const [conversations, setConversations] = useState([]);
+  const [conversationsError, setConversationsError] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [messagesError, setMessagesError] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showMobileChat, setShowMobileChat] = useState(false);
   const [messageMenuOpen, setMessageMenuOpen] = useState(null); // Track which message's menu is open
   const [deletingMessageId, setDeletingMessageId] = useState(null);
   const [editingMessageId, setEditingMessageId] = useState(null);
@@ -73,7 +139,7 @@ const ChatPage = () => {
   const [deletingConversationId, setDeletingConversationId] = useState(null);
   const [showDeleteConversationModal, setShowDeleteConversationModal] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
-  
+
   // Helper function to check if user is online
   const isUserOnline = (userId) => onlineUserIds.includes(userId);
 
@@ -83,22 +149,23 @@ const ChatPage = () => {
 
     return () => {
       // Cleanup: leave conversation and clear current conversation user
-      if (selectedConversation) {
-        signalRService.leaveConversation(selectedConversation.otherUser?.id);
+      if (activeUserRef.current) {
+        signalRService.leaveConversation(activeUserRef.current);
       }
       // Clear current conversation user so new messages will increment unread count
       setCurrentConversationUser(null);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle URL query param OR navigation state for pre-selecting user OR auto-select first conversation
   useEffect(() => {
     // Don't do anything if still loading or already have a selected conversation
     if (loadingConversations || selectedConversation) return;
-    
+
     // Check both URL params and navigation state
     const userId = searchParams.get('user') || location.state?.selectedUserId;
-    
+
     if (userId) {
       // If user ID is specified, select that conversation or create virtual one
       const conv = conversations.find((c) => c.otherUser?.id === userId);
@@ -112,13 +179,14 @@ const ChatPage = () => {
       // Auto-select the first conversation only if we have conversations
       handleSelectConversation(conversations[0]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations, loadingConversations, searchParams, location.state]);
 
   // Create a virtual conversation when navigating to message a user with no existing conversation
   const createVirtualConversation = async (userId) => {
     try {
       const userProfile = await getUserProfileById(userId);
-      
+
       // Create a virtual conversation object
       const virtualConversation = {
         id: `virtual-${userId}`, // Temporary ID
@@ -135,20 +203,22 @@ const ChatPage = () => {
         isVirtual: true, // Flag to indicate this is temporary
       };
 
+      activeUserRef.current = userProfile.id;
       setSelectedConversation(virtualConversation);
-      setShowMobileChat(true);
       setMessages([]);
-      
+      setMessagesError(false);
+      setLoadingMessages(false);
+
       // Tell SignalR context which user we're chatting with
       setCurrentConversationUser(userProfile.id);
-      
+
       // Join conversation
       if (userProfile.id) {
         await signalRJoin(userProfile.id);
       }
     } catch (error) {
       console.error('Error creating virtual conversation:', error);
-      toast.error('Failed to start conversation');
+      toast.error('Söhbətə başlamaq mümkün olmadı');
     }
   };
 
@@ -157,22 +227,37 @@ const ChatPage = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Close message menu when clicking outside
+  // Close message menu when clicking outside (or pressing Escape)
   useEffect(() => {
-    const handleClickOutside = () => {
-      if (messageMenuOpen) {
-        setMessageMenuOpen(null);
-      }
+    if (!messageMenuOpen) return undefined;
+    const closeMenu = () => setMessageMenuOpen(null);
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') closeMenu();
     };
-    
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+
+    document.addEventListener('click', closeMenu);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('click', closeMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [messageMenuOpen]);
 
   // Reset unread count when entering chat page
   useEffect(() => {
     resetUnreadCount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Keep the "Mesajlar" badge in the header equal to the unread messages of the conversations that are not
+  // open (the open one is marked as read). Runs after the list loads and after every change to it.
+  const selectedConversationId = selectedConversation?.id;
+  useEffect(() => {
+    if (loadingConversations || conversationsError) return;
+    setTotalUnreadCount(
+      conversations.reduce((sum, c) => (c.id === selectedConversationId ? sum : sum + (c.unreadCount || 0)), 0)
+    );
+  }, [conversations, conversationsError, loadingConversations, selectedConversationId, setTotalUnreadCount]);
 
   // Handle new messages from global SignalR context
   useEffect(() => {
@@ -180,6 +265,7 @@ const ChatPage = () => {
       handleNewMessage(newMessage);
       clearNewMessage();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newMessage]);
 
   // Handle message read events from SignalR
@@ -204,7 +290,6 @@ const ChatPage = () => {
     };
   }, []);
 
-
   const initializeChat = async () => {
     // SignalR connection is managed by global SignalRContext
     // Just fetch conversations here
@@ -214,12 +299,31 @@ const ChatPage = () => {
   const fetchConversations = async () => {
     try {
       setLoadingConversations(true);
+      setConversationsError(false);
       const data = await getConversations(1, 50);
       setConversations(data?.items || []);
-    } catch (error) {
-      toast.error('Failed to load conversations');
+    } catch {
+      setConversationsError(true);
+      toast.error('Söhbətləri yükləmək mümkün olmadı');
     } finally {
       setLoadingConversations(false);
+    }
+  };
+
+  // Reload the list without the loading state (a message arrived from a reader who is not in it yet).
+  const refreshConversationsQuietly = async () => {
+    try {
+      const data = await getConversations(1, 50);
+      const list = data?.items || [];
+      setConversations(list);
+      // A conversation started from a profile becomes the real one once the server has it.
+      setSelectedConversation((current) => {
+        if (!current?.isVirtual) return current;
+        const real = list.find((c) => c.otherUser?.id === current.otherUser?.id);
+        return real ? { ...real, unreadCount: 0 } : current;
+      });
+    } catch (error) {
+      console.error('Error refreshing conversations:', error);
     }
   };
 
@@ -235,32 +339,42 @@ const ChatPage = () => {
     );
 
     setSelectedConversation({ ...conversation, unreadCount: 0 });
-    setShowMobileChat(true);
+    activeUserRef.current = conversation.otherUser?.id || null;
+    setMessages([]);
+    setMessageMenuOpen(null);
+    setEditingMessageId(null);
+    setEditedMessageText('');
 
     // Tell SignalR context which user we're chatting with (to prevent unread increment)
     setCurrentConversationUser(conversation.otherUser?.id);
 
-    // Join new conversation
-    if (conversation.otherUser?.id) {
-      await signalRJoin(conversation.otherUser.id);
-    }
-
-    // Fetch messages
-    await fetchMessages(conversation);
+    // Join the new conversation and fetch its messages. Joining waits for the hub connection (up to 3 s
+    // when it is down), so both run together and the history never waits for SignalR.
+    await Promise.all([
+      conversation.otherUser?.id ? signalRJoin(conversation.otherUser.id) : null,
+      fetchMessages(conversation),
+    ]);
   };
 
   const fetchMessages = async (conversation) => {
     const otherUserId = conversation?.otherUser?.id;
     const conversationId = conversation?.id;
     if (!otherUserId) return;
+    const isActive = () => activeUserRef.current === otherUserId;
+    let loaded = false;
 
     try {
       setLoadingMessages(true);
+      setMessagesError(false);
       const data = await getMessages(otherUserId, 1, 100);
       const items = data?.items || [];
       // Reverse to show oldest first (API returns newest first)
       const sortedMessages = [...items].reverse();
-      setMessages(sortedMessages);
+      if (isActive()) {
+        setMessages(sortedMessages);
+        setLoadingMessages(false);
+      }
+      loaded = true;
 
       // Get the last message to update conversation
       const lastMessage = sortedMessages[sortedMessages.length - 1];
@@ -287,17 +401,18 @@ const ChatPage = () => {
           return c;
         })
       );
-    } catch (error) {
-      toast.error('Failed to load messages');
+    } catch {
+      if (!loaded && isActive()) setMessagesError(true);
+      toast.error('Mesajları yükləmək mümkün olmadı');
     } finally {
-      setLoadingMessages(false);
+      if (isActive()) setLoadingMessages(false);
     }
   };
 
   const handleNewMessage = (message) => {
     // Determine the other user ID in this message
     const otherUserId = message.senderId === user?.id ? message.receiverId : message.senderId;
-    
+
     // Check if message is for current conversation
     const isCurrentConversation =
       selectedConversation &&
@@ -328,8 +443,14 @@ const ChatPage = () => {
       markAsRead(message.id);
     }
 
-    // Update conversation list with last message (only for incoming messages)
-    // NOTE: Don't increment unreadCount here - SignalRContext already handles it
+    // A reader who is not in the list yet (first message to us): reload the list from the server.
+    if (!conversations.some((c) => c.otherUser?.id === otherUserId)) {
+      refreshConversationsQuietly();
+      return;
+    }
+
+    // Update conversation list with last message (only for incoming messages). The header badge
+    // (SignalRContext) is kept in step with these counts by the effect above.
     setConversations((prev) =>
       prev.map((c) => {
         if (c.otherUser?.id === otherUserId) {
@@ -337,8 +458,8 @@ const ChatPage = () => {
             ...c,
             lastMessageText: message.text,
             lastMessageAt: message.createdAt,
-            // Reset unread count to 0 if current conversation (SignalRContext will handle increment for others)
-            unreadCount: isCurrentConversation ? 0 : (c.unreadCount || 0),
+            // Current conversation stays read; any other one shows the new unread message in the list
+            unreadCount: isCurrentConversation ? 0 : (c.unreadCount || 0) + 1,
           };
         }
         return c;
@@ -374,7 +495,7 @@ const ChatPage = () => {
         const freshConversations = await getConversations(1, 50);
         const convList = freshConversations?.items || [];
         setConversations(convList);
-        
+
         // Find and select the newly created conversation
         const newConv = convList.find((c) => c.otherUser?.id === otherUserId);
         if (newConv) {
@@ -387,7 +508,7 @@ const ChatPage = () => {
       } else {
         // Update existing conversation with the sent message text
         const sentText = newMessage.text || textToSend;
-        
+
         setConversations((prev) =>
           prev.map((c) => {
             if (c.id === conversationId) {
@@ -402,8 +523,8 @@ const ChatPage = () => {
           })
         );
       }
-    } catch (error) {
-      toast.error('Failed to send message');
+    } catch {
+      toast.error('Mesajı göndərmək mümkün olmadı');
       setMessageText(textToSend); // Restore text on error
     } finally {
       setSending(false);
@@ -413,18 +534,18 @@ const ChatPage = () => {
   // Delete message handler
   const handleDeleteMessage = async (messageId) => {
     if (!messageId) return;
-    
+
     try {
       setDeletingMessageId(messageId);
       await deleteMessage(messageId);
-      
+
       // Remove from local state
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
-      
+
       // Update conversation's last message if needed
       const remainingMessages = messages.filter((m) => m.id !== messageId);
       const lastMessage = remainingMessages[remainingMessages.length - 1];
-      
+
       if (lastMessage) {
         setConversations((prev) =>
           prev.map((c) => {
@@ -439,11 +560,11 @@ const ChatPage = () => {
           })
         );
       }
-      
-      toast.success('Message deleted');
+
+      toast.success('Mesaj silindi');
       setMessageMenuOpen(null);
-    } catch (error) {
-      toast.error('Failed to delete message');
+    } catch {
+      toast.error('Mesajı silmək mümkün olmadı');
     } finally {
       setDeletingMessageId(null);
     }
@@ -463,7 +584,7 @@ const ChatPage = () => {
   const handleSaveEditedMessage = async (messageId) => {
     const trimmedText = editedMessageText.trim();
     if (!trimmedText) {
-      toast.error('Message cannot be empty');
+      toast.error('Mesaj boş ola bilməz');
       return;
     }
 
@@ -476,7 +597,7 @@ const ChatPage = () => {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === messageId
-            ? { ...m, ...updated, text: updatedText }
+            ? { ...m, ...updated, text: updatedText, isEdited: true }
             : m
         )
       );
@@ -495,11 +616,11 @@ const ChatPage = () => {
         );
       }
 
-      toast.success('Message updated');
+      toast.success('Mesaj yeniləndi');
       setEditingMessageId(null);
       setEditedMessageText('');
-    } catch (error) {
-      toast.error('Failed to update message');
+    } catch {
+      toast.error('Mesajı yeniləmək mümkün olmadı');
     } finally {
       setSavingEditMessageId(null);
     }
@@ -509,6 +630,11 @@ const ChatPage = () => {
     if (e) e.stopPropagation();
     setConversationToDelete(conversation);
     setShowDeleteConversationModal(true);
+  };
+
+  const closeDeleteConversation = () => {
+    setShowDeleteConversationModal(false);
+    setConversationToDelete(null);
   };
 
   const handleDeleteConversation = async () => {
@@ -522,67 +648,36 @@ const ChatPage = () => {
       );
 
       if (selectedConversation?.id === conversationToDelete.id) {
+        activeUserRef.current = null;
         setSelectedConversation(null);
         setMessages([]);
-        setShowMobileChat(false);
         setCurrentConversationUser(null);
       }
 
-      toast.success('Conversation deleted');
+      toast.success('Söhbət silindi');
       setShowDeleteConversationModal(false);
       setConversationToDelete(null);
-    } catch (error) {
-      toast.error('Failed to delete conversation');
+    } catch {
+      toast.error('Söhbəti silmək mümkün olmadı');
     } finally {
       setDeletingConversationId(null);
     }
   };
 
-  // Note: Using startEditMessage/handleSaveEditedMessage and openDeleteConversation functions above
-
+  // Scroll the message pane (not the page) to the newest message.
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const box = messagesBoxRef.current;
+    if (box) box.scrollTop = box.scrollHeight;
   };
 
-  const formatTime = (dateStr) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
-    } else {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      });
-    }
-  };
-
-  const getProfilePicture = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `${BASE_URL}${url}`;
-  };
-
-  const filteredConversations = conversations.filter((c) =>
-    c.otherUser?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.otherUser?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.otherUser?.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const searchText = searchTerm.trim().toLocaleLowerCase('az');
+  const filteredConversations = conversations.filter((c) => {
+    if (!searchText) return true;
+    const person = c.otherUser;
+    return [person?.username, person?.firstName, person?.lastName, displayName(person)]
+      .filter(Boolean)
+      .some((value) => value.toLocaleLowerCase('az').includes(searchText));
+  });
 
   // Handle resend verification from lock screen
   const handleResendVerification = async () => {
@@ -594,522 +689,359 @@ const ChatPage = () => {
   // Email verification lock screen
   if (!emailConfirmed) {
     return (
-      <div className="min-h-screen bg-stone-50 flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-stone-200 px-4 py-3">
-          <div className="max-w-6xl mx-auto flex items-center gap-3">
-            <button
-              onClick={() => navigate('/')}
-              className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-stone-600" />
-            </button>
-            <h1 className="text-lg font-bold text-stone-900">Messages</h1>
-          </div>
-        </div>
-
-        {/* Lock Screen */}
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="max-w-md w-full text-center">
-            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ShieldAlert className="w-10 h-10 text-amber-600" />
-            </div>
-            
-            <h2 className="text-2xl font-bold text-stone-900 mb-3">
-              Email Verification Required
-            </h2>
-            
-            <p className="text-stone-600 mb-6">
-              Please verify your email address to start chatting with other members. 
-              Check your inbox for the verification link.
+      <div className="page messages-page">
+        <PageHeading />
+        <section aria-labelledby="messages-locked-title" className="messages-locked">
+          <span className="locked-mark">
+            <LockIcon />
+          </span>
+          <Eyebrow>E-POÇT TƏSDİQİ</Eyebrow>
+          <h2 id="messages-locked-title">Mesajlaşmaq üçün e-poçtunu təsdiqlə</h2>
+          <p>
+            Digər oxucularla yazışmağa başlamaq üçün e-poçt ünvanını təsdiqləməlisən. Təsdiq linki gələnlər
+            qutuna göndərilib.
+          </p>
+          {user?.email && (
+            <p className="locked-email">
+              <span>Təsdiq linki göndərilən ünvan</span>
+              <strong>{user.email}</strong>
             </p>
-
-            <div className="bg-white border border-stone-200 rounded-xl p-4 mb-6">
-              <div className="flex items-center gap-3 text-left">
-                <Mail className="w-5 h-5 text-stone-400 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-stone-500">Verification sent to</p>
-                  <p className="font-medium text-stone-900 truncate">{user?.email}</p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleResendVerification}
-              disabled={sendingVerification}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
-            >
-              {sendingVerification ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="w-4 h-4" />
-                  Resend Verification Email
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={() => navigate('/')}
-              className="mt-4 text-stone-600 hover:text-stone-900 text-sm font-medium transition-colors"
-            >
-              Back to Home
-            </button>
-          </div>
-        </div>
+          )}
+          <Button aria-busy={sendingVerification} disabled={sendingVerification} onClick={handleResendVerification}>
+            {sendingVerification ? 'Göndərilir…' : 'Təsdiq məktubunu yenidən göndər'}
+          </Button>
+        </section>
       </div>
     );
   }
 
-  return (
-    <div className="h-screen flex flex-col bg-stone-50">
-      {/* Header */}
-      <div className="bg-white border-b border-stone-200 px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/')}
-              className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-stone-600" />
-            </button>
-            <h1 className="text-lg font-bold text-stone-900">Messages</h1>
-          </div>
-          
-          {signalRConnected ? (
-            <div className="flex items-center gap-1.5 text-emerald-600 text-sm">
-              <Circle className="w-2 h-2 fill-current" />
-              <span>Connected</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 text-stone-400 text-sm">
-              <Circle className="w-2 h-2" />
-              <span>Offline</span>
-            </div>
+  const requestedUserId = searchParams.get('user') || location.state?.selectedUserId;
+  const listUnavailable = !loadingConversations && !selectedConversation && !requestedUserId;
+  const selectedPerson = selectedConversation?.otherUser;
+  const selectedName = displayName(selectedPerson);
+  const selectedOnline = isUserOnline(selectedPerson?.id);
+
+  const renderConversationButton = (conv) => {
+    const person = conv.otherUser;
+    const name = displayName(person);
+    const active = selectedConversation?.id === conv.id;
+    const online = isUserOnline(person?.id);
+    // Show last message from messages array if this is selected conversation
+    const preview = active && messages.length > 0 ? messages[messages.length - 1]?.text : conv.lastMessageText;
+    // Hide badge if this is the currently selected conversation
+    const unread = !active && conv.unreadCount > 0 ? conv.unreadCount : 0;
+
+    return (
+      <button
+        aria-current={active ? 'true' : undefined}
+        className={active ? 'active' : ''}
+        key={conv.id}
+        onClick={() => handleSelectConversation(conv)}
+        type="button"
+      >
+        <span className="avatar-wrap">
+          <Avatar name={name} size="small" src={person?.profilePictureUrl} />
+          {online && <span className="presence" />}
+        </span>
+        <span>
+          <strong>{name}</strong>
+          <small>{conv.isVirtual ? 'Yeni söhbət' : preview || 'Hələ mesaj yoxdur'}</small>
+          {online && <span className="sr-only">Onlayn</span>}
+        </span>
+        <span className="conversation-side">
+          {!conv.isVirtual && conv.lastMessageAt && (
+            <time dateTime={conv.lastMessageAt}>{listTime(conv.lastMessageAt)}</time>
           )}
-        </div>
-      </div>
+          {unread > 0 && (
+            <i>
+              {unread > 9 ? '9+' : unread}
+              <span className="sr-only"> oxunmamış mesaj</span>
+            </i>
+          )}
+        </span>
+      </button>
+    );
+  };
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden max-w-6xl mx-auto w-full">
-        {/* Conversations Sidebar */}
-        <div
-          className={`w-full md:w-80 bg-white border-r border-stone-200 flex flex-col ${
-            showMobileChat ? 'hidden md:flex' : 'flex'
-          }`}
-        >
-          {/* Search */}
-          <div className="p-3 border-b border-stone-100">
-            <div className="flex items-center gap-2 px-3 py-2 bg-stone-100 rounded-lg">
-              <Search className="w-4 h-4 text-stone-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search conversations..."
-                className="flex-1 bg-transparent text-stone-900 placeholder:text-stone-400 focus:outline-none text-sm"
-              />
-            </div>
-          </div>
+  const renderMessage = (message, idx) => {
+    const isOwn = message.senderId === user?.id;
+    const showDate = idx === 0 || dayKey(message.createdAt) !== dayKey(messages[idx - 1]?.createdAt);
+    const isMenuOpen = messageMenuOpen === message.id;
+    const isDeleting = deletingMessageId === message.id;
+    const isEditing = editingMessageId === message.id;
+    const isSaving = savingEditMessageId === message.id;
+    const side = isOwn ? 'outgoing' : 'incoming';
 
-          {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto">
-            {loadingConversations ? (
-              <div className="flex items-center justify-center h-40">
-                <Loader className="w-6 h-6 text-stone-400 animate-spin" />
-              </div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-center p-4">
-                <MessageCircle className="w-10 h-10 text-stone-300 mb-2" />
-                <p className="text-stone-500 text-sm">No conversations yet</p>
-                <p className="text-stone-400 text-xs mt-1">
-                  Start a conversation with someone
-                </p>
-              </div>
-            ) : (
-              filteredConversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => handleSelectConversation(conv)}
+    return (
+      <Fragment key={message.id}>
+        {showDate && <span className="day-label">{dayLabel(message.createdAt)}</span>}
+        <div aria-busy={isDeleting || undefined} className={`message-row ${side} ${isDeleting ? 'is-busy' : ''}`}>
+          <div className={`bubble ${side} ${isEditing ? 'editing' : ''}`}>
+            {isEditing ? (
+              <div className="bubble-edit">
+                <label className="sr-only" htmlFor={`edit-message-${message.id}`}>
+                  Mesajı redaktə et
+                </label>
+                <textarea
+                  autoFocus
+                  disabled={isSaving}
+                  id={`edit-message-${message.id}`}
+                  onChange={(e) => setEditedMessageText(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === 'Escape') {
                       e.preventDefault();
-                      handleSelectConversation(conv);
+                      cancelEditMessage();
+                    } else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      handleSaveEditedMessage(message.id);
                     }
                   }}
-                  role="button"
-                  tabIndex={0}
-                  className={`w-full flex items-center gap-3 p-3 hover:bg-stone-50 transition-colors text-left group cursor-pointer ${
-                    selectedConversation?.id === conv.id ? 'bg-stone-100' : ''
-                  }`}
-                >
-                  {/* Avatar */}
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-full bg-stone-200 overflow-hidden">
-                      {conv.otherUser?.profilePictureUrl ? (
-                        <img
-                          src={getProfilePicture(conv.otherUser.profilePictureUrl)}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-stone-700 text-white text-lg font-medium">
-                          {conv.otherUser?.username?.[0]?.toUpperCase() || 'U'}
-                        </div>
-                      )}
-                    </div>
-                    {isUserOnline(conv.otherUser?.id) && (
-                      <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-stone-900 truncate">
-                        {conv.otherUser?.firstName
-                          ? `${conv.otherUser.firstName} ${conv.otherUser.lastName || ''}`
-                          : conv.otherUser?.username || 'Unknown'}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-stone-400">
-                          {formatDate(conv.lastMessageAt)}
-                        </span>
-                        <button
-                          onClick={(e) => openDeleteConversation(conv, e)}
-                          className="p-1 rounded-md hover:bg-stone-100 opacity-0 group-hover:opacity-100 transition-opacity"
-                          disabled={deletingConversationId === conv.id}
-                          aria-label="Delete conversation"
-                        >
-                          {deletingConversationId === conv.id ? (
-                            <Loader className="w-3.5 h-3.5 text-stone-400 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3.5 h-3.5 text-stone-400" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-sm text-stone-500 truncate">
-                        {/* Show last message from messages array if this is selected conversation */}
-                        {selectedConversation?.id === conv.id && messages.length > 0
-                          ? messages[messages.length - 1]?.text
-                          : conv.lastMessageText || 'No messages yet'}
-                      </p>
-                      {/* Hide badge if this is the currently selected conversation */}
-                      {conv.unreadCount > 0 && selectedConversation?.id !== conv.id && (
-                        <span className="ml-2 px-2 py-0.5 bg-emerald-500 text-white text-xs font-medium rounded-full">
-                          {conv.unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Chat Area */}
-        <div
-          className={`flex-1 flex flex-col bg-stone-50 ${
-            !showMobileChat ? 'hidden md:flex' : 'flex'
-          }`}
-        >
-          {selectedConversation ? (
-            <>
-              {/* Chat Header */}
-              <div className="bg-white border-b border-stone-200 px-4 py-3 flex items-center gap-3">
-                <button
-                  onClick={() => setShowMobileChat(false)}
-                  className="md:hidden p-1 hover:bg-stone-100 rounded-lg"
-                >
-                  <ArrowLeft className="w-5 h-5 text-stone-600" />
-                </button>
-
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-stone-200 overflow-hidden">
-                    {selectedConversation.otherUser?.profilePictureUrl ? (
-                      <img
-                        src={getProfilePicture(selectedConversation.otherUser.profilePictureUrl)}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-stone-700 text-white font-medium">
-                        {selectedConversation.otherUser?.username?.[0]?.toUpperCase() || 'U'}
-                      </div>
-                    )}
-                  </div>
-                  {isUserOnline(selectedConversation.otherUser?.id) && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
-                  )}
-                </div>
-
+                  rows={2}
+                  value={editedMessageText}
+                />
                 <div>
-                  <p className="font-medium text-stone-900">
-                    {selectedConversation.otherUser?.firstName
-                      ? `${selectedConversation.otherUser.firstName} ${selectedConversation.otherUser.lastName || ''}`
-                      : selectedConversation.otherUser?.username || 'Unknown'}
-                  </p>
-                  <p className="text-xs text-stone-500">
-                    {isUserOnline(selectedConversation.otherUser?.id)
-                      ? 'Online'
-                      : 'Offline'}
-                  </p>
+                  <button disabled={isSaving} onClick={cancelEditMessage} type="button">
+                    Ləğv et
+                  </button>
+                  <button
+                    className="bubble-save"
+                    disabled={isSaving}
+                    onClick={() => handleSaveEditedMessage(message.id)}
+                    type="button"
+                  >
+                    {isSaving ? 'Saxlanılır…' : 'Yadda saxla'}
+                  </button>
                 </div>
               </div>
+            ) : (
+              <p>{message.text}</p>
+            )}
+            <span className="bubble-meta">
+              <time dateTime={message.createdAt}>{clockTime(message.createdAt)}</time>
+              {(message.isEdited || message.updatedAt) && <span>· redaktə edilib</span>}
+              {isOwn && (
+                <span className={`receipt ${message.isRead ? 'read' : ''}`} title={message.isRead ? 'Oxunub' : 'Göndərildi'}>
+                  <ReceiptIcon read={message.isRead} />
+                  <span className="sr-only">{message.isRead ? 'Oxunub' : 'Göndərildi'}</span>
+                </span>
+              )}
+            </span>
+          </div>
 
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {loadingMessages ? (
-                  <div className="flex items-center justify-center h-full">
-                    <Loader className="w-6 h-6 text-stone-400 animate-spin" />
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <MessageCircle className="w-12 h-12 text-stone-300 mb-3" />
-                    <p className="text-stone-500">No messages yet</p>
-                    <p className="text-sm text-stone-400 mt-1">
-                      Send a message to start the conversation
-                    </p>
-                  </div>
-                ) : (
-                  messages.map((message, idx) => {
-                    const isOwn = message.senderId === user?.id;
-                    const showDate =
-                      idx === 0 ||
-                      formatDate(message.createdAt) !==
-                        formatDate(messages[idx - 1]?.createdAt);
-                    const isMenuOpen = messageMenuOpen === message.id;
-                    const isDeleting = deletingMessageId === message.id;
+          {/* Actions for own messages */}
+          {isOwn && !isEditing && (
+            <div className={`message-actions ${isMenuOpen ? 'open' : ''}`}>
+              <button
+                aria-expanded={isMenuOpen}
+                aria-haspopup="menu"
+                aria-label="Mesaj əməliyyatları"
+                className="message-more"
+                disabled={isDeleting}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMessageMenuOpen(isMenuOpen ? null : message.id);
+                }}
+                type="button"
+              >
+                {isDeleting ? <span aria-hidden="true" className="chat-spinner" /> : <Icon name="more" />}
+              </button>
 
-                    return (
-                      <div key={message.id}>
-                        {showDate && (
-                          <div className="flex justify-center my-4">
-                            <span className="px-3 py-1 bg-stone-200 text-stone-600 text-xs rounded-full">
-                              {formatDate(message.createdAt)}
-                            </span>
-                          </div>
-                        )}
-
-                        <div
-                          className={`flex items-center gap-1 group ${isOwn ? 'justify-end' : 'justify-start'}`}
-                        >
-                          {/* Delete button - before message for own messages */}
-                          {isOwn && (
-                            <div className="relative">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMessageMenuOpen(isMenuOpen ? null : message.id);
-                                }}
-                                className="p-1.5 rounded-full hover:bg-stone-200 opacity-0 group-hover:opacity-100 transition-opacity"
-                                disabled={isDeleting}
-                              >
-                                {isDeleting ? (
-                                  <Loader className="w-4 h-4 text-stone-400 animate-spin" />
-                                ) : (
-                                  <MoreVertical className="w-4 h-4 text-stone-400" />
-                                )}
-                              </button>
-                              
-                              {/* Dropdown Menu */}
-                              {isMenuOpen && (
-                                <div className="absolute right-0 bottom-full mb-1 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-10 min-w-[140px]">
-                                  <button
-                                    onClick={() => startEditMessage(message)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteMessage(message.id)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                    Delete
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          <div
-                            className={`max-w-[75%] px-4 py-2.5 rounded-2xl ${
-                              isOwn
-                                ? 'bg-stone-900 text-white rounded-br-md'
-                                : 'bg-white text-stone-900 rounded-bl-md shadow-sm'
-                            } ${isDeleting ? 'opacity-50' : ''}`}
-                          >
-                            {editingMessageId === message.id ? (
-                              <div className="space-y-2">
-                                <textarea
-                                  value={editedMessageText}
-                                  onChange={(e) => setEditedMessageText(e.target.value)}
-                                  rows={2}
-                                  className="w-full text-sm bg-white text-stone-900 rounded-lg p-2 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-300"
-                                />
-                                <div className="flex items-center gap-2 justify-end">
-                                  <button
-                                    onClick={cancelEditMessage}
-                                    disabled={savingEditMessageId === message.id}
-                                    className="text-xs px-2 py-1 rounded-md text-stone-600 hover:bg-stone-100 disabled:opacity-50"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    onClick={() => handleSaveEditedMessage(message.id)}
-                                    disabled={savingEditMessageId === message.id}
-                                    className="text-xs px-2 py-1 rounded-md bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-50 flex items-center gap-1"
-                                  >
-                                    {savingEditMessageId === message.id ? (
-                                      <>
-                                        <Loader className="w-3 h-3 animate-spin" />
-                                        Saving...
-                                      </>
-                                    ) : (
-                                      'Save'
-                                    )}
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <p className="text-sm whitespace-pre-wrap break-words">
-                                {message.text}
-                              </p>
-                            )}
-                            <div
-                              className={`flex items-center gap-1 mt-1 ${
-                                isOwn ? 'justify-end' : 'justify-start'
-                              }`}
-                            >
-                              <span
-                                className={`text-xs ${
-                                  isOwn ? 'text-stone-400' : 'text-stone-500'
-                                }`}
-                              >
-                                {formatTime(message.createdAt)}
-                              </span>
-                              {isOwn && (
-                                message.isRead ? (
-                                  <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
-                                ) : (
-                                  <Check className="w-3.5 h-3.5 text-stone-400" />
-                                )
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Message Input */}
-              <div className="bg-white border-t border-stone-200 p-4">
-                <form onSubmit={handleSendMessage} className="flex items-end gap-3">
-                  <div className="flex-1">
-                    <textarea
-                      ref={inputRef}
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage(e);
-                        }
-                      }}
-                      placeholder="Type a message..."
-                      rows={1}
-                      className="w-full px-4 py-2.5 bg-stone-100 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 resize-none"
-                      style={{ maxHeight: '120px' }}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!messageText.trim() || sending}
-                    className="p-3 bg-stone-900 hover:bg-stone-800 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {sending ? (
-                      <Loader className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Send className="w-5 h-5" />
-                    )}
+              {/* Dropdown Menu */}
+              {isMenuOpen && (
+                <div aria-label="Mesaj əməliyyatları" className={`message-menu ${idx < 2 ? 'below' : ''}`} role="menu">
+                  <button onClick={() => startEditMessage(message)} role="menuitem" type="button">
+                    <Icon name="edit" size={16} />
+                    Redaktə et
                   </button>
-                </form>
-              </div>
-            </>
-          ) : (
-            /* No conversation selected */
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <div className="w-20 h-20 bg-stone-200 rounded-full flex items-center justify-center mb-4">
-                <MessageCircle className="w-10 h-10 text-stone-400" />
-              </div>
-              <h2 className="text-xl font-semibold text-stone-900 mb-2">
-                Your Messages
-              </h2>
-              <p className="text-stone-500 max-w-sm">
-                Select a conversation from the sidebar to start chatting
-              </p>
+                  <button className="danger" onClick={() => handleDeleteMessage(message.id)} role="menuitem" type="button">
+                    <Icon name="trash" size={16} />
+                    Sil
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
-      </div>
+      </Fragment>
+    );
+  };
 
-      {/* Delete Conversation Modal */}
-      {showDeleteConversationModal && conversationToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold text-stone-900 mb-2">
-              Delete Conversation
-            </h3>
-            <p className="text-stone-600 mb-6">
-              Are you sure you want to delete this conversation with{' '}
-              <span className="font-medium">
-                {conversationToDelete.otherUser?.firstName ||
-                  conversationToDelete.otherUser?.username ||
-                  'this user'}
-              </span>
-              ? This will remove all messages and cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowDeleteConversationModal(false);
-                  setConversationToDelete(null);
-                }}
-                className="px-4 py-2 text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConversation}
-                disabled={deletingConversationId === conversationToDelete?.id}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                {deletingConversationId === conversationToDelete?.id ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+  const deletingDialogConversation = deletingConversationId && deletingConversationId === conversationToDelete?.id;
+
+  return (
+    <div className="page messages-page">
+      <PageHeading>
+        <p className={`live-status ${signalRConnected ? 'is-live' : ''}`} role="status">
+          <i aria-hidden="true" />
+          {signalRConnected ? 'Canlı bağlantı' : 'Canlı bağlantı yoxdur'}
+        </p>
+      </PageHeading>
+
+      {listUnavailable && conversationsError ? (
+        <div className="messenger-state">
+          <EmptyState
+            action={<Button onClick={fetchConversations}>Yenidən cəhd et</Button>}
+            text="Bağlantını yoxlayıb yenidən cəhd et."
+            title="Söhbətlər yüklənmədi"
+          />
         </div>
+      ) : listUnavailable && conversations.length === 0 ? (
+        <div className="messenger-state">
+          <EmptyState
+            action={<ButtonLink to="/community">Oxucuları kəşf et</ButtonLink>}
+            text="İcmada oxucuları tap və onların profilindən ilk mesajını yaz. Söhbətlərin burada görünəcək."
+            title="Hələ söhbətin yoxdur"
+          />
+        </div>
+      ) : (
+        <div className="messenger">
+          <aside aria-label="Söhbətlər">
+            <SearchField
+              label="Söhbətlərdə axtar"
+              onChange={setSearchTerm}
+              placeholder="Söhbət axtar..."
+              value={searchTerm}
+            />
+            {selectedConversation?.isVirtual && renderConversationButton(selectedConversation)}
+            {loadingConversations ? (
+              <div aria-label="Söhbətlər yüklənir" className="conversation-skeletons" role="status">
+                {[0, 1, 2, 3].map((item) => (
+                  <span className="conversation-skeleton" key={item}>
+                    <i />
+                    <span />
+                  </span>
+                ))}
+              </div>
+            ) : conversationsError ? (
+              <div className="aside-note" role="alert">
+                <p>Söhbətlər yüklənmədi.</p>
+                <Button onClick={fetchConversations} variant="secondary">
+                  Yenidən cəhd et
+                </Button>
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <p className="aside-note">
+                {searchText ? `“${searchTerm.trim()}” üzrə söhbət tapılmadı.` : 'Digər söhbətlərin burada görünəcək.'}
+              </p>
+            ) : (
+              filteredConversations.map(renderConversationButton)
+            )}
+          </aside>
+
+          {selectedConversation ? (
+            <section aria-label={`${selectedName} ilə söhbət`} className="conversation">
+              <header>
+                <span className="avatar-wrap">
+                  <Avatar name={selectedName} size="small" src={selectedPerson?.profilePictureUrl} />
+                  {selectedOnline && <span className="presence" />}
+                </span>
+                <div>
+                  <strong>
+                    <Link to={profilePath(selectedPerson)}>{selectedName}</Link>
+                  </strong>
+                  {signalRConnected && (
+                    <span className={selectedOnline ? 'is-online' : ''}>{selectedOnline ? 'Onlayn' : 'Oflayn'}</span>
+                  )}
+                </div>
+                {!selectedConversation.isVirtual && (
+                  <button
+                    aria-label={`${selectedName} ilə söhbəti sil`}
+                    className="icon-button conversation-delete"
+                    disabled={deletingConversationId === selectedConversation.id}
+                    onClick={(e) => openDeleteConversation(selectedConversation, e)}
+                    title="Söhbəti sil"
+                    type="button"
+                  >
+                    <Icon name="trash" />
+                  </button>
+                )}
+              </header>
+
+              <div aria-label="Mesajlar" aria-live="polite" className="messages" ref={messagesBoxRef} role="log">
+                {loadingMessages ? (
+                  <div aria-label="Mesajlar yüklənir" className="messages-loading" role="status">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                ) : messagesError ? (
+                  <div className="messages-note" role="alert">
+                    <strong>Mesajlar yüklənmədi</strong>
+                    <p>Bağlantını yoxlayıb yenidən cəhd et.</p>
+                    <Button onClick={() => fetchMessages(selectedConversation)} variant="secondary">
+                      Yenidən cəhd et
+                    </Button>
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="messages-note">
+                    <strong>Hələ mesaj yoxdur</strong>
+                    <p>Söhbətə başlamaq üçün ilk mesajını yaz.</p>
+                  </div>
+                ) : (
+                  messages.map(renderMessage)
+                )}
+              </div>
+
+              <form onSubmit={handleSendMessage}>
+                <textarea
+                  aria-label={`${selectedName} üçün mesaj`}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      handleSendMessage(e);
+                    }
+                  }}
+                  placeholder="Mesajını yaz..."
+                  ref={inputRef}
+                  rows={1}
+                  value={messageText}
+                />
+                <button aria-busy={sending} aria-label="Göndər" disabled={!messageText.trim() || sending} type="submit">
+                  {sending ? <span aria-hidden="true" className="chat-spinner" /> : <Icon name="send" />}
+                </button>
+              </form>
+            </section>
+          ) : (
+            /* No conversation selected */
+            <section aria-label="Söhbət" className="conversation conversation-idle">
+              {loadingConversations ? (
+                <div aria-hidden="true" className="messages-loading">
+                  <i />
+                  <i />
+                  <i />
+                </div>
+              ) : (
+                <div className="messages-note">
+                  <strong>Söhbət seç</strong>
+                  <p>Mesajları görmək üçün siyahıdan bir söhbət seç.</p>
+                </div>
+              )}
+            </section>
+          )}
+        </div>
+      )}
+
+      {/* Delete Conversation Dialog */}
+      {showDeleteConversationModal && conversationToDelete && (
+        <Dialog labelledBy="delete-conversation-title" onClose={closeDeleteConversation}>
+          <Eyebrow>SÖHBƏTİ SİL</Eyebrow>
+          <h2 id="delete-conversation-title">{displayName(conversationToDelete.otherUser)} ilə söhbət silinsin?</h2>
+          <p>Bütün mesajlar silinəcək. Bu əməliyyatı geri qaytarmaq mümkün deyil.</p>
+          <div className="modal-actions">
+            <Button onClick={closeDeleteConversation} variant="secondary">
+              Ləğv et
+            </Button>
+            <Button
+              aria-busy={Boolean(deletingDialogConversation)}
+              disabled={Boolean(deletingDialogConversation)}
+              onClick={handleDeleteConversation}
+              variant="danger"
+            >
+              {deletingDialogConversation ? 'Silinir…' : 'Söhbəti sil'}
+            </Button>
+          </div>
+        </Dialog>
       )}
     </div>
   );

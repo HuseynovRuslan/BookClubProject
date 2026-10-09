@@ -1,0 +1,148 @@
+/* Bookla 2.0 — Community (/community), activity feed (/feed) and the feed card (also on /profile).
+   Extends the Make classes in ../bookla-app.css for real data: links instead of Make buttons, owner
+   menus, comments, dialogs, load-more and the sidebar lists. Everything is scoped under .bk-app. */
+
+/* ---------- Shared ---------- */
+.bk-app .list-more { display: flex; justify-content: center; margin-top: 34px; }
+.bk-app .list-end { margin: 34px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+.bk-app .stars .stars-off { color: rgba(24, 61, 53, .16); }
+.bk-app .feed-link-button { padding: 0; background: none; color: var(--forest); font-family: var(--font-semibold); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- Community ---------- */
+/* The hero sits flush under the header at every width (Make pulls it up by the 1440px padding only). */
+@media (min-width: 781px) {
+  .bk-app .community-page > .community-hero { margin-top: calc(-1 * clamp(50px, 7vw, 94px)); }
+}
+.bk-app .community-hero .community-search { position: relative; max-width: 600px; margin-top: 30px; }
+.bk-app .community-hero .community-search .field { max-width: none; margin-top: 0; }
+.bk-app .community-search:has(.community-search-clear) .field { padding-right: 58px; }
+.bk-app .community-search input::-webkit-search-cancel-button { display: none; -webkit-appearance: none; appearance: none; }
+.bk-app .community-search-clear { position: absolute; top: 50%; right: 12px; display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: var(--sand); color: var(--forest); transform: translateY(-50%); }
+.bk-app .community-search-clear:hover { background: var(--sage); }
+.bk-app .community-page > .community-readers { margin-top: clamp(56px, 7vw, 96px); }
+.bk-app .community-count { margin: 0; color: var(--muted); font-size: 12px; }
+
+.bk-app .reader-card { display: flex; flex-direction: column; }
+.bk-app .reader-avatar-link { align-self: flex-start; border-radius: 50%; }
+.bk-app .reader-card .reader-name { margin-bottom: 18px; color: inherit; text-decoration: none; }
+.bk-app .reader-card .reader-name:hover h3 { text-decoration: underline; text-underline-offset: 4px; }
+.bk-app .reader-card > p { margin: 0 0 17px; }
+.bk-app .reader-card > div:not(.reader-name) { margin: 0 0 20px; }
+.bk-app .reader-card > .button { margin-top: auto; }
+.bk-app .reader-card > .button .icon { margin-left: -4px; }
+
+/* Make's ".community-note span/p" rules also hit the heading lines and the eyebrow; keep them headings. */
+.bk-app .community-note > .eyebrow { margin-bottom: 12px; padding-top: 0; border-top: 0; }
+.bk-app .community-note h2 .heading-line { display: block; margin: 0; color: white; font-size: inherit; }
+
+/* ---------- Feed page ---------- */
+.bk-app .feed-refresh { flex: 0 0 auto; }
+.bk-app .feed-refresh .spinning { animation: bk-social-spin 900ms linear infinite; }
+@keyframes bk-social-spin { to { transform: rotate(360deg); } }
+.bk-app .feed-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
+.bk-app .feed-page .empty-state { min-height: 340px; }
+
+.bk-app .feed-side { display: grid; align-self: start; gap: 18px; }
+.bk-app .feed-side .suggested { position: static; }
+.bk-app .suggested-list, .bk-app .trending-list { margin: 0; padding: 0; list-style: none; }
+.bk-app .suggested-reader > a { min-width: 0; flex: 1; color: inherit; text-decoration: none; }
+.bk-app .suggested-reader > a:hover strong { text-decoration: underline; text-underline-offset: 3px; }
+.bk-app .suggested-reader .button:disabled { opacity: .6; }
+.bk-app .suggested-reader > span.avatar-initials, .bk-app .feed-card .activity > span.avatar-initials { display: inline-grid; overflow: visible; color: var(--forest); font-size: 13px; }
+.bk-app .suggested-reader > span.avatar-initials { background: var(--white); }
+.bk-app .suggested-empty { margin: 14px 0 0; color: var(--muted); font-size: 12px; }
+
+.bk-app .feed-trending { padding: 27px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
+.bk-app .feed-trending .section-heading { margin-bottom: 8px; }
+.bk-app .feed-trending .section-heading h2 { font-size: 27px; }
+.bk-app .trending-list li + li .trending-book { border-top: 1px solid var(--line); }
+.bk-app .trending-book { display: grid; grid-template-columns: 16px 40px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 0; color: inherit; text-decoration: none; }
+.bk-app .trending-book:hover strong { text-decoration: underline; text-underline-offset: 3px; }
+.bk-app .trending-rank { color: var(--terracotta-dark); font-family: var(--font-editorial); font-size: 16px; text-align: center; }
+.bk-app .trending-book .book-cover { width: 40px; padding: 6px; box-shadow: 0 5px 12px rgba(24, 61, 53, .14); }
+.bk-app .trending-book .book-cover strong, .bk-app .trending-book .book-cover small, .bk-app .trending-book .book-cover .cover-mark, .bk-app .trending-book .book-cover i { display: none; }
+.bk-app .trending-copy { min-width: 0; }
+.bk-app .trending-copy strong, .bk-app .trending-copy > span:not(.rating) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .trending-copy strong { color: var(--forest); font-family: var(--font-semibold); font-size: 12px; font-weight: 400; }
+.bk-app .trending-copy > span:not(.rating) { color: var(--muted); font-size: 11px; }
+.bk-app .trending-copy .rating { margin-top: 3px; font-size: 10px; }
+.bk-app .feed-trending > .button { margin-top: 12px; }
+
+.bk-app .side-skeleton > div { display: flex; align-items: center; gap: 12px; padding: 14px 0; }
+.bk-app .side-skeleton i { width: 36px; height: 36px; flex: 0 0 auto; border-radius: 50%; background: linear-gradient(100deg, var(--sand) 35%, #f6f4ed 50%, var(--sand) 65%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+.bk-app .side-skeleton span { height: 12px; flex: 1; border-radius: 5px; background: var(--sand); }
+
+/* ---------- Feed card ---------- */
+.bk-app .feed-card .activity time { color: var(--muted); font-size: 11px; }
+.bk-app .activity > .feed-menu { position: relative; min-width: 0; flex: 0 0 auto; }
+.bk-app .feed-menu-button { display: grid; width: 36px; height: 36px; place-items: center; margin-right: -8px; border-radius: 50%; background: transparent; color: var(--muted); }
+.bk-app .feed-menu-button:hover, .bk-app .feed-menu-button[aria-expanded="true"] { background: var(--sand); color: var(--forest); }
+.bk-app .feed-menu-list { position: absolute; z-index: 30; top: 40px; right: -8px; min-width: 190px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); box-shadow: var(--shadow); }
+.bk-app .feed-menu-list button { display: flex; width: 100%; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: none; color: var(--forest); font-size: 13px; text-align: left; }
+.bk-app .feed-menu-list button:hover, .bk-app .feed-menu-list button:focus-visible { background: var(--sand); }
+.bk-app .feed-menu-list button.danger { color: var(--danger); }
+
+.bk-app .feed-cover-link { display: block; border-radius: 5px 9px 9px 5px; }
+.bk-app .feed-book h3 a, .bk-app .finished-book h3 a, .bk-app .feed-book-link { color: inherit; text-decoration: none; }
+.bk-app .feed-book h3 a:hover, .bk-app .finished-book h3 a:hover, .bk-app .feed-book-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.bk-app .feed-book p:not(.eyebrow), .bk-app .finished-book p:not(.eyebrow) { margin-bottom: 0; overflow-wrap: anywhere; }
+.bk-app .finished-book p + .feed-rating { margin-top: 10px; }
+.bk-app .feed-rating { display: flex; align-items: center; gap: 8px; }
+.bk-app .feed-rating > span { color: var(--muted); font-size: 12px; }
+.bk-app .feed-badge { display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 99px; background: var(--rose); color: var(--danger); font-family: var(--font-semibold); font-size: 10px; vertical-align: middle; }
+
+.bk-app .quote-feed blockquote { overflow-wrap: anywhere; }
+.bk-app .feed-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 6% 0; padding: 0; list-style: none; }
+.bk-app .feed-tags li { padding: 4px 11px; border-radius: 99px; background: var(--sand); color: var(--forest); font-size: 11px; }
+
+.bk-app .feed-actions { align-items: center; margin-top: 12px; margin-bottom: -6px; }
+.bk-app .feed-actions button { display: inline-flex; min-height: 32px; align-items: center; gap: 6px; }
+.bk-app .feed-actions button:hover, .bk-app .feed-actions button.active { color: var(--forest); }
+.bk-app .feed-actions button.liked { color: var(--terracotta-dark); }
+.bk-app .feed-actions button.liked .icon { fill: currentColor; }
+
+/* Comments under a card */
+.bk-app .feed-comments { margin-top: 12px; padding-top: 6px; border-top: 1px solid var(--line); }
+.bk-app .feed-comments-status { margin: 14px 0 4px; color: var(--muted); font-size: 12px; }
+.bk-app .feed-comment-list { margin: 0; padding: 0; list-style: none; }
+.bk-app .feed-comment { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.bk-app .feed-comment-body { min-width: 0; flex: 1; }
+.bk-app .feed-comment-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0; font-size: 12px; }
+.bk-app .feed-comment-meta strong { color: var(--forest); font-family: var(--font-semibold); font-weight: 400; }
+.bk-app .feed-comment-meta time { color: var(--muted); font-size: 11px; }
+.bk-app .feed-comment-text { margin: 3px 0 0; font-size: 13px; overflow-wrap: anywhere; white-space: pre-line; }
+.bk-app .feed-comment-tools { display: flex; flex: 0 0 auto; gap: 2px; }
+.bk-app .feed-comment-tools button { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: none; color: var(--muted); }
+.bk-app .feed-comment-tools button:hover { background: var(--sand); color: var(--forest); }
+.bk-app .feed-comment-tools button:last-child:hover { color: var(--danger); }
+.bk-app .feed-comment-edit { margin-top: 6px; }
+.bk-app .feed-comment-edit textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; outline: 0; background: var(--white); font-size: 13px; resize: vertical; }
+.bk-app .feed-comment-edit textarea:focus { border-color: var(--forest); }
+.bk-app .feed-comment-edit > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.bk-app .feed-comment-edit .button { min-height: 36px; padding: 7px 14px; }
+.bk-app .feed-comment-form { display: flex; gap: 10px; margin-top: 14px; }
+.bk-app .feed-comment-form input { min-width: 0; height: 42px; flex: 1; padding: 0 16px; border: 1px solid var(--line); border-radius: 99px; outline: 0; background: var(--white); font-size: 13px; }
+.bk-app .feed-comment-form input:focus { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(24, 61, 53, .08); }
+.bk-app .feed-comment-form button { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--forest); color: white; }
+
+/* Star picker in the review edit dialog */
+.bk-app .star-input { margin: 22px 0 0; padding: 0; border: 0; }
+.bk-app .star-input legend { margin-bottom: 4px; padding: 0; color: var(--muted); font-size: 11px; }
+.bk-app .star-input > div { display: flex; }
+.bk-app .star-input label { position: relative; padding: 0 3px; color: rgba(24, 61, 53, .2); cursor: pointer; font-size: 30px; line-height: 1.1; }
+.bk-app .star-input label.on { color: var(--terracotta-dark); }
+.bk-app .star-input > div:hover label { color: var(--terracotta); }
+.bk-app .star-input label:hover ~ label { color: rgba(24, 61, 53, .2); }
+.bk-app .star-input input:focus-visible + span { border-radius: 4px; outline: 2px solid var(--terracotta-dark); outline-offset: 2px; }
+.bk-app .modal .text-field textarea { min-height: 120px; }
+
+@media (max-width: 780px) {
+  .bk-app .community-hero img { width: 100%; }
+}
+@media (max-width: 540px) {
+  .bk-app .community-hero .community-search { margin-top: 24px; }
+  .bk-app .feed-tags { margin: 14px 0 0; }
+  .bk-app .feed-card .activity p { font-size: 13px; }
+  .bk-app .feed-comment-form input { height: 40px; }
+  .bk-app .page-heading-row .feed-refresh { align-self: flex-start; }
+}

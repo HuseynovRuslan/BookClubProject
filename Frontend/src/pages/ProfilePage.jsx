@@ -1,35 +1,5 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-  User,
-  Camera,
-  Trash2,
-  MapPin,
-  Globe,
-  Calendar,
-  Link as LinkIcon,
-  Facebook,
-  Twitter,
-  Linkedin,
-  Shield,
-  Edit3,
-  Eye,
-  Lock,
-  AlertTriangle,
-  Loader,
-  Check,
-  X,
-  ArrowLeft,
-  BookOpen,
-  Users,
-  UserPlus,
-  UserCheck,
-  MessageCircle,
-  Library,
-  ChevronRight,
-  BookMarked,
-  ExternalLink,
-} from 'lucide-react';
 import {
   getCurrentUserProfile,
   updateUserProfile,
@@ -46,110 +16,119 @@ import { getUserShelves, getUserShelvesById } from '../api/shelves';
 import { followUser, unfollowUser, getMyFollowing, getUserFollowers, getUserFollowing } from '../api/userFollows';
 import { startConversation } from '../api/messages';
 import { getUserFeed } from '../api/feed';
+import { getUserYearChallenge } from '../api/readingChallenge';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import BookCard from '../components/BookCard';
 import UserListModal from '../components/UserListModal';
 import FeedItemCard from '../components/FeedItemCard';
+import {
+  Avatar,
+  BookCover,
+  Button,
+  ButtonLink,
+  Dialog,
+  EmptyState,
+  Eyebrow,
+  Icon,
+  LoadingState,
+  SectionTitle,
+  Tabs,
+} from '../components/app/ui';
+import { displayName, formatDate, shelfName } from '../components/app/format';
+import '../styles/app/profile.css';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
-
-// Helper to get full image URL
-const getImageUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-
-  // Normalize path separators (convert Windows backslashes to forward slashes)
-  let normalizedPath = url.replace(/\\/g, '/');
-
-  // Remove leading slash if present
-  const cleanPath = normalizedPath.startsWith('/')
-    ? normalizedPath.substring(1)
-    : normalizedPath;
-
-  return `${BASE_URL}/${cleanPath}`;
-};
+// Profile page (Make "Profile"): hero, shelves, reading year, activity and account settings.
+// Own profile: /profile (or /profile/<own username|id>); another reader: /profile/<username|id>.
 
 // Helper to check if user is admin
 const isAdmin = (user) => {
   return user?.role === 'Admin' || user?.roles?.includes('Admin');
 };
 
-// Format date
-const formatDate = (dateStr) => {
-  if (!dateStr) return 'Not set';
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+// Paged results come as an array, { data: [] } or { items: [] }.
+const listFrom = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
 };
 
-// Shelf Preview Card
-const ShelfPreviewCard = ({ shelf }) => {
-  const books = shelf?.books || [];
-  const displayBooks = books.slice(0, 4);
+// Date of birth is a DateOnly ("1995-05-03"); read it without a timezone shift.
+const formatDateOnly = (value) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || '');
+  return match ? formatDate(new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))) : formatDate(value);
+};
 
+// Only http(s) links leave the app; "example.az" opens as https://example.az.
+const externalUrl = (value) => {
+  const url = value?.trim();
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(url)) return `https://${url}`;
+  return null;
+};
+
+const hostOf = (url) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'Vebsayt';
+  }
+};
+
+// Up to three real covers of a shelf, fanned out (Make "stacked-covers").
+const StackedCovers = ({ books }) => {
+  const shown = books.slice(0, 3);
   return (
-    <div className="bg-white rounded-xl border border-stone-200 p-5 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Library className="w-5 h-5 text-amber-500" />
-          <h3 className="font-semibold text-stone-800">{shelf.name}</h3>
-          <span className="text-sm text-stone-400">({shelf.bookCount || books.length})</span>
-        </div>
-        {books.length > 4 && (
-          <Link
-            to={`/shelves/${shelf.id}`}
-            className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
-          >
-            View all
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-        )}
-      </div>
-
-      {displayBooks.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {displayBooks.map((book) => (
-            <BookCard key={book.id} book={book} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-6 text-stone-400">
-          <BookOpen className="w-8 h-8 mx-auto mb-2 text-stone-300" />
-          <p className="text-sm">No books in this shelf yet</p>
-        </div>
-      )}
+    <div aria-hidden="true" className={`stacked-covers stacked-${shown.length}`}>
+      {shown.length > 0
+        ? shown.map((book) => <BookCover book={book} key={book.id} />)
+        : [0, 1, 2].map((index) => <span className="cover-ghost" key={index} />)}
     </div>
   );
 };
 
-const tabs = [
-  { id: 'overview', label: 'Overview', icon: Eye },
-  { id: 'shelves', label: 'Bookshelves', icon: Library },
-  { id: 'activity', label: 'Activity', icon: BookOpen },
-];
+const ProfileSkeleton = () => (
+  <div className="page profile-page">
+    <section className="profile-hero" aria-busy="true">
+      <div className="profile-pattern" />
+      <div className="profile-main profile-skeleton" role="status" aria-label="Profil yüklənir">
+        <span className="skeleton-avatar" />
+        <div className="profile-copy">
+          <span className="skeleton-line" style={{ width: 130 }} />
+          <span className="skeleton-line skeleton-title" style={{ width: 'min(420px, 80%)' }} />
+          <span className="skeleton-line" style={{ width: 110 }} />
+          <span className="skeleton-line" style={{ width: 'min(560px, 95%)' }} />
+        </div>
+      </div>
+      <div className="profile-stats" aria-hidden="true">
+        {[0, 1, 2, 3].map((index) => (
+          <span className="skeleton-line" key={index} style={{ width: 90, marginTop: 0 }} />
+        ))}
+      </div>
+    </section>
+  </div>
+);
 
 const editTabs = [
-  { id: 'edit', label: 'Edit Profile', icon: Edit3 },
-  { id: 'socials', label: 'Social Links', icon: LinkIcon },
-  { id: 'security', label: 'Security', icon: Shield },
+  { value: 'about', label: 'Haqqında' },
+  { value: 'socials', label: 'Sosial şəbəkələr' },
 ];
 
-const ProfilePage = () => {
-  const { identifier } = useParams(); // Can be username or userId
+const ProfileView = ({ identifier }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const fileInputRef = useRef(null);
+  const settingsRef = useRef(null);
+  const uploadPhotoRef = useRef(null);
+  const removePhotoRef = useRef(null);
 
   // Determine if viewing own profile
   const isOwnProfile = !identifier || identifier === user?.username || identifier === user?.id;
 
   // State
-  const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // 'notFound' | 'failed'
   const [saving, setSaving] = useState(false);
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const [deletingPicture, setDeletingPicture] = useState(false);
@@ -178,6 +157,7 @@ const ProfilePage = () => {
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [booksReadCount, setBooksReadCount] = useState(0);
+  const [challenge, setChallenge] = useState(null);
 
   // Modal states
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
@@ -186,6 +166,9 @@ const ProfilePage = () => {
   const [followingList, setFollowingList] = useState([]);
   const [loadingFollowers, setLoadingFollowers] = useState(false);
   const [loadingFollowing, setLoadingFollowing] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTab, setEditTab] = useState('about');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Activity feed state
   const [feedItems, setFeedItems] = useState([]);
@@ -218,14 +201,12 @@ const ProfilePage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  // Fetch user feed for Activity tab
+  // Fetch the user's activity feed ("Son fəaliyyət")
   const fetchUserFeed = useCallback(async (pageNum = 1, append = false) => {
     if (!profile?.id) return;
 
     try {
-      if (pageNum === 1 && !append) {
-        setFeedLoading(true);
-      }
+      setFeedLoading(true);
 
       const response = await getUserFeed(profile.id, pageNum, 10);
 
@@ -245,7 +226,7 @@ const ProfilePage = () => {
       }
 
       // Filter out items from admin users (shouldn't happen but just in case)
-      const filteredItems = items.filter(item => !isAdmin(item?.user));
+      const filteredItems = items.filter((item) => !isAdmin(item?.user));
 
       if (append) {
         setFeedItems((prev) => [...prev, ...filteredItems]);
@@ -255,18 +236,22 @@ const ProfilePage = () => {
 
       setHasMoreFeed(pageNum < totalPages);
       setFeedPage(pageNum);
-    } catch (error) {
-      console.error('Error fetching user feed:', error);
-      toast.error('Failed to load activity feed');
+    } catch (err) {
+      console.error('Error fetching user feed:', err);
+      toast.error('Fəaliyyət lentini yükləmək alınmadı');
     } finally {
       setFeedLoading(false);
     }
   }, [profile?.id]);
 
-  // Fetch profile data
-  const fetchAllData = useCallback(async () => {
+  // Fetch profile data. `silent` refreshes in place (after a new photo) without the loading
+  // screen and without discarding what is typed in the edit form.
+  const fetchAllData = useCallback(async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+      }
       let profileData;
 
       // Determine if it's own profile or another user's profile
@@ -277,6 +262,8 @@ const ProfilePage = () => {
         // Another user's profile - try username first, then ID
         try {
           profileData = await getUserProfileByUsername(identifier);
+          // The profile DTO has no username; the identifier that found it is the username.
+          if (profileData && !profileData.username) profileData = { ...profileData, username: identifier };
         } catch (err) {
           // If username fails, try as ID
           if (err.response?.status === 404) {
@@ -289,20 +276,22 @@ const ProfilePage = () => {
 
       // Check if profile is admin - don't show admin profiles
       if (!isOwnProfile && isAdmin(profileData)) {
-        setError('User not found');
+        setError('notFound');
         setLoading(false);
         return;
       }
 
       setProfile(profileData);
-      setProfileForm({
-        firstName: profileData.firstName || '',
-        lastName: profileData.lastName || '',
-        bio: profileData.bio || '',
-        country: profileData.country || '',
-        websiteUrl: profileData.websiteUrl || '',
-        dateOfBirth: profileData.dateOfBirth || '',
-      });
+      if (!silent) {
+        setProfileForm({
+          firstName: profileData.firstName || '',
+          lastName: profileData.lastName || '',
+          bio: profileData.bio || '',
+          country: profileData.country || '',
+          websiteUrl: profileData.websiteUrl || '',
+          dateOfBirth: profileData.dateOfBirth || '',
+        });
+      }
 
       // Fetch additional data in parallel
       const promises = [];
@@ -325,29 +314,24 @@ const ProfilePage = () => {
       promises.push(getUserFollowers(profileData.id, 1, 1));
       promises.push(getUserFollowing(profileData.id, 1, 1));
 
-      const [shelvesData, socialsData, followersRes, followingRes] = await Promise.allSettled(promises);
+      // This year's reading challenge ("Bu il"); null when the reader has not set one
+      promises.push(getUserYearChallenge(new Date().getFullYear(), profileData.id));
+
+      const [shelvesData, socialsData, followersRes, followingRes, challengeRes] = await Promise.allSettled(promises);
 
       // Process shelves
       if (shelvesData.status === 'fulfilled') {
-        let shelvesList = [];
-        const data = shelvesData.value;
-        if (Array.isArray(data)) {
-          shelvesList = data;
-        } else if (Array.isArray(data?.data)) {
-          shelvesList = data.data;
-        } else if (Array.isArray(data?.items)) {
-          shelvesList = data.items;
-        }
+        let shelvesList = listFrom(shelvesData.value);
 
         // For other users, show only default shelves
         if (!isOwnProfile) {
-          shelvesList = shelvesList.filter(s => s.isDefault);
+          shelvesList = shelvesList.filter((s) => s.isDefault);
         }
 
         setShelves(shelvesList);
 
         // Count books read
-        const readShelf = shelvesList.find(s => s.name === 'Read');
+        const readShelf = shelvesList.find((s) => s.name === 'Read');
         setBooksReadCount(readShelf?.bookCount || readShelf?.books?.length || 0);
       }
 
@@ -374,27 +358,23 @@ const ProfilePage = () => {
         setFollowingCount(data?.totalCount || data?.length || 0);
       }
 
+      setChallenge(challengeRes.status === 'fulfilled' ? challengeRes.value || null : null);
+
       // Check if current user follows this profile
       if (!isOwnProfile && user?.id) {
         try {
           const myFollowingRes = await getMyFollowing(1, 1000);
-          let myFollowing = [];
-          if (Array.isArray(myFollowingRes)) {
-            myFollowing = myFollowingRes;
-          } else if (Array.isArray(myFollowingRes?.data)) {
-            myFollowing = myFollowingRes.data;
-          } else if (Array.isArray(myFollowingRes?.items)) {
-            myFollowing = myFollowingRes.items;
-          }
-          const isFollowed = myFollowing.some(u => u.id === profileData.id);
+          const myFollowing = listFrom(myFollowingRes);
+          const isFollowed = myFollowing.some((u) => u.id === profileData.id);
           setIsFollowing(isFollowed);
         } catch (err) {
           console.error('Error checking follow status:', err);
         }
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      toast.error('Failed to load profile');
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      toast.error('Profili yükləmək alınmadı');
+      if (!silent) setError(err.response?.status === 404 ? 'notFound' : 'failed');
     } finally {
       setLoading(false);
     }
@@ -404,12 +384,12 @@ const ProfilePage = () => {
     fetchAllData();
   }, [fetchAllData]);
 
-  // Fetch activity feed when tab is active
+  // Load the activity feed once the profile is on screen
   useEffect(() => {
-    if (activeTab === 'activity' && profile?.id && feedItems.length === 0) {
+    if (!loading && !error && profile?.id) {
       fetchUserFeed(1);
     }
-  }, [activeTab, profile?.id, fetchUserFeed]);
+  }, [loading, error, profile?.id, fetchUserFeed]);
 
   // Handle follow/unfollow
   const handleFollowToggle = async () => {
@@ -417,34 +397,35 @@ const ProfilePage = () => {
 
     setFollowLoading(true);
     const wasFollowing = isFollowing;
+    const name = profile.firstName || profile.username || 'Oxucu';
 
     // Optimistic update
     setIsFollowing(!wasFollowing);
-    setFollowersCount(prev => wasFollowing ? prev - 1 : prev + 1);
+    setFollowersCount((prev) => (wasFollowing ? prev - 1 : prev + 1));
 
     try {
       if (wasFollowing) {
         await unfollowUser(profile.id);
-        toast.success(`Unfollowed ${profile.firstName || profile.username}`);
+        toast.success(`${name} artıq izlənilmir`);
       } else {
         await followUser(profile.id);
-        toast.success(`Following ${profile.firstName || profile.username}`);
+        toast.success(`${name} izlənilir`);
       }
-    } catch (error) {
+    } catch (err) {
       // Handle 409 Conflict
-      if (error.response?.status === 409) {
+      if (err.response?.status === 409) {
         if (!wasFollowing) {
           setIsFollowing(true);
-          toast.info(`Already following ${profile.firstName || profile.username}`);
+          toast.info(`${name} artıq izlənilir`);
         } else {
           setIsFollowing(false);
-          setFollowersCount(prev => prev - 1);
+          setFollowersCount((prev) => prev - 1);
         }
       } else {
         // Revert on error
         setIsFollowing(wasFollowing);
-        setFollowersCount(prev => wasFollowing ? prev + 1 : prev - 1);
-        toast.error(wasFollowing ? 'Failed to unfollow' : 'Failed to follow');
+        setFollowersCount((prev) => (wasFollowing ? prev + 1 : prev - 1));
+        toast.error(wasFollowing ? 'İzləməni dayandırmaq alınmadı' : 'İzləmək alınmadı');
       }
     } finally {
       setFollowLoading(false);
@@ -458,9 +439,9 @@ const ProfilePage = () => {
     try {
       await startConversation(profile.id);
       navigate('/messages', { state: { selectedUserId: profile.id } });
-    } catch (error) {
-      console.error('Error starting conversation:', error);
-      toast.error('Failed to start conversation');
+    } catch (err) {
+      console.error('Error starting conversation:', err);
+      toast.error('Söhbətə başlamaq alınmadı');
     }
   };
 
@@ -471,22 +452,12 @@ const ProfilePage = () => {
     setLoadingFollowers(true);
     try {
       const response = await getUserFollowers(profile.id, 1, 100);
-
-      let users = [];
-      if (Array.isArray(response)) {
-        users = response;
-      } else if (Array.isArray(response?.data)) {
-        users = response.data;
-      } else if (Array.isArray(response?.items)) {
-        users = response.items;
-      }
-
       // No need to filter here - backend already filters admins
-      setFollowersList(users);
+      setFollowersList(listFrom(response));
       setIsFollowersModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching followers:', error);
-      toast.error('Failed to load followers');
+    } catch (err) {
+      console.error('Error fetching followers:', err);
+      toast.error('İzləyiciləri yükləmək alınmadı');
     } finally {
       setLoadingFollowers(false);
     }
@@ -499,29 +470,39 @@ const ProfilePage = () => {
     setLoadingFollowing(true);
     try {
       const response = await getUserFollowing(profile.id, 1, 100);
-
-      let users = [];
-      if (Array.isArray(response)) {
-        users = response;
-      } else if (Array.isArray(response?.data)) {
-        users = response.data;
-      } else if (Array.isArray(response?.items)) {
-        users = response.items;
-      }
-
       // No need to filter here - backend already filters admins
-      setFollowingList(users);
+      setFollowingList(listFrom(response));
       setIsFollowingModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching following:', error);
-      toast.error('Failed to load following');
+    } catch (err) {
+      console.error('Error fetching following:', err);
+      toast.error('İzlənilənləri yükləmək alınmadı');
     } finally {
       setLoadingFollowing(false);
     }
   };
 
+  // Edit dialog opens with the saved values (unsaved edits from last time are dropped).
+  const openEdit = () => {
+    setProfileForm({
+      firstName: profile?.firstName || '',
+      lastName: profile?.lastName || '',
+      bio: profile?.bio || '',
+      country: profile?.country || '',
+      websiteUrl: profile?.websiteUrl || '',
+      dateOfBirth: profile?.dateOfBirth || '',
+    });
+    setSocialsForm({
+      facebook: socials?.facebook || '',
+      twitter: socials?.twitter || '',
+      linkedIn: socials?.linkedin || socials?.linkedIn || '',
+    });
+    setEditTab('about');
+    setEditOpen(true);
+  };
+
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     try {
       setSaving(true);
 
@@ -534,15 +515,16 @@ const ProfilePage = () => {
         bio: profileForm.bio || null,
         firstName: profileForm.firstName || null,
         lastName: profileForm.lastName || null,
-        country: profileForm.country || null
+        country: profileForm.country || null,
       };
 
       await updateUserProfile(payload);
-      toast.success('Profile updated successfully');
-      setProfile(prev => ({ ...prev, ...profileForm }));
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.response?.data?.title || 'Failed to update profile');
-      console.error('Profile update error:', error);
+      toast.success('Profil yeniləndi');
+      setProfile((prev) => ({ ...prev, ...profileForm }));
+      setEditOpen(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.response?.data?.title || 'Profili yeniləmək alınmadı');
+      console.error('Profile update error:', err);
     } finally {
       setSaving(false);
     }
@@ -550,13 +532,15 @@ const ProfilePage = () => {
 
   const handleSocialsSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     try {
       setSaving(true);
       await updateUserSocialLinks(socialsForm);
-      toast.success('Social links updated successfully');
+      toast.success('Sosial keçidlər yeniləndi');
       setSocials(socialsForm);
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update social links');
+      setEditOpen(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Sosial keçidləri yeniləmək alınmadı');
     } finally {
       setSaving(false);
     }
@@ -564,17 +548,18 @@ const ProfilePage = () => {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error('Yeni şifrələr üst-üstə düşmür');
       return;
     }
     try {
       setSaving(true);
       await changePassword(passwordForm);
-      toast.success('Password changed successfully');
+      toast.success('Şifrə dəyişdirildi');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error) {
-      toast.error(error.response?.data?.errors?.[0]?.description || 'Failed to change password');
+    } catch (err) {
+      toast.error(err.response?.data?.errors?.[0]?.description || 'Şifrəni dəyişmək alınmadı');
     } finally {
       setSaving(false);
     }
@@ -585,27 +570,26 @@ const ProfilePage = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      toast.error('Şəkil faylı seçin');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
+      toast.error('Şəklin ölçüsü 5 MB-dan az olmalıdır');
       return;
     }
 
     try {
       setUploadingPicture(true);
       await updateProfilePicture(file);
-      toast.success('Profile picture updated');
-      await fetchAllData();
-    } catch (error) {
-      console.error('Upload error:', error);
-      console.error('Upload error:', error);
+      toast.success('Profil şəkli yeniləndi');
+      await fetchAllData({ silent: true });
+    } catch (err) {
+      console.error('Upload error:', err);
 
       // Extract specific error message
-      let errorMessage = 'Failed to upload picture';
-      const errorData = error.response?.data;
+      let errorMessage = 'Şəkli yükləmək alınmadı';
+      const errorData = err.response?.data;
 
       if (errorData) {
         if (errorData.detail) {
@@ -616,7 +600,7 @@ const ProfilePage = () => {
             errorMessage = errorData.errors[0]?.description || errorData.errors[0];
           } else if (typeof errorData.errors === 'object') {
             const values = Object.values(errorData.errors).flat();
-            errorMessage = values[0] || 'Validation error';
+            errorMessage = values[0] || 'Yoxlama xətası';
           }
         } else if (errorData.message) {
           errorMessage = errorData.message;
@@ -629,791 +613,617 @@ const ProfilePage = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      uploadPhotoRef.current?.focus();
     }
   };
 
   const handleDeletePicture = async () => {
+    if (deletingPicture) return;
     try {
       setDeletingPicture(true);
       await deleteProfilePicture();
-      toast.success('Profile picture removed');
-      setProfile(prev => ({ ...prev, profilePictureUrl: null }));
-    } catch (error) {
-      toast.error('Failed to remove picture');
+      toast.success('Profil şəkli silindi');
+      setProfile((prev) => ({ ...prev, profilePictureUrl: null }));
+    } catch {
+      toast.error('Şəkli silmək alınmadı');
     } finally {
       setDeletingPicture(false);
+      // The remove button disappears on success; keep keyboard focus inside the dialog.
+      requestAnimationFrame(() => (removePhotoRef.current || uploadPhotoRef.current)?.focus());
     }
   };
 
   const handleDeleteAccount = async () => {
+    if (saving) return;
     if (deleteConfirmText !== 'DELETE') {
-      toast.error('Please type DELETE to confirm');
+      toast.error('Təsdiqləmək üçün DELETE yazın');
       return;
     }
     try {
       setSaving(true);
       await deleteAccount();
-      toast.success('Account deleted successfully');
+      toast.success('Hesab silindi');
       logout();
       navigate('/');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete account');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Hesabı silmək alınmadı');
       setSaving(false);
     }
   };
 
-  const getInitials = () => {
-    const first = profile?.firstName?.[0] || user?.username?.[0] || profile?.username?.[0] || 'U';
-    const last = profile?.lastName?.[0] || '';
-    return (first + last).toUpperCase();
+  const closeDeleteConfirm = () => {
+    setShowDeleteConfirm(false);
+    setDeleteConfirmText('');
   };
 
-  const getProfilePictureUrl = () => {
-    return getImageUrl(profile?.profilePictureUrl);
+  const toggleSettings = () => {
+    setSettingsOpen((open) => !open);
+    if (!settingsOpen) {
+      requestAnimationFrame(() => settingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+    }
   };
-
-  const displayName = profile?.firstName && profile?.lastName
-    ? `${profile.firstName} ${profile.lastName}`
-    : profile?.username || user?.username || 'User';
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-stone-200 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-stone-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
-          </div>
-          <p className="text-stone-500 mt-4 font-medium">Loading profile...</p>
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (error || !profile) {
+    const failed = error === 'failed';
     return (
-      <div className="min-h-screen bg-stone-50">
-        <div className="bg-white border-b border-stone-200 sticky top-0 z-40">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-            <button
-              onClick={() => navigate('/')}
-              className="group inline-flex items-center gap-2 text-stone-500 hover:text-stone-800 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium">Back to Home</span>
-            </button>
-          </div>
-        </div>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 text-center">
-          <div className="w-20 h-20 mx-auto bg-stone-100 rounded-full flex items-center justify-center mb-4">
-            <Users className="w-10 h-10 text-stone-400" />
-          </div>
-          <h2 className="text-xl font-semibold text-stone-800 mb-2">User not found</h2>
-          <p className="text-stone-500 mb-6">{error || "The user doesn't exist or has been removed."}</p>
-          <button
-            onClick={() => navigate('/community')}
-            className="px-6 py-2.5 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
-          >
-            Browse Community
-          </button>
-        </div>
+      <div className="page profile-page">
+        <h1 className="sr-only">Profil</h1>
+        <EmptyState
+          title={failed ? 'Profil yüklənmədi' : 'İstifadəçi tapılmadı'}
+          text={
+            failed
+              ? 'Profil məlumatlarını yükləmək alınmadı. Bir az sonra yenidən cəhd edin.'
+              : 'Bu istifadəçi mövcud deyil və ya silinib.'
+          }
+          action={
+            <div className="profile-empty-actions">
+              {failed && <Button onClick={() => fetchAllData()}>Yenidən cəhd et</Button>}
+              <ButtonLink to="/community" variant={failed ? 'secondary' : 'primary'}>
+                İcmaya keç
+              </ButtonLink>
+            </div>
+          }
+        />
       </div>
     );
   }
 
-  const currentTabs = isOwnProfile ? [...tabs, ...editTabs] : tabs;
+  const username = profile.username || (isOwnProfile ? user?.username : null);
+  const name = displayName({ ...profile, username });
+
+  // Links shown under the bio: own socials come from their endpoint, other readers' from the profile.
+  const links = isOwnProfile ? socials : profile.social || {};
+  const website = externalUrl(profile.websiteUrl);
+  const socialLinks = [
+    { label: 'Facebook', url: externalUrl(links?.facebook) },
+    { label: 'X', url: externalUrl(links?.twitter) },
+    { label: 'LinkedIn', url: externalUrl(links?.linkedin || links?.linkedIn) },
+  ].filter((link) => link.url);
+
+  // Books on the shelves (a book can sit on several shelves, so count each once).
+  const bookIds = new Set(shelves.flatMap((shelf) => (shelf.books || []).map((book) => book.id)));
+  const defaultShelfTotal = shelves
+    .filter((shelf) => shelf.isDefault)
+    .reduce((sum, shelf) => sum + (shelf.bookCount || shelf.books?.length || 0), 0);
+  const totalBooks = Math.max(bookIds.size, defaultShelfTotal);
+  const shelfCount = (shelfLabel) => {
+    const shelf = shelves.find((s) => s.name === shelfLabel);
+    return shelf?.bookCount || shelf?.books?.length || 0;
+  };
+
+  const challengeTarget = challenge?.targetBooksCount || 0;
+  const challengeDone = challenge?.completedBooksCount || 0;
+  const challengePercent = challengeTarget > 0 ? Math.min(100, Math.round((challengeDone / challengeTarget) * 100)) : 0;
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      {/* Header */}
-      <div className="bg-white border-b border-stone-200 sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <button
-            onClick={() => navigate('/')}
-            className="group inline-flex items-center gap-2 text-stone-500 hover:text-stone-800 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-medium">Back to Home</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        {/* Profile Header Card */}
-        <div className="bg-white rounded-xl border border-stone-200 overflow-hidden mb-6">
-          <div className="px-6 py-6">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-6">
-              {/* Avatar */}
-              <div className="relative group shrink-0">
-                <div className="w-28 h-28 rounded-full border-4 border-stone-100 bg-stone-200 overflow-hidden shadow-lg">
-                  {getProfilePictureUrl() ? (
-                    <img
-                      src={getProfilePictureUrl()}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-stone-700 to-stone-900 text-white text-3xl font-bold">
-                      {getInitials()}
-                    </div>
-                  )}
-                </div>
-
-                {/* Upload/Delete Buttons - Only for own profile */}
-                {isOwnProfile && (
-                  <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingPicture}
-                      className="w-9 h-9 bg-stone-900/80 hover:bg-stone-900 rounded-full flex items-center justify-center text-white transition-colors"
-                      title="Upload picture"
-                    >
-                      {uploadingPicture ? (
-                        <Loader className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Camera className="w-4 h-4" />
-                      )}
-                    </button>
-                    {getProfilePictureUrl() && (
-                      <button
-                        onClick={handleDeletePicture}
-                        disabled={deletingPicture}
-                        className="w-9 h-9 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors"
-                        title="Remove picture"
-                      >
-                        {deletingPicture ? (
-                          <Loader className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </button>
-                    )}
-                  </div>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePictureUpload}
-                  className="hidden"
-                />
-              </div>
-
-              {/* Name & Info */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-stone-900">{displayName}</h1>
-                <p className="text-stone-500 mb-2">@{profile?.username || user?.username}</p>
-                {profile?.bio && (
-                  <p className="text-stone-600 mb-4">{profile.bio}</p>
-                )}
-
-                {/* Meta Info */}
-                {!isOwnProfile && (
-                  <div className="flex flex-wrap gap-4 text-sm text-stone-500 mb-4">
-                    {profile?.country && (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {profile.country}
-                      </span>
-                    )}
-                    {profile?.websiteUrl && (
-                      <a
-                        href={profile.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-amber-600 hover:text-amber-700"
-                      >
-                        <Globe className="w-4 h-4" />
-                        Website
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                    {profile?.createdAt && (
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        Joined {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Stats */}
-                <div className="flex gap-6 mb-4">
-                  <button
-                    onClick={handleOpenFollowers}
-                    disabled={loadingFollowers}
-                    className="text-center hover:bg-stone-50 px-3 py-2 rounded-lg transition-colors"
-                  >
-                    <div className="text-xl font-bold text-stone-900">
-                      {loadingFollowers ? <Loader className="w-5 h-5 animate-spin mx-auto" /> : followersCount}
-                    </div>
-                    <div className="text-xs text-stone-500">Followers</div>
-                  </button>
-                  <button
-                    onClick={handleOpenFollowing}
-                    disabled={loadingFollowing}
-                    className="text-center hover:bg-stone-50 px-3 py-2 rounded-lg transition-colors"
-                  >
-                    <div className="text-xl font-bold text-stone-900">
-                      {loadingFollowing ? <Loader className="w-5 h-5 animate-spin mx-auto" /> : followingCount}
-                    </div>
-                    <div className="text-xs text-stone-500">Following</div>
-                  </button>
-                  <div className="text-center px-3 py-2">
-                    <div className="text-xl font-bold text-stone-900">{booksReadCount}</div>
-                    <div className="text-xs text-stone-500">Books Read</div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                {!isOwnProfile && !isAdmin(profile) && (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleFollowToggle}
-                      disabled={followLoading}
-                      className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${isFollowing
-                        ? 'bg-stone-100 text-stone-700 hover:bg-red-50 hover:text-red-600'
-                        : 'bg-stone-900 text-white hover:bg-stone-800'
-                        }`}
-                    >
-                      {followLoading ? (
-                        <Loader className="w-4 h-4 animate-spin" />
-                      ) : isFollowing ? (
-                        <>
-                          <UserCheck className="w-4 h-4" />
-                          Following
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="w-4 h-4" />
-                          Follow
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={handleMessage}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors font-medium"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      Message
-                    </button>
-                  </div>
-                )}
-              </div>
+    <div className="page profile-page">
+      <section className="profile-hero">
+        <div className="profile-pattern" />
+        <div className="profile-main">
+          <Avatar name={name} size="hero" src={profile.profilePictureUrl} />
+          <div className="profile-copy">
+            <Eyebrow>{isOwnProfile ? 'MƏNİM PROFİLİM' : 'OXUCU PROFİLİ'}</Eyebrow>
+            <h1>{name}</h1>
+            {username && <span>@{username}</span>}
+            {profile.bio && <p>{profile.bio}</p>}
+            <div className="social-links">
+              {profile.country && <span>{profile.country}</span>}
+              {website && (
+                <a href={website} rel="noopener noreferrer" target="_blank">
+                  {hostOf(website)} ↗<span className="sr-only"> (yeni pəncərədə açılır)</span>
+                </a>
+              )}
+              {socialLinks.map((link) => (
+                <a href={link.url} key={link.label} rel="noopener noreferrer" target="_blank">
+                  {link.label} ↗<span className="sr-only"> (yeni pəncərədə açılır)</span>
+                </a>
+              ))}
+              {profile.dateOfBirth && <span>Doğum tarixi: {formatDateOnly(profile.dateOfBirth)}</span>}
+              {profile.createdAt && <span>Qoşulub: {formatDate(profile.createdAt)}</span>}
             </div>
           </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-          {/* Tab Headers */}
-          <div className="flex border-b border-stone-200 overflow-x-auto">
-            {currentTabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    flex items-center gap-2 px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors
-                    ${activeTab === tab.id
-                      ? 'text-stone-900 border-b-2 border-stone-900 -mb-px'
-                      : 'text-stone-500 hover:text-stone-700'
-                    }
-                  `}
-                >
-                  <Icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
+          <div className="profile-action">
+            {isOwnProfile ? (
+              <Button onClick={openEdit} variant="secondary">
+                <Icon name="edit" /> Profili redaktə et
+              </Button>
+            ) : (
+              !isAdmin(profile) && (
+                <>
+                  <Button
+                    aria-busy={followLoading}
+                    aria-pressed={isFollowing}
+                    onClick={handleFollowToggle}
+                    variant={isFollowing ? 'secondary' : 'primary'}
+                  >
+                    {isFollowing ? 'İzlənilir' : 'İzlə'}
+                  </Button>
+                  <Button onClick={handleMessage} variant="secondary">
+                    <Icon name="send" size={16} /> Mesaj yaz
+                  </Button>
+                </>
+              )
+            )}
           </div>
+        </div>
+        <div className="profile-stats">
+          <div>
+            <strong>{totalBooks}</strong>
+            <span>kitab</span>
+          </div>
+          <button aria-busy={loadingFollowers} aria-haspopup="dialog" onClick={handleOpenFollowers} type="button">
+            <strong>{followersCount}</strong>
+            <span>izləyici</span>
+          </button>
+          <button aria-busy={loadingFollowing} aria-haspopup="dialog" onClick={handleOpenFollowing} type="button">
+            <strong>{followingCount}</strong>
+            <span>izlənilən</span>
+          </button>
+          <div>
+            <strong>{booksReadCount}</strong>
+            <span>oxunub</span>
+          </div>
+        </div>
+      </section>
 
-          {/* Tab Content */}
-          <div className="p-6">
-            {/* Overview Tab */}
-            {activeTab === 'overview' && (
-              <div className="space-y-6">
-                <h3 className="font-semibold text-stone-800">Profile Information</h3>
+      <section className="profile-layout">
+        <div>
+          <SectionTitle
+            action={
+              isOwnProfile && (
+                <ButtonLink to="/my-shelves" variant="quiet">
+                  Rəflərimə keç <Icon name="arrow" />
+                </ButtonLink>
+              )
+            }
+            eyebrow="AÇIQ RƏFLƏR"
+            id="profile-shelves-title"
+            title="Kitab dünyası"
+          />
+          {shelves.length > 0 ? (
+            <div className="profile-shelves">
+              {shelves.map((shelf) => {
+                const count = shelf.bookCount || shelf.books?.length || 0;
+                return (
+                  <Link key={shelf.id} to={`/shelves/${shelf.id}`}>
+                    <StackedCovers books={shelf.books || []} />
+                    <strong>{shelfName(shelf.name)}</strong>
+                    <span>{count} kitab</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              text={isOwnProfile ? 'Hələ rəflərinizə kitab əlavə etməmisiniz.' : 'Bu oxucu hələ rəflərinə kitab əlavə etməyib.'}
+              title="Hələ rəf yoxdur"
+            />
+          )}
+        </div>
+        <aside aria-labelledby="reading-year-title" className="reading-year">
+          {challenge && challengeTarget > 0 ? (
+            <>
+              <Eyebrow>BU İL · {challenge.year || new Date().getFullYear()}</Eyebrow>
+              <h2 id="reading-year-title">
+                <span className="heading-line">{challengeDone} kitab,</span>
+                <span className="heading-line">hədəf {challengeTarget}</span>
+              </h2>
+              <p>
+                {challengePercent >= 100
+                  ? 'İllik oxu hədəfi tamamlanıb.'
+                  : `İllik oxu hədəfinin ${challengePercent}%-i tamamlanıb.`}
+              </p>
+              <div
+                aria-label="İllik oxu hədəfi"
+                aria-valuemax={challengeTarget}
+                aria-valuemin={0}
+                aria-valuenow={Math.min(challengeDone, challengeTarget)}
+                className="progress"
+                role="progressbar"
+              >
+                <i style={{ width: `${challengePercent}%` }} />
+              </div>
+              {challenge.books?.length > 0 && (
+                <>
+                  <p className="year-books-label">Bu il oxunanlar</p>
+                  <div className="year-books">
+                    {challenge.books.slice(0, 5).map((book) => (
+                      <Link aria-label={book.title} key={book.bookId} title={book.title} to={`/books/${book.bookId}`}>
+                        <BookCover book={book} />
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <Eyebrow>OXU XÜLASƏSİ</Eyebrow>
+              <h2 id="reading-year-title">
+                <span className="heading-line">{booksReadCount} kitab</span>
+                <span className="heading-line">oxunub</span>
+              </h2>
+              <p>
+                {isOwnProfile
+                  ? 'Bu il üçün hələ oxu hədəfi qoymamısınız.'
+                  : 'Bu il üçün oxu hədəfi qoyulmayıb.'}
+              </p>
+              <dl className="year-summary">
+                <div>
+                  <dt>Hazırda oxuyur</dt>
+                  <dd>{shelfCount('Currently Reading')}</dd>
+                </div>
+                <div>
+                  <dt>Oxumaq istəyir</dt>
+                  <dd>{shelfCount('Want to Read')}</dd>
+                </div>
+              </dl>
+              {isOwnProfile && (
+                <ButtonLink to="/dashboard" variant="terracotta">
+                  Oxu hədəfi qoy
+                </ButtonLink>
+              )}
+            </>
+          )}
+        </aside>
+      </section>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {profile?.country && (
-                    <div className="flex items-center gap-3 text-stone-600">
-                      <MapPin className="w-5 h-5 text-stone-400" />
-                      <span>{profile.country}</span>
-                    </div>
-                  )}
-                  {profile?.websiteUrl && (
-                    <div className="flex items-center gap-3">
-                      <Globe className="w-5 h-5 text-stone-400" />
-                      <a
-                        href={profile.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-stone-600 hover:text-stone-900 hover:underline"
+      <section aria-labelledby="profile-activity-title">
+        <SectionTitle eyebrow="SON FƏALİYYƏT" id="profile-activity-title" title="Oxu gündəliyi" />
+        {feedLoading && feedItems.length === 0 ? (
+          <LoadingState count={2} kind="feed" />
+        ) : feedItems.length > 0 ? (
+          <>
+            <div className="profile-feed">
+              {feedItems.map((item) => (
+                <FeedItemCard
+                  item={item}
+                  key={item.id}
+                  onItemDeleted={(itemId) => setFeedItems((prev) => prev.filter((i) => i.id !== itemId))}
+                />
+              ))}
+            </div>
+
+            {hasMoreFeed && (
+              <div className="profile-more">
+                <Button
+                  aria-busy={feedLoading}
+                  aria-disabled={feedLoading}
+                  onClick={() => !feedLoading && fetchUserFeed(feedPage + 1, true)}
+                  variant="secondary"
+                >
+                  {feedLoading ? 'Yüklənir…' : 'Daha çox göstər'}
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <EmptyState
+            text={
+              isOwnProfile
+                ? 'Hələ sitat, rəy paylaşmamısınız və rəflərə kitab əlavə etməmisiniz.'
+                : 'Bu oxucu hələ heç nə paylaşmayıb.'
+            }
+            title="Hələ fəaliyyət yoxdur"
+          />
+        )}
+      </section>
+
+      {isOwnProfile && (
+        <div className="profile-settings" ref={settingsRef}>
+          <button
+            aria-controls="account-settings"
+            aria-expanded={settingsOpen}
+            className="settings-entry"
+            onClick={toggleSettings}
+            type="button"
+          >
+            Hesab və məxfilik ayarları <Icon name="arrow" />
+          </button>
+          {settingsOpen && (
+            <div className="account-settings" id="account-settings">
+              <form aria-labelledby="password-title" className="settings-card" onSubmit={handlePasswordSubmit}>
+                <Eyebrow>TƏHLÜKƏSİZLİK</Eyebrow>
+                <h3 id="password-title">Şifrəni dəyiş</h3>
+                <label className="text-field">
+                  <span>Cari şifrə</span>
+                  <input
+                    autoComplete="current-password"
+                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                    required
+                    type="password"
+                    value={passwordForm.currentPassword}
+                  />
+                </label>
+                <div className="form-pair">
+                  <label className="text-field">
+                    <span>Yeni şifrə</span>
+                    <input
+                      autoComplete="new-password"
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      required
+                      type="password"
+                      value={passwordForm.newPassword}
+                    />
+                  </label>
+                  <label className="text-field">
+                    <span>Yeni şifrənin təkrarı</span>
+                    <input
+                      autoComplete="new-password"
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                      required
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                    />
+                  </label>
+                </div>
+                <Button aria-busy={saving} aria-disabled={saving} type="submit">
+                  {saving ? 'Dəyişdirilir…' : 'Şifrəni dəyiş'}
+                </Button>
+              </form>
+
+              <div aria-labelledby="danger-title" className="settings-card danger-zone" role="group">
+                <Eyebrow>TƏHLÜKƏLİ ZONA</Eyebrow>
+                <h3 id="danger-title">Hesabı sil</h3>
+                <p>Hesabınızı sildikdən sonra onu geri qaytarmaq mümkün olmayacaq. Zəhmət olmasa, əmin olun.</p>
+                <Button onClick={() => setShowDeleteConfirm(true)} variant="danger">
+                  <Icon name="trash" size={16} /> Hesabı sil
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lives outside the dialog so the dialog's focus trap only sees visible controls. */}
+      {isOwnProfile && (
+        <input accept="image/*" hidden onChange={handlePictureUpload} ref={fileInputRef} tabIndex={-1} type="file" />
+      )}
+
+      {editOpen && (
+        <Dialog className="profile-edit-modal" labelledBy="edit-profile-title" onClose={() => setEditOpen(false)}>
+          <Eyebrow>PROFİLİ REDAKTƏ ET</Eyebrow>
+          <h2 id="edit-profile-title">Özün haqqında</h2>
+          <Tabs active={editTab} label="Profil bölmələri" onChange={setEditTab} tabs={editTabs} />
+
+          {editTab === 'about' ? (
+            <>
+              <div className="photo-field">
+                <Avatar name={name} size="large" src={profile.profilePictureUrl} />
+                <div>
+                  <strong>Profil şəkli</strong>
+                  <span>Şəkil faylı, ən çox 5 MB.</span>
+                  <div className="photo-actions">
+                    <Button
+                      aria-busy={uploadingPicture}
+                      aria-disabled={uploadingPicture}
+                      onClick={() => !uploadingPicture && fileInputRef.current?.click()}
+                      ref={uploadPhotoRef}
+                      variant="secondary"
+                    >
+                      {uploadingPicture ? 'Yüklənir…' : profile.profilePictureUrl ? 'Şəkli dəyiş' : 'Şəkil yüklə'}
+                    </Button>
+                    {profile.profilePictureUrl && (
+                      <Button
+                        aria-busy={deletingPicture}
+                        className="photo-remove"
+                        aria-disabled={deletingPicture}
+                        onClick={handleDeletePicture}
+                        ref={removePhotoRef}
+                        variant="quiet"
                       >
-                        {profile.websiteUrl}
-                      </a>
-                    </div>
-                  )}
-                  {profile?.dateOfBirth && (
-                    <div className="flex items-center gap-3 text-stone-600">
-                      <Calendar className="w-5 h-5 text-stone-400" />
-                      <span>Born {formatDate(profile.dateOfBirth)}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3 text-stone-600">
-                    <Calendar className="w-5 h-5 text-stone-400" />
-                    <span>Joined {formatDate(profile?.createdAt)}</span>
+                        <Icon name="trash" size={16} /> {deletingPicture ? 'Silinir…' : 'Şəkli sil'}
+                      </Button>
+                    )}
                   </div>
                 </div>
-
-                {/* Social Links */}
-                {(socials?.facebook || socials?.twitter || socials?.linkedin || socials?.linkedIn) && (
-                  <div>
-                    <h3 className="font-semibold text-stone-800 mb-3">Social Links</h3>
-                    <div className="flex gap-3">
-                      {socials?.facebook && (
-                        <a
-                          href={socials.facebook}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-10 h-10 bg-stone-100 hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors"
-                        >
-                          <Facebook className="w-5 h-5 text-stone-600 hover:text-blue-600" />
-                        </a>
-                      )}
-                      {socials?.twitter && (
-                        <a
-                          href={socials.twitter}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-10 h-10 bg-stone-100 hover:bg-sky-100 rounded-lg flex items-center justify-center transition-colors"
-                        >
-                          <Twitter className="w-5 h-5 text-stone-600 hover:text-sky-500" />
-                        </a>
-                      )}
-                      {(socials?.linkedin || socials?.linkedIn) && (
-                        <a
-                          href={socials.linkedin || socials.linkedIn}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-10 h-10 bg-stone-100 hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors"
-                        >
-                          <Linkedin className="w-5 h-5 text-stone-600 hover:text-blue-700" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
-            )}
 
-            {/* Shelves Tab */}
-            {activeTab === 'shelves' && (
-              <div className="space-y-4">
-                {shelves.length > 0 ? (
-                  shelves.map((shelf) => (
-                    <ShelfPreviewCard key={shelf.id} shelf={shelf} />
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-stone-400">
-                    <BookMarked className="w-12 h-12 mx-auto mb-3 text-stone-300" />
-                    <h3 className="font-medium text-stone-800 mb-1">No shelves yet</h3>
-                    <p className="text-sm text-stone-500">
-                      {isOwnProfile ? "You haven't added any books to your shelves yet." : "This user hasn't added any books yet."}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Activity Tab */}
-            {activeTab === 'activity' && (
-              <div className="space-y-4">
-                {feedLoading && feedItems.length === 0 ? (
-                  // Loading skeleton
-                  <>
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="bg-stone-50 rounded-xl border border-stone-200 p-4 animate-pulse">
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-stone-200 rounded-full" />
-                          <div className="flex-1">
-                            <div className="h-4 bg-stone-200 rounded w-32 mb-2" />
-                            <div className="h-3 bg-stone-200 rounded w-20" />
-                          </div>
-                        </div>
-                        <div className="mt-4 space-y-2">
-                          <div className="h-4 bg-stone-200 rounded w-full" />
-                          <div className="h-4 bg-stone-200 rounded w-3/4" />
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : feedItems.length > 0 ? (
-                  <>
-                    {feedItems.map((item) => (
-                      <FeedItemCard
-                        key={item.id}
-                        item={item}
-                        onItemDeleted={(itemId) =>
-                          setFeedItems((prev) => prev.filter((i) => i.id !== itemId))
-                        }
-                      />
-                    ))}
-
-                    {/* Load More Button */}
-                    {hasMoreFeed && (
-                      <div className="text-center py-4">
-                        <button
-                          onClick={() => fetchUserFeed(feedPage + 1, true)}
-                          disabled={feedLoading}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-stone-200 rounded-xl text-stone-600 hover:bg-stone-50 hover:border-stone-300 transition-all font-medium disabled:opacity-50"
-                        >
-                          {feedLoading ? (
-                            <>
-                              <Loader className="w-4 h-4 animate-spin" />
-                              Loading...
-                            </>
-                          ) : (
-                            'Load More'
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-center py-8 text-stone-400">
-                    <BookOpen className="w-12 h-12 mx-auto mb-3 text-stone-300" />
-                    <h3 className="font-medium text-stone-800 mb-1">No activity yet</h3>
-                    <p className="text-sm text-stone-500">
-                      {isOwnProfile
-                        ? "You haven't shared any quotes, reviews, or added books yet."
-                        : "This user hasn't shared any activity yet."}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Edit Profile Tab - Only for own profile */}
-            {isOwnProfile && activeTab === 'edit' && (
-              <form onSubmit={handleProfileSubmit} className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                      First Name
-                    </label>
+              <form onSubmit={handleProfileSubmit}>
+                <div className="form-pair">
+                  <label className="text-field">
+                    <span>Ad</span>
                     <input
+                      autoComplete="given-name"
+                      onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                      placeholder="Elçin"
                       type="text"
                       value={profileForm.firstName}
-                      onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                      placeholder="Elçin"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                      Last Name
-                    </label>
+                  </label>
+                  <label className="text-field">
+                    <span>Soyad</span>
                     <input
+                      autoComplete="family-name"
+                      onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                      placeholder="Məmmədov"
                       type="text"
                       value={profileForm.lastName}
-                      onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                      placeholder="Məmmədov"
                     />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                    Bio
                   </label>
-                  <textarea
-                    value={profileForm.bio}
-                    onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
-                    rows={3}
-                    className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent resize-none"
-                    placeholder="Tell us about yourself..."
-                  />
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                      Location
-                    </label>
+                <label className="text-field">
+                  <span>Bioqrafiya</span>
+                  <textarea
+                    onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+                    placeholder="Özünüz və sevdiyiniz kitablar haqqında bir neçə söz…"
+                    rows={4}
+                    value={profileForm.bio}
+                  />
+                </label>
+                <div className="form-pair">
+                  <label className="text-field">
+                    <span>Məkan</span>
                     <input
+                      autoComplete="country-name"
+                      onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
+                      placeholder="Bakı, Azərbaycan"
                       type="text"
                       value={profileForm.country}
-                      onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                      placeholder="Bakı, Azərbaycan"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                      Date of Birth
-                    </label>
+                  </label>
+                  <label className="text-field">
+                    <span>Doğum tarixi</span>
                     <input
+                      autoComplete="bday"
+                      onChange={(e) => setProfileForm({ ...profileForm, dateOfBirth: e.target.value })}
                       type="date"
                       value={profileForm.dateOfBirth}
-                      onChange={(e) => setProfileForm({ ...profileForm, dateOfBirth: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
                     />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                    Website
                   </label>
+                </div>
+                <label className="text-field">
+                  <span>Vebsayt</span>
                   <input
+                    autoComplete="url"
+                    onChange={(e) => setProfileForm({ ...profileForm, websiteUrl: e.target.value })}
+                    placeholder="https://saytiniz.az"
                     type="url"
                     value={profileForm.websiteUrl}
-                    onChange={(e) => setProfileForm({ ...profileForm, websiteUrl: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                    placeholder="https://yourwebsite.com"
                   />
+                </label>
+                <div className="modal-actions">
+                  <Button onClick={() => setEditOpen(false)} variant="secondary">
+                    Ləğv et
+                  </Button>
+                  <Button aria-busy={saving} aria-disabled={saving} type="submit">
+                    {saving ? 'Saxlanılır…' : 'Yadda saxla'}
+                  </Button>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {saving ? (
-                    <>
-                      <Loader className="w-4 h-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      Save Changes
-                    </>
-                  )}
-                </button>
               </form>
-            )}
-
-            {/* Social Links Tab - Only for own profile */}
-            {isOwnProfile && activeTab === 'socials' && (
-              <form onSubmit={handleSocialsSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <Facebook className="w-4 h-4" />
-                      Facebook
-                    </div>
-                  </label>
-                  <input
-                    type="url"
-                    value={socialsForm.facebook}
-                    onChange={(e) => setSocialsForm({ ...socialsForm, facebook: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                    placeholder="https://facebook.com/username"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <Twitter className="w-4 h-4" />
-                      Twitter / X
-                    </div>
-                  </label>
-                  <input
-                    type="url"
-                    value={socialsForm.twitter}
-                    onChange={(e) => setSocialsForm({ ...socialsForm, twitter: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                    placeholder="https://twitter.com/username"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <Linkedin className="w-4 h-4" />
-                      LinkedIn
-                    </div>
-                  </label>
-                  <input
-                    type="url"
-                    value={socialsForm.linkedIn}
-                    onChange={(e) => setSocialsForm({ ...socialsForm, linkedIn: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                    placeholder="https://linkedin.com/in/username"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {saving ? (
-                    <>
-                      <Loader className="w-4 h-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      Save Social Links
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {/* Security Tab - Only for own profile */}
-            {isOwnProfile && activeTab === 'security' && (
-              <div className="space-y-8">
-                {/* Change Password */}
-                <div>
-                  <h3 className="font-semibold text-stone-800 mb-4 flex items-center gap-2">
-                    <Lock className="w-5 h-5" />
-                    Change Password
-                  </h3>
-                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                        Current Password
-                      </label>
-                      <input
-                        type="password"
-                        value={passwordForm.currentPassword}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                          New Password
-                        </label>
-                        <input
-                          type="password"
-                          value={passwordForm.newPassword}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-stone-600 mb-1.5">
-                          Confirm New Password
-                        </label>
-                        <input
-                          type="password"
-                          value={passwordForm.confirmPassword}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                          className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <>
-                          <Loader className="w-4 h-4 animate-spin" />
-                          Changing...
-                        </>
-                      ) : (
-                        'Change Password'
-                      )}
-                    </button>
-                  </form>
-                </div>
-
-                {/* Danger Zone */}
-                <div className="border border-red-200 rounded-xl p-5 bg-red-50">
-                  <h3 className="font-semibold text-red-800 mb-2 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    Danger Zone
-                  </h3>
-                  <p className="text-sm text-red-700 mb-4">
-                    Once you delete your account, there is no going back. Please be certain.
-                  </p>
-
-                  {!showDeleteConfirm ? (
-                    <button
-                      onClick={() => setShowDeleteConfirm(true)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete Account
-                    </button>
-                  ) : (
-                    <div className="space-y-3">
-                      <p className="text-sm text-red-700 font-medium">
-                        Type <span className="font-mono bg-red-100 px-1 rounded">DELETE</span> to confirm:
-                      </p>
-                      <input
-                        type="text"
-                        value={deleteConfirmText}
-                        onChange={(e) => setDeleteConfirmText(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-red-300 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
-                        placeholder="Type DELETE"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleDeleteAccount}
-                          disabled={saving || deleteConfirmText !== 'DELETE'}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {saving ? (
-                            <Loader className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                          Confirm Delete
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowDeleteConfirm(false);
-                            setDeleteConfirmText('');
-                          }}
-                          className="px-5 py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-700 font-medium rounded-lg transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+            </>
+          ) : (
+            <form onSubmit={handleSocialsSubmit}>
+              <label className="text-field">
+                <span>Facebook</span>
+                <input
+                  onChange={(e) => setSocialsForm({ ...socialsForm, facebook: e.target.value })}
+                  placeholder="https://facebook.com/istifadeci"
+                  type="url"
+                  value={socialsForm.facebook}
+                />
+              </label>
+              <label className="text-field">
+                <span>X (Twitter)</span>
+                <input
+                  onChange={(e) => setSocialsForm({ ...socialsForm, twitter: e.target.value })}
+                  placeholder="https://x.com/istifadeci"
+                  type="url"
+                  value={socialsForm.twitter}
+                />
+              </label>
+              <label className="text-field">
+                <span>LinkedIn</span>
+                <input
+                  onChange={(e) => setSocialsForm({ ...socialsForm, linkedIn: e.target.value })}
+                  placeholder="https://linkedin.com/in/istifadeci"
+                  type="url"
+                  value={socialsForm.linkedIn}
+                />
+              </label>
+              <div className="modal-actions">
+                <Button onClick={() => setEditOpen(false)} variant="secondary">
+                  Ləğv et
+                </Button>
+                <Button aria-busy={saving} aria-disabled={saving} type="submit">
+                  {saving ? 'Saxlanılır…' : 'Yadda saxla'}
+                </Button>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
+            </form>
+          )}
+        </Dialog>
+      )}
+
+      {showDeleteConfirm && (
+        <Dialog className="delete-account-modal" labelledBy="delete-account-title" onClose={closeDeleteConfirm}>
+          <Eyebrow>TƏHLÜKƏLİ ZONA</Eyebrow>
+          <h2 id="delete-account-title">Hesab silinsin?</h2>
+          <p>Hesabınızı sildikdən sonra onu geri qaytarmaq mümkün olmayacaq. Zəhmət olmasa, əmin olun.</p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleDeleteAccount();
+            }}
+          >
+            <label className="text-field">
+              <span>
+                Təsdiqləmək üçün <strong>DELETE</strong> yazın
+              </span>
+              <input
+                autoCapitalize="characters"
+                autoComplete="off"
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                spellCheck={false}
+                type="text"
+                value={deleteConfirmText}
+              />
+            </label>
+            <div className="modal-actions">
+              <Button onClick={closeDeleteConfirm} variant="secondary">
+                Ləğv et
+              </Button>
+              <Button
+                aria-busy={saving}
+                aria-disabled={saving}
+                disabled={deleteConfirmText !== 'DELETE'}
+                type="submit"
+                variant="danger"
+              >
+                <Icon name="trash" size={16} /> {saving ? 'Silinir…' : 'Hesabı birdəfəlik sil'}
+              </Button>
+            </div>
+          </form>
+        </Dialog>
+      )}
 
       {/* User List Modals */}
       <UserListModal
+        eyebrow={name}
         isOpen={isFollowersModalOpen}
         onClose={() => setIsFollowersModalOpen(false)}
-        title="Followers"
+        title="İzləyicilər"
         users={followersList}
       />
       <UserListModal
+        eyebrow={name}
         isOpen={isFollowingModalOpen}
         onClose={() => setIsFollowingModalOpen(false)}
-        title="Following"
+        title="İzlənilənlər"
         users={followingList}
       />
     </div>
   );
+};
+
+// A new identifier is a new profile: remount so no state (feed, modals, follow status) carries over.
+const ProfilePage = () => {
+  const { identifier } = useParams(); // Can be username or userId
+  return <ProfileView identifier={identifier} key={identifier || 'me'} />;
 };
 
 export default ProfilePage;

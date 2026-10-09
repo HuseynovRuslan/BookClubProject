@@ -1,0 +1,110 @@
+/* Profile page (Bookla 2.0). Builds on the Make profile rules in bookla-app.css (profile-hero,
+   profile-main, profile-stats, profile-layout, profile-shelves, stacked-covers, reading-year,
+   settings-entry); only what real data and the real features need is added here. */
+
+/* Hero ------------------------------------------------------------------------------------------ */
+.bk-app .profile-page .profile-copy { min-width: 0; }
+.bk-app .profile-page .profile-copy h1 { overflow-wrap: anywhere; }
+.bk-app .profile-page .social-links { flex-wrap: wrap; row-gap: 6px; }
+.bk-app .profile-page .social-links a { text-decoration: none; }
+.bk-app .profile-page .social-links a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bk-app .profile-action { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Stats: followers/following open a list; the book counts are plain numbers. */
+.bk-app .profile-stats > div { display: flex; align-items: baseline; gap: 7px; }
+.bk-app .profile-stats > button { padding: 0; text-align: left; }
+.bk-app .profile-stats > button:hover span { color: var(--forest); text-decoration: underline; text-underline-offset: 3px; }
+.bk-app .profile-stats > button[aria-busy="true"] { cursor: progress; opacity: .6; }
+
+/* Shelves ---------------------------------------------------------------------------------------- */
+.bk-app .profile-shelves > a { display: block; min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); color: inherit; text-align: left; text-decoration: none; transition: 180ms; }
+.bk-app .profile-shelves > a:hover { border-color: var(--forest); transform: translateY(-3px); }
+.bk-app .profile-shelves > a > strong, .bk-app .profile-shelves > a > span { display: block; }
+.bk-app .profile-shelves > a > strong { overflow: hidden; margin-top: 15px; color: var(--forest); font-family: var(--font-editorial-semibold); text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .profile-shelves > a > span { color: var(--muted); font-size: 10px; }
+/* One or two books: a smaller fan; none: three empty outlines. */
+.bk-app .stacked-covers.stacked-1 .book-cover:nth-child(1) { transform: rotate(-3deg); }
+.bk-app .stacked-covers.stacked-2 .book-cover:nth-child(1) { transform: rotate(-7deg) translateX(10px); }
+.bk-app .stacked-covers.stacked-2 .book-cover:nth-child(2) { transform: rotate(6deg) translateX(-10px); }
+.bk-app .stacked-covers .cover-ghost { display: block; width: 75px; aspect-ratio: 2 / 3; border: 1px dashed rgba(24, 61, 53, .28); border-radius: 5px 9px 9px 5px; background: var(--cream); }
+.bk-app .stacked-covers .cover-ghost:nth-child(1) { transform: rotate(-8deg) translateX(20px); }
+.bk-app .stacked-covers .cover-ghost:nth-child(2) { z-index: 2; background: var(--sand); }
+.bk-app .stacked-covers .cover-ghost:nth-child(3) { transform: rotate(8deg) translateX(-20px); }
+
+/* Reading year (real challenge numbers, or the reader's shelf summary). */
+.bk-app .reading-year h2 { margin-bottom: 8px; }
+.bk-app .reading-year .progress { margin: 26px 0 0; background: rgba(255, 255, 255, .18); }
+.bk-app .reading-year .progress i { background: var(--terracotta); }
+.bk-app .reading-year .year-books-label { margin: 24px 0 10px; }
+.bk-app .year-books { display: flex; gap: 10px; }
+.bk-app .year-books a { width: 46px; flex: 0 0 auto; }
+.bk-app .year-books .book-cover { padding: 6px; box-shadow: 0 6px 14px rgba(0, 0, 0, .2); }
+.bk-app .year-books .book-cover strong, .bk-app .year-books .book-cover span, .bk-app .year-books .book-cover small { display: none; }
+.bk-app .year-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; margin: 26px 0 0; padding-top: 18px; border-top: 1px solid rgba(255, 255, 255, .2); }
+.bk-app .year-summary dt { color: #c8d9d3; font-size: 11px; }
+.bk-app .year-summary dd { margin: 2px 0 0; color: white; font-family: var(--font-editorial); font-size: 26px; line-height: 1.2; }
+.bk-app .reading-year > .button { margin-top: 26px; }
+
+/* Activity ---------------------------------------------------------------------------------------- */
+.bk-app .profile-feed { display: grid; gap: 18px; }
+.bk-app .profile-feed > article { margin: 0; }
+.bk-app .profile-more { display: flex; justify-content: center; margin-top: 28px; }
+.bk-app .profile-page .empty-state { min-height: 0; margin: 0 auto; padding: 40px 20px; }
+.bk-app .profile-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 12px; }
+
+/* Account settings (password, delete account) behind the Make "settings-entry" row. */
+.bk-app .profile-settings { margin-top: 75px; }
+.bk-app .profile-settings > .settings-entry { margin-top: 0; }
+.bk-app .settings-entry .icon { transition: transform 180ms; }
+.bk-app .settings-entry[aria-expanded="true"] .icon { transform: rotate(90deg); }
+.bk-app .account-settings { display: grid; grid-template-columns: 1.25fr .75fr; align-items: start; gap: 22px; padding-top: 34px; }
+.bk-app .settings-card { min-width: 0; padding: clamp(24px, 3vw, 36px); border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
+.bk-app .settings-card .eyebrow { margin-bottom: 8px; }
+.bk-app .settings-card h3 { margin: 0; font-size: 24px; }
+.bk-app .settings-card > .button { margin-top: 26px; }
+.bk-app .danger-zone { border-color: rgba(143, 62, 46, .3); background: #fbf4f0; }
+.bk-app .danger-zone .eyebrow { color: var(--danger); }
+.bk-app .danger-zone p { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+
+/* Forms in dialogs and settings. Busy buttons use aria-disabled (not disabled) so keyboard focus
+   stays on them and the dialog keeps its focus trap and Escape. */
+.bk-app .profile-page .button[aria-disabled="true"] { cursor: progress; opacity: .6; transform: none; }
+.bk-app .form-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.bk-app .text-field input[type="date"] { min-height: 46px; }
+.bk-app .profile-edit-modal .tabs { margin: 22px 0 6px; }
+.bk-app .profile-edit-modal .photo-field { margin-top: 20px; }
+.bk-app .photo-field { display: flex; align-items: center; gap: 18px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--white); }
+.bk-app .photo-field > div { min-width: 0; }
+.bk-app .photo-field strong { display: block; color: var(--forest); font-family: var(--font-semibold); font-size: 13px; }
+.bk-app .photo-field > div > span { display: block; color: var(--muted); font-size: 11px; }
+.bk-app .photo-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; margin-top: 10px; }
+.bk-app .photo-actions .button { min-height: 36px; padding-top: 7px; padding-bottom: 7px; }
+.bk-app .photo-actions .photo-remove { color: var(--danger); }
+.bk-app .delete-account-modal .text-field strong { color: var(--danger); font-family: var(--font-semibold); }
+
+/* Followers / following dialog. */
+.bk-app .user-list { margin: 20px -12px 0; padding: 0; list-style: none; }
+.bk-app .user-list a { display: flex; align-items: center; gap: 13px; padding: 11px 12px; border-radius: var(--radius-sm); color: inherit; text-decoration: none; }
+.bk-app .user-list a:hover { background: var(--sand); }
+.bk-app .user-list a > span { min-width: 0; flex: 1; }
+.bk-app .user-list strong, .bk-app .user-list small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .user-list strong { color: var(--forest); font-family: var(--font-semibold); font-size: 13px; }
+.bk-app .user-list small { color: var(--muted); font-size: 11px; }
+.bk-app .user-list .icon { color: var(--muted); }
+.bk-app .user-list-empty { margin: 18px 0 0; color: var(--muted); }
+.bk-app .user-list-modal h2, .bk-app .profile-edit-modal h2, .bk-app .delete-account-modal h2 { padding-right: 36px; }
+
+/* Loading skeleton of the hero. */
+.bk-app .profile-skeleton .skeleton-avatar { display: block; width: 148px; height: 148px; flex: 0 0 auto; border: 8px solid var(--cream); border-radius: 50%; background: var(--sand); }
+.bk-app .skeleton-line { display: block; height: 13px; margin-top: 14px; border-radius: 6px; background: linear-gradient(100deg, var(--sand) 35%, #f6f4ed 50%, var(--sand) 65%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+.bk-app .skeleton-line.skeleton-title { height: 52px; }
+
+@media (max-width: 780px) {
+  .bk-app .account-settings { grid-template-columns: 1fr; }
+}
+@media (max-width: 540px) {
+  .bk-app .form-pair { grid-template-columns: 1fr; }
+  .bk-app .profile-skeleton .skeleton-avatar { width: 125px; height: 125px; }
+  .bk-app .profile-action { width: 100%; }
+  .bk-app .photo-field { align-items: flex-start; }
+}

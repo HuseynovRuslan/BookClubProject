@@ -1,15 +1,5 @@
-﻿import { useState, useEffect } from 'react';
-import {
-  MessageSquare,
-  Pencil,
-  Trash2,
-  Loader,
-  User,
-  X,
-  Send,
-  AlertCircle,
-  ShieldAlert,
-} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import StarRating from './StarRating';
 import {
@@ -18,22 +8,27 @@ import {
   updateReview,
   deleteReview,
 } from '../api/reviews';
+import { toggleLike, getComments, addComment, updateComment, deleteComment } from '../api/interactions';
 import { useAuth } from '../context/AuthContext';
+import { Avatar, Button, ButtonLink, Dialog, EmptyState, Eyebrow, Icon } from './app/ui';
+import { displayName, timeAgo } from './app/format';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
+// Reader reviews of one book (Make "Oxucu rəyləri"): summary, the write form, and review rows with
+// edit/delete for the author, likes and comments for everyone.
+
+const profilePath = (person) => `/profile/${person?.username || person?.userName || person?.userId || ''}`;
 
 /**
- * Review Section Component
- * Displays reviews for a book and allows users to add/edit/delete their own reviews
- * 
  * @param {Object} props
  * @param {string} props.bookId - The book ID to display reviews for
+ * @param {Function} [props.onStatsChange] - Called with { count, average } whenever the list changes
  */
-const ReviewSection = ({ bookId }) => {
+const ReviewSection = ({ bookId, onStatsChange }) => {
   const { user, isAuthenticated, emailConfirmed } = useAuth();
 
   // State
   const [reviews, setReviews] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState(null);
@@ -52,38 +47,49 @@ const ReviewSection = ({ bookId }) => {
   // Check if current user has already reviewed
   const userReview = reviews.find((r) => r.userId === user?.id);
 
+  const fetchReviews = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getReviewsByBookId(bookId, 1, 50);
+      const received = data?.items || data || [];
+      // The API filters by bookId; keep only this book's reviews in case a list ever comes back mixed.
+      const reviewsList = received.filter((r) => !r.bookId || String(r.bookId) === String(bookId));
+      setReviews(reviewsList);
+      setTotalCount(
+        reviewsList.length === received.length ? Math.max(data?.totalCount || 0, reviewsList.length) : reviewsList.length,
+      );
+    } catch {
+      toast.error('Rəylər yüklənmədi');
+    } finally {
+      setLoading(false);
+    }
+  }, [bookId]);
+
   useEffect(() => {
     if (bookId) {
       fetchReviews();
     }
-  }, [bookId]);
+  }, [bookId, fetchReviews]);
 
-  const fetchReviews = async () => {
-    try {
-      setLoading(true);
-      const data = await getReviewsByBookId(bookId, 1, 50);
-      const reviewsList = data?.items || data || [];
-      // Debug: Check if review data includes firstName, lastName, userProfilePictureUrl
-      if (reviewsList.length > 0) {
-        console.log('Review data sample:', reviewsList[0]);
-      }
-      setReviews(reviewsList);
-    } catch (error) {
-      toast.error('Failed to load reviews');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Calculate average rating
+  const averageRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
+
+  useEffect(() => {
+    if (!loading) onStatsChange?.({ count: totalCount, average: averageRating });
+  }, [loading, totalCount, averageRating, onStatsChange]);
 
   const validateForm = (rating, comment) => {
     if (!rating || rating < 1 || rating > 5) {
-      return 'Please select a rating (1-5 stars)';
+      return 'Qiymət seç (1–5 ulduz)';
     }
     if (!comment || comment.trim().length === 0) {
-      return 'Please write a review comment';
+      return 'Rəyinin mətnini yaz';
     }
     if (comment.trim().length < 10) {
-      return 'Review must be at least 10 characters';
+      return 'Rəy ən azı 10 simvoldan ibarət olmalıdır';
     }
     return '';
   };
@@ -92,7 +98,7 @@ const ReviewSection = ({ bookId }) => {
     e.preventDefault();
 
     if (!isAuthenticated) {
-      toast.info('Please log in to write a review');
+      toast.info('Rəy yazmaq üçün daxil ol');
       return;
     }
 
@@ -111,12 +117,12 @@ const ReviewSection = ({ bookId }) => {
         reviewText: newComment.trim(),
       });
 
-      toast.success('Review submitted successfully!');
+      toast.success('Rəyin paylaşıldı!');
       setNewRating(0);
       setNewComment('');
       fetchReviews();
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Failed to submit review';
+      const errorMessage = error.response?.data?.message || 'Rəyi göndərmək alınmadı';
       toast.error(errorMessage);
     } finally {
       setSubmitting(false);
@@ -149,11 +155,11 @@ const ReviewSection = ({ bookId }) => {
         reviewText: editComment.trim(),
       });
 
-      toast.success('Review updated!');
+      toast.success('Rəy yeniləndi');
       setEditingReviewId(null);
       fetchReviews();
-    } catch (error) {
-      toast.error('Failed to update review');
+    } catch {
+      toast.error('Rəyi yeniləmək alınmadı');
     } finally {
       setSubmitting(false);
     }
@@ -163,37 +169,19 @@ const ReviewSection = ({ bookId }) => {
     try {
       setDeletingReviewId(reviewId);
       await deleteReview(reviewId);
-      toast.success('Review deleted');
+      toast.success('Rəy silindi');
       setShowDeleteConfirm(null);
       setReviews((prev) => prev.filter((r) => r.id !== reviewId));
-    } catch (error) {
-      toast.error('Failed to delete review');
+      setTotalCount((count) => Math.max(0, count - 1));
+    } catch {
+      toast.error('Rəyi silmək alınmadı');
     } finally {
       setDeletingReviewId(null);
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const getProfilePicture = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `${BASE_URL}${url}`;
-  };
-
-  // Calculate average rating
-  const averageRating =
-    reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-      : 0;
+  const patchReview = (reviewId, changes) =>
+    setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, ...changes(r) } : r)));
 
   // Rating distribution
   const ratingCounts = [5, 4, 3, 2, 1].map((stars) => ({
@@ -205,367 +193,483 @@ const ReviewSection = ({ bookId }) => {
         : 0,
   }));
 
+  if (loading) {
+    return (
+      <div aria-label="Rəylər yüklənir" aria-live="polite" className="reviews reviews-loading" role="status">
+        <div className="review-summary-skeleton" />
+        {[0, 1].map((key) => (
+          <div className="review-skeleton" key={key}>
+            <i />
+            <div>
+              <span />
+              <span />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const reviewToDelete = reviews.find((r) => r.id === showDeleteConfirm);
+
   return (
-    <div className="mt-12 pt-8 border-t border-stone-200">
-      {/* Section Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <MessageSquare className="w-6 h-6 text-stone-700" />
-        <h2 className="text-2xl font-bold text-stone-900">Reviews & Ratings</h2>
-        <span className="px-2.5 py-0.5 bg-stone-100 text-stone-600 text-sm font-medium rounded-full">
-          {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
-        </span>
+    <div className="reviews">
+      {/* Rating Summary */}
+      <div className="review-summary">
+        <strong>{averageRating > 0 ? averageRating.toFixed(1) : '—'}</strong>
+        <div>
+          <StarRating rating={Math.round(averageRating)} />
+          <span>
+            {reviews.length > 0 ? `${reviews.length} rəy əsasında` : 'Hələ qiymət verilməyib'}
+          </span>
+        </div>
+        {reviews.length > 0 && (
+          <ul aria-label="Qiymətlərin bölgüsü" className="rating-bars">
+            {ratingCounts.map(({ stars, count, percentage }) => (
+              <li key={stars}>
+                <span>{stars} ★</span>
+                <i aria-hidden="true">
+                  <b style={{ width: `${percentage}%` }} />
+                </i>
+                <span>
+                  {count}
+                  <span className="sr-only"> rəy</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="w-8 h-8 text-stone-400 animate-spin" />
-        </div>
-      ) : (
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Rating Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-stone-50 rounded-xl p-6">
-              {/* Average Rating */}
-              <div className="text-center mb-6">
-                <div className="text-5xl font-bold text-stone-900 mb-2">
-                  {averageRating > 0 ? averageRating.toFixed(1) : '—'}
-                </div>
-                <StarRating rating={Math.round(averageRating)} size="lg" />
-                <p className="text-stone-500 text-sm mt-2">
-                  Based on {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
-                </p>
-              </div>
+      {/* Write Review Form - Only if user hasn't reviewed */}
+      {isAuthenticated && !userReview && (
+        <form aria-labelledby={`review-form-${bookId}`} className="review-form" onSubmit={handleSubmitReview} noValidate>
+          <h3 id={`review-form-${bookId}`}>Rəyini yaz</h3>
 
-              {/* Rating Distribution */}
-              <div className="space-y-2">
-                {ratingCounts.map(({ stars, count, percentage }) => (
-                  <div key={stars} className="flex items-center gap-2">
-                    <span className="text-sm text-stone-600 w-6">{stars}★</span>
-                    <div className="flex-1 h-2 bg-stone-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-amber-400 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <span className="text-sm text-stone-500 w-8">{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Email Verification Warning */}
+          {!emailConfirmed && (
+            <p className="review-note review-note-warning" role="note">
+              <strong>E-poçt təsdiqi tələb olunur.</strong> Rəy yazmaq üçün e-poçtunu təsdiqlə — təsdiq
+              linki gələnlər qutusundadır.
+            </p>
+          )}
 
-            {/* Write Review Form - Only if user hasn't reviewed */}
-            {isAuthenticated && !userReview && (
-              <div className="mt-6 bg-white border border-stone-200 rounded-xl p-6">
-                <h3 className="font-semibold text-stone-900 mb-4">Write a Review</h3>
-                
-                {/* Email Verification Warning */}
-                {!emailConfirmed && (
-                  <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg mb-4">
-                    <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-amber-800 font-medium text-sm">Email verification required</p>
-                      <p className="text-amber-700 text-sm mt-1">
-                        Please verify your email to submit reviews. Check your inbox for the verification link.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmitReview}>
-                  {/* Star Rating Input */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-stone-700 mb-2">
-                      Your Rating
-                    </label>
-                    <StarRating
-                      rating={newRating}
-                      onRatingChange={emailConfirmed ? setNewRating : undefined}
-                      size="lg"
-                      disabled={!emailConfirmed}
-                    />
-                  </div>
-
-                  {/* Comment Input */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-stone-700 mb-2">
-                      Your Review
-                    </label>
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder={emailConfirmed ? "Share your thoughts about this book..." : "Verify your email to write reviews"}
-                      rows={4}
-                      disabled={!emailConfirmed}
-                      className={`w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent resize-none ${!emailConfirmed ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    />
-                  </div>
-
-                  {/* Error Message */}
-                  {formError && (
-                    <div className="flex items-center gap-2 text-red-600 text-sm mb-4">
-                      <AlertCircle className="w-4 h-4" />
-                      {formError}
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={submitting || !emailConfirmed}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-stone-900 hover:bg-stone-800 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader className="w-4 h-4 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : !emailConfirmed ? (
-                      <>
-                        <ShieldAlert className="w-4 h-4" />
-                        Verify Email to Submit
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        Submit Review
-                      </>
-                    )}
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {/* Already Reviewed Notice */}
-            {isAuthenticated && userReview && (
-              <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-                <p className="text-amber-800 text-sm">
-                  You've already reviewed this book. You can edit or delete your review below.
-                </p>
-              </div>
-            )}
-
-            {/* Login Prompt */}
-            {!isAuthenticated && (
-              <div className="mt-6 bg-stone-50 border border-stone-200 rounded-xl p-6 text-center">
-                <p className="text-stone-600 mb-3">
-                  Log in to write a review
-                </p>
-                <a
-                  href="/login"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 transition-colors"
-                >
-                  Log In
-                </a>
-              </div>
-            )}
+          {/* Star Rating Input */}
+          <div className="review-form-rating">
+            <span aria-hidden="true" className="review-form-label">
+              Qiymətin
+            </span>
+            <StarRating
+              disabled={!emailConfirmed}
+              label="Qiymətin"
+              onRatingChange={emailConfirmed ? setNewRating : undefined}
+              rating={newRating}
+              size="lg"
+            />
           </div>
 
-          {/* Right Column - Reviews List */}
-          <div className="lg:col-span-2">
-            {reviews.length === 0 ? (
-              /* Empty State */
-              <div className="bg-stone-50 rounded-xl p-12 text-center">
-                <div className="w-16 h-16 bg-stone-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MessageSquare className="w-8 h-8 text-stone-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-stone-900 mb-2">
-                  No Reviews Yet
-                </h3>
-                <p className="text-stone-500">
-                  Be the first to share your thoughts about this book!
-                </p>
-              </div>
-            ) : (
-              /* Reviews List */
-              <div className="space-y-6">
-                {reviews.map((review) => {
-                  const isOwn = review.userId === user?.id;
-                  const isEditing = editingReviewId === review.id;
+          {/* Comment Input */}
+          <label className="text-field">
+            Rəyin
+            <textarea
+              aria-label="Rəyin"
+              disabled={!emailConfirmed}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder={emailConfirmed ? 'Bu kitab haqqında fikirlərini bölüş...' : 'Rəy yazmaq üçün e-poçtunu təsdiqlə'}
+              rows={4}
+              value={newComment}
+              aria-describedby={formError ? `review-error-${bookId}` : undefined}
+              aria-invalid={formError ? true : undefined}
+            />
+          </label>
 
-                  return (
-                    <div
-                      key={review.id}
-                      className={`bg-white border rounded-xl p-6 transition-all ${
-                        isOwn ? 'border-amber-200 bg-amber-50/30' : 'border-stone-200'
-                      }`}
-                    >
-                      {/* Review Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          {/* Avatar */}
-                          <div className="w-10 h-10 rounded-full bg-stone-200 overflow-hidden flex-shrink-0">
-                            {review.userProfilePictureUrl ? (
-                              <img
-                                src={getProfilePicture(review.userProfilePictureUrl)}
-                                alt=""
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-stone-700 text-white font-medium">
-                                {review.firstName && review.lastName
-                                  ? `${review.firstName[0]}${review.lastName[0]}`.toUpperCase()
-                                  : review.firstName
-                                  ? review.firstName[0].toUpperCase()
-                                  : review.username?.[0]?.toUpperCase() || 'U'}
-                              </div>
-                            )}
-                          </div>
+          {/* Error Message */}
+          {formError && (
+            <p className="form-error" id={`review-error-${bookId}`} role="alert">
+              {formError}
+            </p>
+          )}
 
-                          {/* User Info */}
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex flex-col">
-                                {(review.firstName || review.lastName) ? (
-                                  <span className="font-medium text-stone-900">
-                                    {[review.firstName, review.lastName].filter(Boolean).join(' ') || review.username || 'Anonymous'}
-                                  </span>
-                                ) : (
-                                  <span className="font-medium text-stone-900">
-                                    {review.username || 'Anonymous'}
-                                  </span>
-                                )}
-                                {review.username && (review.firstName || review.lastName) && (
-                                  <span className="text-xs text-stone-500">@{review.username}</span>
-                                )}
-                              </div>
-                              {isOwn && (
-                                <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                                  You
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <StarRating rating={review.rating} size="sm" />
-                              <span className="text-stone-400 text-xs">•</span>
-                              <span className="text-stone-500 text-xs">
-                                {formatDate(review.createdAt)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions (only for own reviews) */}
-                        {isOwn && !isEditing && (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleStartEdit(review)}
-                              className="p-2 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
-                              aria-label="Edit review"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(review.id)}
-                              className="p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              aria-label="Delete review"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Review Content or Edit Form */}
-                      {isEditing ? (
-                        <div className="space-y-4">
-                          {/* Edit Rating */}
-                          <div>
-                            <label className="block text-sm font-medium text-stone-700 mb-2">
-                              Rating
-                            </label>
-                            <StarRating
-                              rating={editRating}
-                              onRatingChange={setEditRating}
-                              size="md"
-                            />
-                          </div>
-
-                          {/* Edit Comment */}
-                          <div>
-                            <label className="block text-sm font-medium text-stone-700 mb-2">
-                              Review
-                            </label>
-                            <textarea
-                              value={editComment}
-                              onChange={(e) => setEditComment(e.target.value)}
-                              rows={3}
-                              className="w-full px-4 py-3 bg-white border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-300 resize-none"
-                            />
-                          </div>
-
-                          {/* Edit Actions */}
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={handleCancelEdit}
-                              className="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => handleUpdateReview(review.id)}
-                              disabled={submitting}
-                              className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                            >
-                              {submitting ? (
-                                <>
-                                  <Loader className="w-4 h-4 animate-spin" />
-                                  Saving...
-                                </>
-                              ) : (
-                                'Save Changes'
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        /* Review Text */
-                        <p className="text-stone-700 leading-relaxed whitespace-pre-wrap">
-                          {review.reviewText || 'No comment provided.'}
-                        </p>
-                      )}
-
-                      {/* Delete Confirmation */}
-                      {showDeleteConfirm === review.id && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-red-800 text-sm mb-3">
-                            Are you sure you want to delete this review?
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setShowDeleteConfirm(null)}
-                              className="px-3 py-1.5 text-stone-600 hover:bg-stone-100 rounded-lg text-sm transition-colors"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => handleDeleteReview(review.id)}
-                              disabled={deletingReviewId === review.id}
-                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
-                            >
-                              {deletingReviewId === review.id ? (
-                                <>
-                                  <Loader className="w-3 h-3 animate-spin" />
-                                  Deleting...
-                                </>
-                              ) : (
-                                <>
-                                  <Trash2 className="w-3 h-3" />
-                                  Delete
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          <div className="review-form-actions">
+            <Button disabled={submitting || !emailConfirmed} type="submit">
+              <Icon name="send" />
+              {submitting ? 'Göndərilir...' : !emailConfirmed ? 'Göndərmək üçün e-poçtu təsdiqlə' : 'Rəyi paylaş'}
+            </Button>
           </div>
+        </form>
+      )}
+
+      {/* Already Reviewed Notice */}
+      {isAuthenticated && userReview && (
+        <p className="review-note">Bu kitab haqqında artıq rəy yazmısan. Rəyini aşağıda redaktə edə və ya silə bilərsən.</p>
+      )}
+
+      {/* Login Prompt */}
+      {!isAuthenticated && (
+        <div className="review-note review-login">
+          <p>Rəy yazmaq üçün hesabına daxil ol.</p>
+          <ButtonLink to="/login" variant="secondary">
+            Daxil ol
+          </ButtonLink>
         </div>
       )}
+
+      {/* Reviews List */}
+      {reviews.length === 0 ? (
+        <EmptyState title="Hələ rəy yoxdur" text="Bu kitab haqqında fikrini ilk sən bölüş." />
+      ) : (
+        <div className="review-list">
+          {reviews.map((review) => {
+            const isOwn = review.userId === user?.id;
+            const isEditing = editingReviewId === review.id;
+            const name = displayName(review);
+
+            return (
+              <article className={`review ${isOwn ? 'review-own' : ''}`} key={review.id}>
+                <Avatar name={name} size="small" src={review.userProfilePictureUrl} />
+                <div>
+                  <div className="review-head">
+                    <p className="review-author">
+                      <Link className="activity-name" to={profilePath(review)}>
+                        {name}
+                      </Link>
+                      {review.username && (review.firstName || review.lastName) && (
+                        <span className="review-handle">@{review.username}</span>
+                      )}
+                      {isOwn && <span className="review-tag">Sənin rəyin</span>}
+                    </p>
+                    {!isEditing && <StarRating rating={review.rating} />}
+                  </div>
+
+                  {/* Review Content or Edit Form */}
+                  {isEditing ? (
+                    <div className="review-edit">
+                      <div className="review-form-rating">
+                        <span aria-hidden="true" className="review-form-label">Qiymət</span>
+                        <StarRating label="Qiymət" onRatingChange={setEditRating} rating={editRating} size="md" />
+                      </div>
+                      <label className="text-field">
+                        Rəy
+                        <textarea aria-label="Rəy" onChange={(e) => setEditComment(e.target.value)} rows={3} value={editComment} />
+                      </label>
+                      <div className="review-form-actions">
+                        <Button onClick={handleCancelEdit} variant="secondary">
+                          Ləğv et
+                        </Button>
+                        <Button disabled={submitting} onClick={() => handleUpdateReview(review.id)}>
+                          {submitting ? 'Yadda saxlanılır...' : 'Yadda saxla'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="review-text">{review.reviewText || 'Şərh yazılmayıb.'}</p>
+                  )}
+
+                  <ReviewFooter
+                    isEditing={isEditing}
+                    isOwn={isOwn}
+                    onDelete={() => setShowDeleteConfirm(review.id)}
+                    onEdit={() => handleStartEdit(review)}
+                    onPatch={(changes) => patchReview(review.id, changes)}
+                    review={review}
+                  />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Delete Confirmation */}
+      {reviewToDelete && (
+        <Dialog labelledBy="delete-review-title" onClose={() => setShowDeleteConfirm(null)}>
+          <Eyebrow>RƏYİ SİL</Eyebrow>
+          <h2 id="delete-review-title">Rəyini silmək istəyirsən?</h2>
+          <p>Rəy, ona verilən bəyənmələr və şərhlər silinəcək. Bu əməliyyatı geri qaytarmaq olmur.</p>
+          <div className="modal-actions">
+            <Button onClick={() => setShowDeleteConfirm(null)} variant="secondary">
+              Ləğv et
+            </Button>
+            <Button
+              disabled={deletingReviewId === reviewToDelete.id}
+              onClick={() => handleDeleteReview(reviewToDelete.id)}
+              variant="danger"
+            >
+              <Icon name="trash" />
+              {deletingReviewId === reviewToDelete.id ? 'Silinir...' : 'Sil'}
+            </Button>
+          </div>
+        </Dialog>
+      )}
     </div>
+  );
+};
+
+// Time, likes, comments and (for the author) edit/delete under one review.
+const ReviewFooter = ({ review, isOwn, isEditing, onEdit, onDelete, onPatch }) => {
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const liked = !!review.isLiked;
+  const likesCount = review.likesCount ?? 0;
+  const commentsCount = review.commentsCount ?? 0;
+
+  const handleLike = async () => {
+    if (!review.id || likeLoading) return;
+    // Optimistic update, rolled back on error
+    onPatch(() => ({ isLiked: !liked, likesCount: liked ? Math.max(0, likesCount - 1) : likesCount + 1 }));
+    setLikeLoading(true);
+    try {
+      const response = await toggleLike(review.id, 'Review');
+      if (response && typeof response.isLiked === 'boolean') {
+        const count = response.newCount ?? response.likesCount;
+        onPatch((r) => ({ isLiked: response.isLiked, likesCount: typeof count === 'number' ? count : r.likesCount }));
+      }
+    } catch {
+      onPatch(() => ({ isLiked: liked, likesCount }));
+      toast.error('Bəyənməni yeniləmək alınmadı');
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
+  const commentsId = `review-comments-${review.id}`;
+
+  return (
+    <>
+      <div className="review-footer">
+        <small>
+          <time dateTime={review.createdAt}>{timeAgo(review.createdAt)}</time>
+        </small>
+        <div className="review-actions">
+          <button
+            aria-label={liked ? 'Bəyənməni geri al' : 'Rəyi bəyən'}
+            aria-pressed={liked}
+            className={`review-action ${liked ? 'is-liked' : ''}`}
+            disabled={likeLoading}
+            onClick={handleLike}
+            type="button"
+          >
+            <Icon name="heart" size={16} />
+            <span>{likesCount}</span>
+          </button>
+          <button
+            aria-controls={commentsId}
+            aria-expanded={commentsOpen}
+            aria-label={`Şərhlər (${commentsCount})`}
+            className={`review-action ${commentsOpen ? 'is-open' : ''}`}
+            onClick={() => setCommentsOpen((open) => !open)}
+            type="button"
+          >
+            <Icon name="comment" size={16} />
+            <span>{commentsCount}</span>
+          </button>
+          {isOwn && !isEditing && (
+            <>
+              <button aria-label="Rəyi redaktə et" className="review-action" onClick={onEdit} type="button">
+                <Icon name="edit" size={16} />
+              </button>
+              <button aria-label="Rəyi sil" className="review-action review-action-danger" onClick={onDelete} type="button">
+                <Icon name="trash" size={16} />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      {commentsOpen && (
+        <ReviewComments
+          id={commentsId}
+          onCountChange={(delta) => onPatch((r) => ({ commentsCount: Math.max(0, (r.commentsCount ?? 0) + delta) }))}
+          reviewId={review.id}
+        />
+      )}
+    </>
+  );
+};
+
+// Comments under a review: list, add, and edit/delete for the comment's author.
+const ReviewComments = ({ id, reviewId, onCountChange }) => {
+  const { user } = useAuth();
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newComment, setNewComment] = useState('');
+  const [posting, setPosting] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [savingId, setSavingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const fetchComments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await getComments(reviewId);
+      setComments(response?.items || response?.data || []);
+    } catch {
+      toast.error('Şərhlər yüklənmədi');
+    } finally {
+      setLoading(false);
+    }
+  }, [reviewId]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim() || posting) return;
+    setPosting(true);
+    try {
+      await addComment(reviewId, 'Review', newComment.trim());
+      setNewComment('');
+      onCountChange(1);
+      await fetchComments();
+      toast.success('Şərh əlavə edildi');
+    } catch {
+      toast.error('Şərh əlavə etmək alınmadı');
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleUpdateComment = async (commentId) => {
+    const text = editText.trim();
+    if (!text || savingId) return;
+    setSavingId(commentId);
+    try {
+      await updateComment(commentId, text);
+      setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, text } : c)));
+      setEditingCommentId(null);
+      setEditText('');
+      toast.success('Şərh yeniləndi');
+    } catch {
+      toast.error('Şərhi yeniləmək alınmadı');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (deletingId) return;
+    setDeletingId(commentId);
+    try {
+      await deleteComment(commentId);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setConfirmDeleteId(null);
+      onCountChange(-1);
+      toast.success('Şərh silindi');
+    } catch {
+      toast.error('Şərhi silmək alınmadı');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  return (
+    <section aria-label="Rəyə yazılan şərhlər" className="review-comments" id={id}>
+      {loading ? (
+        <p className="review-comments-status" role="status">
+          Şərhlər yüklənir...
+        </p>
+      ) : comments.length === 0 ? (
+        <p className="review-comments-status">Hələ şərh yoxdur. İlk şərhi sən yaz.</p>
+      ) : (
+        <ul className="review-comment-list">
+          {comments.map((comment) => {
+            const isOwner = user?.id && comment.userId === user.id;
+            const isEditing = editingCommentId === comment.id;
+            const name = comment.userName || 'Oxucu';
+            return (
+              <li className="review-comment" key={comment.id}>
+                <Avatar name={name} size="small" src={comment.userProfilePicture} />
+                <div>
+                  <p className="review-comment-meta">
+                    <Link className="activity-name" to={`/profile/${comment.userName || comment.userId}`}>
+                      {name}
+                    </Link>
+                    <time dateTime={comment.createdAt}>{timeAgo(comment.createdAt)}</time>
+                  </p>
+                  {isEditing ? (
+                    <div className="review-comment-edit">
+                      <label className="text-field">
+                        <span className="sr-only">Şərhi redaktə et</span>
+                        <textarea aria-label="Şərhi redaktə et" onChange={(e) => setEditText(e.target.value)} rows={2} value={editText} />
+                      </label>
+                      <div className="review-form-actions">
+                        <Button
+                          onClick={() => {
+                            setEditingCommentId(null);
+                            setEditText('');
+                          }}
+                          variant="secondary"
+                        >
+                          Ləğv et
+                        </Button>
+                        <Button disabled={!editText.trim() || savingId === comment.id} onClick={() => handleUpdateComment(comment.id)}>
+                          {savingId === comment.id ? 'Yadda saxlanılır...' : 'Yadda saxla'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="review-comment-text">{comment.text}</p>
+                  )}
+                  {isOwner && !isEditing && (
+                    <div className="review-comment-actions">
+                      {confirmDeleteId === comment.id ? (
+                        <>
+                          <span>Şərh silinsin?</span>
+                          <button onClick={() => setConfirmDeleteId(null)} type="button">
+                            Xeyr
+                          </button>
+                          <button
+                            className="is-danger"
+                            disabled={deletingId === comment.id}
+                            onClick={() => handleDeleteComment(comment.id)}
+                            type="button"
+                          >
+                            {deletingId === comment.id ? 'Silinir...' : 'Bəli, sil'}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingCommentId(comment.id);
+                              setEditText(comment.text || '');
+                            }}
+                            type="button"
+                          >
+                            Redaktə et
+                          </button>
+                          <button className="is-danger" onClick={() => setConfirmDeleteId(comment.id)} type="button">
+                            Sil
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <form className="review-comment-form" onSubmit={handleAddComment}>
+        <label className="field">
+          <span className="sr-only">Şərh yaz</span>
+          <input
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Şərh yaz..."
+            value={newComment}
+          />
+        </label>
+        <Button disabled={!newComment.trim() || posting} type="submit">
+          <Icon name="send" size={16} />
+          {posting ? 'Göndərilir...' : 'Göndər'}
+        </Button>
+      </form>
+    </section>
   );
 };
 
