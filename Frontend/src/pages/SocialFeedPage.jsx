@@ -179,7 +179,9 @@ const SocialFeedPage = () => {
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [allBooks, setAllBooks] = useState([]);
   const [sidebarLoading, setSidebarLoading] = useState(true);
+  const [sidebarError, setSidebarError] = useState(false);
   const [loadingBooks, setLoadingBooks] = useState(true);
+  const [booksError, setBooksError] = useState(false);
 
   // Fetch feed
   const fetchFeed = useCallback(async (pageNum = 1, append = false) => {
@@ -251,9 +253,11 @@ const SocialFeedPage = () => {
       const response = await getAllBooks(1, 1000);
       const allBooksData = response?.items || (Array.isArray(response) ? response : []);
       setAllBooks(allBooksData);
+      setBooksError(false);
     } catch (err) {
       console.error('Error loading books:', err);
       setAllBooks([]);
+      setBooksError(true);
     } finally {
       setLoadingBooks(false);
     }
@@ -316,9 +320,11 @@ const SocialFeedPage = () => {
       const suggested = shuffled.slice(0, 3);
 
       setSuggestedUsers(suggested);
+      setSidebarError(false);
     } catch (error) {
       console.error('Error fetching sidebar data:', error);
       setSuggestedUsers([]);
+      setSidebarError(true);
     } finally {
       setSidebarLoading(false);
     }
@@ -389,6 +395,7 @@ const SocialFeedPage = () => {
         <div>
           <Tabs active={feedType} label="Lent növü" onChange={handleSwitchFeed} tabs={feedTabs} />
           <div aria-label={activeTab?.label} role="tabpanel">
+            <h2 className="sr-only">Son fəaliyyətlər</h2>
             {loading ? (
               <LoadingState kind="feed" />
             ) : error ? (
@@ -441,6 +448,8 @@ const SocialFeedPage = () => {
                   />
                 ))}
               </ul>
+            ) : sidebarError ? (
+              <p className="suggested-empty">Təkliflər yüklənmədi. Oxucuları icma səhifəsində tapa bilərsən.</p>
             ) : (
               <p className="suggested-empty">Hələlik yeni təklif yoxdur. Bütün oxucuları icma səhifəsində tapa bilərsən.</p>
             )}
@@ -460,7 +469,7 @@ const SocialFeedPage = () => {
                 ))}
               </ol>
             ) : (
-              <p className="suggested-empty">Hələ populyar kitab yoxdur.</p>
+              <p className="suggested-empty">{booksError ? 'Kitablar yüklənmədi.' : 'Hələ populyar kitab yoxdur.'}</p>
             )}
             <ButtonLink to="/books" variant="quiet">
               Bütün kitablar <Icon name="arrow" size={15} />

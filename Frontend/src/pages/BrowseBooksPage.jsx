@@ -134,6 +134,7 @@ const BrowseBooksPage = () => {
         />
       ) : books.length > 0 ? (
         <>
+          <h2 className="sr-only">Kitablar</h2>
           <div className="book-grid">
             {books.map((book) => (
               <BookCard book={book} key={book.id} />

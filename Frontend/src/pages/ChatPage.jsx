@@ -304,7 +304,7 @@ const ChatPage = () => {
       setConversations(data?.items || []);
     } catch {
       setConversationsError(true);
-      toast.error('Söhbətləri yükləmək mümkün olmadı');
+      toast.error('Söhbətləri yükləmək mümkün olmadı', { toastId: 'conversations-error' });
     } finally {
       setLoadingConversations(false);
     }
@@ -403,7 +403,7 @@ const ChatPage = () => {
       );
     } catch {
       if (!loaded && isActive()) setMessagesError(true);
-      toast.error('Mesajları yükləmək mümkün olmadı');
+      toast.error('Mesajları yükləmək mümkün olmadı', { toastId: 'messages-error' });
     } finally {
       if (isActive()) setLoadingMessages(false);
     }

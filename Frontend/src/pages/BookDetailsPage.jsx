@@ -48,6 +48,9 @@ const initialsOf = (name = '') =>
     .join('')
     .toLocaleUpperCase('az');
 
+// Language codes the API may store, shown by name; anything else is shown as stored.
+const languageNames = { az: 'Azərbaycan dili', en: 'İngilis dili', ru: 'Rus dili', tr: 'Türk dili', de: 'Alman dili', fr: 'Fransız dili' };
+
 const TABS = [
   { value: 'about', label: 'Kitab haqqında' },
   { value: 'reviews', label: 'Oxucu rəyləri' },
@@ -248,7 +251,7 @@ const BookDetailsPage = () => {
   const facts = [
     book.publisher && { label: 'Nəşriyyat', value: book.publisher },
     book.pageCount > 0 && { label: 'Səhifə sayı', value: book.pageCount },
-    book.language && { label: 'Dil', value: book.language },
+    book.language && { label: 'Dil', value: languageNames[book.language.toLowerCase()] || book.language },
     book.publicationDate && { label: 'Nəşr tarixi', value: formatDate(book.publicationDate) },
     (book.isbn || book.ISBN) && { label: 'ISBN', value: book.isbn || book.ISBN, mono: true },
   ].filter(Boolean);
@@ -353,6 +356,7 @@ const BookDetailsPage = () => {
             </div>
           </div>
           <div aria-label="Oxucu rəyləri" hidden={activeTab !== 'reviews'} role="tabpanel">
+            <h2 className="sr-only">Oxucu rəyləri</h2>
             <ReviewSection bookId={id} onStatsChange={setReviewStats} />
           </div>
         </div>

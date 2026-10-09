@@ -21,6 +21,7 @@
 .bk-app .messages-page .messenger > aside > button:hover:not(.active) { background: rgba(24, 61, 53, .045); }
 .bk-app .messages-page .avatar-wrap { position: relative; display: block; flex: 0 0 auto; line-height: 0; }
 .bk-app .messages-page .messenger > aside > button > .avatar-wrap { flex: 0 0 auto; }
+.bk-app .messages-page .messenger > aside > button.active .avatar-initials { background: var(--white); }
 .bk-app .messages-page .presence { position: absolute; right: -1px; bottom: -1px; display: block; width: 11px; height: 11px; border: 2px solid var(--white); border-radius: 50%; background: var(--presence); }
 .bk-app .messages-page .messenger > aside > button > .conversation-side { display: flex; min-width: 0; flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: 5px; }
 .bk-app .messages-page .conversation-side time { color: var(--muted); font-size: 10px; line-height: 1.2; white-space: nowrap; }
@@ -45,7 +46,7 @@
 /* Messages: a row holds the bubble and, for own messages, the actions button. */
 .bk-app .messages-page .day-label { margin: 6px 0 2px; }
 .bk-app .messages-page .day-label:first-child { margin-top: 0; }
-.bk-app .messages-page .message-row { display: flex; max-width: min(70%, 520px); align-items: center; gap: 6px; }
+.bk-app .messages-page .message-row { position: relative; display: flex; max-width: min(70%, 520px); align-items: center; gap: 6px; }
 .bk-app .messages-page .message-row.outgoing { max-width: calc(min(70%, 520px) + 36px); flex-direction: row-reverse; align-self: flex-end; }
 .bk-app .messages-page .message-row > .bubble { min-width: 0; max-width: 100%; align-self: auto; }
 .bk-app .messages-page .bubble p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -55,11 +56,12 @@
 .bk-app .messages-page .bubble.outgoing .receipt.read { color: #c4e3d1; }
 .bk-app .messages-page .message-row.is-busy .bubble { opacity: .5; }
 
-.bk-app .messages-page .message-actions { position: relative; flex: 0 0 auto; }
+.bk-app .messages-page .message-actions { flex: 0 0 auto; }
 .bk-app .messages-page .message-more { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: transparent; color: var(--muted); opacity: 0; transition: opacity 150ms ease, background 150ms ease; }
 .bk-app .messages-page .message-row:hover .message-more, .bk-app .messages-page .message-more:focus-visible, .bk-app .messages-page .message-actions.open .message-more, .bk-app .messages-page .message-row.is-busy .message-more { opacity: 1; }
 .bk-app .messages-page .message-more:hover:not(:disabled), .bk-app .messages-page .message-actions.open .message-more { background: rgba(24, 61, 53, .08); color: var(--forest); }
-.bk-app .messages-page .message-menu { position: absolute; z-index: 5; bottom: calc(100% + 6px); left: 0; min-width: 160px; padding: 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--white); box-shadow: var(--shadow); }
+/* The menu opens over the row, aligned with the right edge of the (right-aligned) own bubble. */
+.bk-app .messages-page .message-menu { position: absolute; z-index: 5; right: 0; bottom: calc(100% + 6px); min-width: 160px; padding: 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--white); box-shadow: var(--shadow); }
 .bk-app .messages-page .message-menu.below { top: calc(100% + 6px); bottom: auto; }
 .bk-app .messages-page .message-menu button { display: flex; width: 100%; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 7px; background: none; color: var(--forest); font-size: 12px; text-align: left; white-space: nowrap; }
 .bk-app .messages-page .message-menu button:hover { background: var(--sand); }
@@ -88,6 +90,7 @@
 .bk-app .messages-page .conversation-idle { display: flex; grid-template-rows: none; padding: 25px; background: linear-gradient(rgba(248,246,240,.78),rgba(248,246,240,.78)), radial-gradient(var(--line) 1px, transparent 1px); background-size: auto, 18px 18px; }
 .bk-app .messages-page .messenger-state { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--white); }
 .bk-app .messages-page .messenger-state .empty-state { margin: 0 auto; }
+.bk-app .messages-page .messenger-state .empty-state p { margin-bottom: 26px; }
 
 /* Composer: a growing text area in the Make pill input. */
 .bk-app .messages-page .conversation > form { align-items: flex-end; }
@@ -109,6 +112,7 @@
 
 /* Phones: Make's avatar strip above the open conversation. */
 @media (max-width: 540px) {
+  .bk-app .messages-page .page-heading-row { gap: 18px; }
   .bk-app .messages-page .messenger { grid-template-rows: auto auto; }
   .bk-app .messages-page .messenger > aside > button { flex: 0 0 auto; }
   .bk-app .messages-page .messenger > aside > button + button { margin-top: 0; }

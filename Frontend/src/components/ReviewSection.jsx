@@ -218,7 +218,7 @@ const ReviewSection = ({ bookId, onStatsChange }) => {
       <div className="review-summary">
         <strong>{averageRating > 0 ? averageRating.toFixed(1) : '—'}</strong>
         <div>
-          <StarRating rating={Math.round(averageRating)} />
+          {reviews.length > 0 && <StarRating rating={Math.round(averageRating)} />}
           <span>
             {reviews.length > 0 ? `${reviews.length} rəy əsasında` : 'Hələ qiymət verilməyib'}
           </span>

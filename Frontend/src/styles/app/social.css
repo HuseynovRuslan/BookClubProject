@@ -41,6 +41,7 @@
 @keyframes bk-social-spin { to { transform: rotate(360deg); } }
 .bk-app .feed-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
 .bk-app .feed-page .empty-state { min-height: 340px; }
+.bk-app .feed-page .empty-state > p, .bk-app .community-page .empty-state > p { margin-bottom: 20px; }
 
 .bk-app .feed-side { display: grid; align-self: start; gap: 18px; }
 .bk-app .feed-side .suggested { position: static; }
