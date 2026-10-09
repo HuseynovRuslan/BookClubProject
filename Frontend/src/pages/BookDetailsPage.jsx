@@ -190,7 +190,8 @@ const BookDetailsPage = () => {
       let errorMessage = 'Kitabı rəfə əlavə etmək alınmadı';
 
       if (status === 409) {
-        const errorCode = errorData?.errors?.[0]?.code || errorData?.errors?.[0]?.type;
+        // ProblemDetails carries the error code in `title`.
+        const errorCode = errorData?.title || errorData?.errors?.[0]?.code || errorData?.errors?.[0]?.type;
 
         if (errorCode === 'Shelf.AlreadyAdded' || errorData?.errors?.[0]?.description?.includes('already')) {
           errorMessage = `Bu kitab artıq “${shelfName(shelfLabel)}” rəfindədir`;

@@ -59,6 +59,8 @@ const formatDateOnly = (value) => {
   return match ? formatDate(new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))) : formatDate(value);
 };
 
+const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Only http(s) links leave the app; "example.az" opens as https://example.az.
 const externalUrl = (value) => {
   const url = value?.trim();
@@ -259,15 +261,20 @@ const ProfileView = ({ identifier }) => {
         // Own profile
         profileData = await getCurrentUserProfile();
       } else {
-        // Another user's profile - try username first, then ID
-        try {
-          profileData = await getUserProfileByUsername(identifier);
+        // Another user's profile. Notifications and comments link by user id (a GUID), everything else
+        // by username: try the likelier lookup first and fall back to the other one on 404.
+        const byUsername = async () => {
+          const data = await getUserProfileByUsername(identifier);
           // The profile DTO has no username; the identifier that found it is the username.
-          if (profileData && !profileData.username) profileData = { ...profileData, username: identifier };
+          return data && !data.username ? { ...data, username: identifier } : data;
+        };
+        const byId = () => getUserProfileById(identifier);
+        const [first, second] = GUID_PATTERN.test(identifier) ? [byId, byUsername] : [byUsername, byId];
+        try {
+          profileData = await first();
         } catch (err) {
-          // If username fails, try as ID
           if (err.response?.status === 404) {
-            profileData = await getUserProfileById(identifier);
+            profileData = await second();
           } else {
             throw err;
           }
@@ -524,7 +531,7 @@ const ProfileView = ({ identifier }) => {
       setProfile((prev) => ({ ...prev, ...profileForm }));
       setEditOpen(false);
     } catch (err) {
-      toast.error(err.response?.data?.message || err.response?.data?.title || 'Profili yeniləmək alınmadı');
+      toast.error(err.response?.data?.message || 'Profili yeniləmək alınmadı');
       console.error('Profile update error:', err);
     } finally {
       setSaving(false);
@@ -550,6 +557,15 @@ const ProfileView = ({ identifier }) => {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (saving) return;
+    // Same rules as the API validator, so the reader gets the reason in Azerbaijani.
+    if (passwordForm.newPassword.length < 6) {
+      toast.error('Yeni şifrə ən azı 6 simvol olmalıdır');
+      return;
+    }
+    if (passwordForm.newPassword === passwordForm.currentPassword) {
+      toast.error('Yeni şifrə cari şifrədən fərqli olmalıdır');
+      return;
+    }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast.error('Yeni şifrələr üst-üstə düşmür');
       return;
@@ -560,7 +576,9 @@ const ProfileView = ({ identifier }) => {
       toast.success('Şifrə dəyişdirildi');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      toast.error(err.response?.data?.errors?.[0]?.description || 'Şifrəni dəyişmək alınmadı');
+      // The API answers with ProblemDetails; once validation passes, its only failure is a wrong current password.
+      const code = err.response?.data?.title;
+      toast.error(code === 'Users.ChangePasswordFailed' ? 'Cari şifrə yanlışdır' : 'Şifrəni dəyişmək alınmadı');
     } finally {
       setSaving(false);
     }
