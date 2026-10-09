@@ -10,6 +10,10 @@
   --color-bookla-line: #d9ded3;
   --color-bookla-clay: #c97959;
   --color-bookla-muted: #69736a;
+  /* Not in Figma: darker variants for small text that misses WCAG AA (4.5:1) in the Figma colours.
+     muted-strong passes on sage, sand, blush, paper and white; clay-strong on paper and white. */
+  --color-bookla-muted-strong: #5f6860;
+  --color-bookla-clay-strong: #ad5a38;
   --color-bookla-sage: #dde7dd;
   --color-bookla-sand: #eeece3;
   --color-bookla-blush: #f1e3d8;

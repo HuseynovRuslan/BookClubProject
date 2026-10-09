@@ -37,22 +37,19 @@ export const Logo = ({ className = '' }) => (
   </span>
 );
 
-// The page is lang="az", where CSS uppercase turns i into İ. Figma renders the eyebrows with English
-// casing (YENI), so the visible copy is uppercased as English and screen readers get the az text.
+// Uppercased by CSS under the page's lang="az", so "yeni" renders as "YENİ" (Figma shows English casing).
 export const Eyebrow = ({ children, className = 'text-bookla-forest' }) => (
-  <p className={`text-[11px]/[13px] font-semibold whitespace-nowrap ${className}`}>
-    <span className="sr-only">{children}</span>
-    <span aria-hidden="true" lang="en" className="uppercase">
-      {children}
-    </span>
-  </p>
+  <p className={`text-[11px]/[13px] font-semibold whitespace-nowrap uppercase ${className}`}>{children}</p>
 );
 
-// Not part of the Figma file: marks which advertised features the app already has.
+// Not part of the Figma file: marks which advertised features the app already has. "soon" is only for
+// features already in development (reading progress has a backend but no UI yet); features with no
+// code at all are "unavailable" until the owner confirms they are planned.
 const statusTags = {
   available: { label: 'Mövcuddur', dot: 'bg-bookla-forest' },
   partial: { label: 'Qismən', srLabel: 'Qismən mövcuddur', dot: 'bg-bookla-clay' },
   soon: { label: 'Tezliklə', dot: 'bg-bookla-muted' },
+  unavailable: { label: 'Mövcud deyil', dot: 'shadow-[inset_0_0_0_1px_var(--color-bookla-muted)]' },
 };
 
 export const StatusTag = ({ status, label, className = '' }) => {
@@ -137,11 +134,11 @@ export const SampleCard = ({ children, className = '' }) => (
   </div>
 );
 
-const PollOption = ({ title, votes, barWidth, tone }) => (
+const PollOption = ({ title, votes, barWidth, tone, votesColor = 'text-bookla-muted' }) => (
   <div className={`flex w-full flex-col items-start gap-[7px] overflow-hidden rounded-[8px] p-2.5 ${tone}`}>
     <div className="flex w-full items-start justify-between text-[11px]/[13px] whitespace-nowrap">
       <p>{title}</p>
-      <p className="text-bookla-muted">{votes}</p>
+      <p className={votesColor}>{votes}</p>
     </div>
     <div className="h-[3px] shrink-0 rounded-[3px] bg-bookla-forest" style={{ width: barWidth }} />
   </div>
@@ -150,7 +147,7 @@ const PollOption = ({ title, votes, barWidth, tone }) => (
 export const PollCard = ({ className = '' }) => (
   <SampleCard className={className}>
     <p className="text-[12px]/[15px] font-semibold whitespace-nowrap">Növbəti kitabımız hansıdır?</p>
-    <PollOption title="Kiçik şahzadə" votes="5 səs" barWidth={145} tone="bg-bookla-sage" />
+    <PollOption title="Kiçik şahzadə" votes="5 səs" barWidth={145} tone="bg-bookla-sage" votesColor="text-bookla-muted-strong" />
     <PollOption title="Səfillər" votes="3 səs" barWidth={88} tone="bg-bookla-paper" />
   </SampleCard>
 );
