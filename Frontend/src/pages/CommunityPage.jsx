@@ -1,30 +1,13 @@
-﻿import { useEffect, useState, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Search,
-  Users,
-  UserPlus,
-  UserCheck,
-  Loader,
-  X,
-  Sparkles,
-  Globe,
-  Filter,
-} from 'lucide-react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getAllUsers } from '../api/users';
 import { followUser, unfollowUser, getMyFollowing } from '../api/userFollows';
 import { useAuth } from '../context/AuthContext';
-
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
-
-// Helper to get full image URL
-const getImageUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url}`;
-};
+import { Avatar, Button, ButtonLink, EmptyState, Eyebrow, Icon, LoadingState, SearchField, SectionTitle } from '../components/app/ui';
+import { displayName, formatDate } from '../components/app/format';
+import communityHero from '../assets/app/community-hero.jpg';
+import '../styles/app/social.css';
 
 // Helper to check if user is admin
 const isAdmin = (user) => {
@@ -42,70 +25,50 @@ const isAdmin = (user) => {
   return isAdminByRole || isAdminByUsername;
 };
 
-// Skeleton Components
-const UserCardSkeleton = () => (
-  <div className="bg-white rounded-xl border border-stone-200 p-5 animate-pulse">
-    <div className="flex items-center gap-4">
-      <div className="w-14 h-14 bg-stone-200 rounded-full" />
-      <div className="flex-1">
-        <div className="h-5 bg-stone-200 rounded w-32 mb-2" />
-        <div className="h-4 bg-stone-200 rounded w-24" />
-      </div>
-      <div className="w-24 h-9 bg-stone-200 rounded-lg" />
-    </div>
-  </div>
-);
+// "Qoşulub: 14 mar 2025" — only when the API gives a real date.
+const joinedOn = (date) => {
+  const parsed = date ? new Date(date) : null;
+  return parsed && !Number.isNaN(parsed.getTime()) && parsed.getFullYear() > 2000 ? formatDate(parsed) : null;
+};
 
-// User Card Component
+// Reader card (Make ".reader-card")
 const UserCard = ({ user, isFollowing, onFollowToggle, isCurrentUser }) => {
   const [loading, setLoading] = useState(false);
-  const [following, setFollowing] = useState(isFollowing);
-
-  // Sync local state with prop when it changes
-  useEffect(() => {
-    setFollowing(isFollowing);
-  }, [isFollowing]);
-
-  const profilePicUrl = getImageUrl(user?.profilePictureUrl);
-  const initials = user?.firstName && user?.lastName
-    ? `${user.firstName[0]}${user.lastName[0]}`
-    : user?.username?.[0]?.toUpperCase() || '?';
+  const name = displayName(user);
+  const joined = joinedOn(user.createdAt);
 
   const handleFollowToggle = async () => {
     if (loading || isCurrentUser || isAdmin(user)) return;
 
     // Optimistic UI update
     setLoading(true);
-    const wasFollowing = following;
-    setFollowing(!following);
+    const wasFollowing = isFollowing;
+    onFollowToggle(user.id, !wasFollowing);
 
     try {
       if (wasFollowing) {
         await unfollowUser(user.id);
-        toast.success(`Unfollowed ${user.username}`);
+        toast.success(`@${user.username} artıq izlənilmir`);
       } else {
         await followUser(user.id);
-        toast.success(`Following ${user.username}`);
+        toast.success(`İndi @${user.username} istifadəçisini izləyirsən`);
       }
-      onFollowToggle(user.id, !wasFollowing);
     } catch (error) {
       // Handle 409 Conflict - already following/not following
       if (error.response?.status === 409) {
-        // If we tried to follow but got 409, user is already followed
         if (!wasFollowing) {
-          setFollowing(true);
+          // If we tried to follow but got 409, user is already followed
           onFollowToggle(user.id, true);
-          toast.info(`Already following ${user.username}`);
+          toast.info(`@${user.username} istifadəçisini artıq izləyirsən`);
         } else {
           // If we tried to unfollow but got 409, user is already not followed
-          setFollowing(false);
           onFollowToggle(user.id, false);
-          toast.info(`Not following ${user.username}`);
+          toast.info(`@${user.username} istifadəçisini izləmirsən`);
         }
       } else {
         // Revert on other errors
-        setFollowing(wasFollowing);
-        toast.error(wasFollowing ? 'Failed to unfollow' : 'Failed to follow');
+        onFollowToggle(user.id, wasFollowing);
+        toast.error(wasFollowing ? 'İzləməni dayandırmaq alınmadı' : 'İzləmək alınmadı');
       }
     } finally {
       setLoading(false);
@@ -113,118 +76,74 @@ const UserCard = ({ user, isFollowing, onFollowToggle, isCurrentUser }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-stone-200 p-5 hover:shadow-md hover:border-stone-300 transition-all group">
-      <div className="flex items-center gap-4">
-        {/* Avatar */}
-        <Link
-          to={`/profile/${user.username}`}
-          className="w-14 h-14 rounded-full bg-gradient-to-br from-stone-700 to-stone-900 flex items-center justify-center text-white text-lg font-semibold overflow-hidden shrink-0 ring-2 ring-stone-100 group-hover:ring-amber-200 transition-all"
-        >
-          {profilePicUrl ? (
-            <img src={profilePicUrl} alt="" className="w-full h-full object-cover" />
-          ) : (
-            initials
-          )}
-        </Link>
-
-        {/* User Info */}
-        <div className="flex-1 min-w-0">
-          <Link
-            to={`/profile/${user.username}`}
-            className="font-semibold text-stone-800 hover:text-amber-600 transition-colors block truncate"
-          >
-            {user.firstName && user.lastName
-              ? `${user.firstName} ${user.lastName}`
-              : user.username}
-          </Link>
-          <p className="text-sm text-stone-400 truncate">@{user.username}</p>
-          {user.bio && (
-            <p className="text-sm text-stone-500 mt-1 line-clamp-1">{user.bio}</p>
-          )}
-        </div>
-
-        {/* Follow Button */}
-        {!isCurrentUser && !isAdmin(user) && (
-          <button
-            onClick={handleFollowToggle}
-            disabled={loading}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all shrink-0 ${following
-                ? 'bg-stone-100 text-stone-600 hover:bg-red-50 hover:text-red-600'
-                : 'bg-stone-900 text-white hover:bg-stone-800'
-              }`}
-          >
-            {loading ? (
-              <Loader className="w-4 h-4 animate-spin" />
-            ) : following ? (
-              <>
-                <UserCheck className="w-4 h-4" />
-                <span className="hidden sm:inline">Following</span>
-              </>
-            ) : (
-              <>
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Follow</span>
-              </>
-            )}
-          </button>
-        )}
-
-        {isCurrentUser && (
-          <span className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium">
-            You
+    <article className="reader-card">
+      <Link aria-hidden="true" className="reader-avatar-link" tabIndex={-1} to={`/profile/${user.username}`}>
+        <Avatar name={name} size="large" src={user.profilePictureUrl} />
+      </Link>
+      <Link className="reader-name" to={`/profile/${user.username}`}>
+        <h3>{name}</h3>
+        <span>@{user.username}</span>
+      </Link>
+      {user.bio && <p>{user.bio}</p>}
+      {joined && (
+        <div>
+          <span>
+            Qoşulub: <strong>{joined}</strong>
           </span>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+
+      {/* Follow Button */}
+      {!isCurrentUser && !isAdmin(user) && (
+        <Button
+          aria-busy={loading}
+          aria-label={`${isFollowing ? 'İzlənilir' : 'İzlə'}: ${name}`}
+          disabled={loading}
+          onClick={handleFollowToggle}
+          title={isFollowing ? 'İzləməni dayandır' : undefined}
+          variant={isFollowing ? 'secondary' : 'primary'}
+        >
+          {isFollowing ? (
+            <>
+              <Icon name="check" size={15} /> İzlənilir
+            </>
+          ) : (
+            'İzlə'
+          )}
+        </Button>
+      )}
+
+      {isCurrentUser && (
+        <ButtonLink to="/profile" variant="secondary">
+          Sənin profilin
+        </ButtonLink>
+      )}
+    </article>
   );
 };
 
-// Empty State Component
-const EmptyState = ({ searchTerm, onClear }) => (
-  <div className="bg-white rounded-xl border border-stone-200 p-12 text-center">
-    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-stone-100 to-stone-200 rounded-full flex items-center justify-center mb-4">
-      <Users className="w-10 h-10 text-stone-400" />
-    </div>
-    <h3 className="text-lg font-semibold text-stone-800 mb-2">
-      {searchTerm ? 'No users found' : 'No users yet'}
-    </h3>
-    <p className="text-stone-500 mb-6 max-w-sm mx-auto">
-      {searchTerm
-        ? `We couldn't find any users matching "${searchTerm}". Try a different search term.`
-        : 'Be the first to invite friends to Bookla!'}
-    </p>
-    {searchTerm && (
-      <button
-        onClick={onClear}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors font-medium"
-      >
-        <X className="w-4 h-4" />
-        Clear Search
-      </button>
-    )}
-  </div>
-);
-
 // Main Page Component
 const CommunityPage = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   // State
   const [users, setUsers] = useState([]);
   const [followingIds, setFollowingIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const requestRef = useRef(0);
+  const searchRef = useRef(null);
 
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
+      setDebouncedSearch(searchTerm.trim());
       setPage(1);
     }, 300);
     return () => clearTimeout(timer);
@@ -256,6 +175,7 @@ const CommunityPage = () => {
 
   // Fetch users
   const fetchUsers = useCallback(async (pageNum = 1, append = false) => {
+    const requestId = ++requestRef.current;
     try {
       if (pageNum === 1 && !append) {
         setLoading(true);
@@ -264,6 +184,8 @@ const CommunityPage = () => {
       }
 
       const response = await getAllUsers(pageNum, 12, debouncedSearch);
+      // A newer search has started; its answer wins.
+      if (requestId !== requestRef.current) return;
 
       // Handle response format
       let items = [];
@@ -298,15 +220,24 @@ const CommunityPage = () => {
         setUsers(filteredItems);
       }
 
+      setError(false);
       setTotalCount(adjustedTotal);
       setHasMore(pageNum < totalPages && filteredItems.length > 0);
       setPage(pageNum);
     } catch (error) {
       console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
+      if (requestId !== requestRef.current) return;
+      if (append) {
+        toast.error('Daha çox oxucu yüklənmədi');
+      } else {
+        setError(true);
+        setUsers([]);
+      }
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (requestId === requestRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
   }, [debouncedSearch]);
 
@@ -342,130 +273,138 @@ const CommunityPage = () => {
   // Clear search
   const handleClearSearch = () => {
     setSearchTerm('');
+    searchRef.current?.focus();
   };
 
+  const handleRetry = () => {
+    fetchFollowingList();
+    fetchUsers(1);
+  };
+
+  const resultsInfo = debouncedSearch
+    ? `“${debouncedSearch}” üzrə ${totalCount} nəticə`
+    : `${users.length} / ${totalCount} oxucu göstərilir`;
+
   return (
-    <div className="min-h-screen bg-stone-50">
-      {/* Header */}
-      <header className="bg-white border-b border-stone-200 sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="p-2 text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2">
-                <Globe className="w-6 h-6 text-amber-500" />
-                <h1 className="text-xl font-bold text-stone-800">Community</h1>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="hidden sm:flex items-center gap-2 text-sm text-stone-500">
-              <Users className="w-4 h-4" />
-              <span>{totalCount} members</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
-            <input
-              type="text"
+    <div className="page community-page">
+      <section className="community-hero">
+        <div>
+          <Eyebrow>BOOKLA İCMASI</Eyebrow>
+          <h1>
+            <span className="heading-line">Eyni kitabı sevən</span>
+            <span className="heading-line">insanlarla tanış ol.</span>
+          </h1>
+          <p>Yeni baxışlar, düşüncəli rəylər və növbəti oxu ilhamın səni gözləyir.</p>
+          <form className="community-search" onSubmit={(event) => event.preventDefault()} role="search">
+            <SearchField
+              autoComplete="off"
+              enterKeyHint="search"
+              inputRef={searchRef}
+              label="Oxucu axtar"
+              large
+              onChange={setSearchTerm}
+              placeholder="Ad və ya istifadəçi adı ilə axtar..."
+              type="search"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search users by name or username..."
-              className="w-full pl-12 pr-12 py-3.5 bg-white border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition-all"
             />
             {searchTerm && (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
+              <button aria-label="Axtarışı təmizlə" className="community-search-clear" onClick={handleClearSearch} type="button">
+                <Icon name="close" />
               </button>
             )}
-          </div>
+          </form>
         </div>
+        <img alt="Kitab ətrafında söhbət edən Bookla oxucuları" src={communityHero} />
+      </section>
 
-        {/* Results Info */}
-        {!loading && users.length > 0 && (
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-stone-500">
-              {debouncedSearch
-                ? `Found ${totalCount} user${totalCount !== 1 ? 's' : ''} matching "${debouncedSearch}"`
-                : `Showing ${users.length} of ${totalCount} members`}
-            </p>
-          </div>
-        )}
+      <section aria-labelledby="community-readers-title" className="community-readers">
+        <SectionTitle
+          action={
+            !loading && !error && users.length > 0 ? (
+              <p aria-live="polite" className="community-count">
+                {resultsInfo}
+              </p>
+            ) : null
+          }
+          eyebrow="KƏŞF ET"
+          id="community-readers-title"
+          title={debouncedSearch ? 'Axtarış nəticələri' : 'Düşüncələri ilə ilham verən oxucular'}
+        />
 
-        {/* Loading Skeletons */}
-        {loading && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[...Array(8)].map((_, idx) => (
-              <UserCardSkeleton key={idx} />
-            ))}
-          </div>
-        )}
+        {loading ? (
+          <LoadingState count={6} kind="readers" />
+        ) : error ? (
+          <EmptyState
+            action={<Button onClick={handleRetry}>Yenidən cəhd et</Button>}
+            text="Bağlantını yoxlayıb yenidən cəhd et."
+            title="Oxucular yüklənmədi"
+          />
+        ) : users.length === 0 ? (
+          debouncedSearch ? (
+            <EmptyState
+              action={
+                <Button onClick={handleClearSearch} variant="secondary">
+                  Axtarışı təmizlə
+                </Button>
+              }
+              text={`“${debouncedSearch}” üzrə oxucu tapılmadı. İstifadəçi adını yoxla və ya daha qısa sorğu ilə yenidən axtar.`}
+              title="Oxucu tapılmadı"
+            />
+          ) : (
+            <EmptyState
+              text="Dostlarını Bookla-ya dəvət et və oxucu icmasını birlikdə qurun."
+              title="Hələ oxucu yoxdur"
+            />
+          )
+        ) : (
+          <>
+            <div className="reader-grid">
+              {users.map((u) => (
+                <UserCard
+                  isCurrentUser={u.id === user?.id}
+                  isFollowing={followingIds.has(u.id)}
+                  key={u.id}
+                  onFollowToggle={handleFollowToggle}
+                  user={u}
+                />
+              ))}
+            </div>
 
-        {/* Empty State */}
-        {!loading && users.length === 0 && (
-          <EmptyState searchTerm={debouncedSearch} onClear={handleClearSearch} />
+            {/* Load More / End of List */}
+            {hasMore ? (
+              <div className="list-more">
+                <Button aria-busy={loadingMore} disabled={loadingMore} onClick={handleLoadMore} variant="secondary">
+                  {loadingMore ? 'Yüklənir…' : 'Daha çox oxucu göstər'}
+                </Button>
+              </div>
+            ) : (
+              <p className="list-end">Bütün oxucuları gördün.</p>
+            )}
+          </>
         )}
+      </section>
 
-        {/* User Grid */}
-        {!loading && users.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {users.map((u) => (
-              <UserCard
-                key={u.id}
-                user={u}
-                isFollowing={followingIds.has(u.id)}
-                onFollowToggle={handleFollowToggle}
-                isCurrentUser={u.id === user?.id}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Load More Button */}
-        {!loading && users.length > 0 && hasMore && (
-          <div className="text-center mt-8">
-            <button
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-stone-200 rounded-xl text-stone-600 hover:bg-stone-50 hover:border-stone-300 transition-all font-medium"
-            >
-              {loadingMore ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Load More Users
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* End of List */}
-        {!loading && users.length > 0 && !hasMore && (
-          <div className="text-center mt-8 py-4">
-            <p className="text-stone-400 text-sm">You've seen all members! 🎉</p>
-          </div>
-        )}
-      </main>
+      <section aria-labelledby="community-note-title" className="community-note">
+        <Eyebrow>İCMANI GÖZƏL EDƏN</Eyebrow>
+        <h2 id="community-note-title">
+          <span className="heading-line">Oxuduğunu paylaş,</span>
+          <span className="heading-line">başqasının baxışını dinlə.</span>
+        </h2>
+        <div>
+          <p>
+            <strong>Düşüncəli rəylər</strong>
+            <span>Kitaba dair fikrini səmimi və əsaslandırılmış şəkildə bölüş.</span>
+          </p>
+          <p>
+            <strong>Yeni səslər</strong>
+            <span>Oxu zövqünə yaxın insanları və müəllifləri kəşf et.</span>
+          </p>
+          <p>
+            <strong>Hörmətli söhbət</strong>
+            <span>Fərqli fikirlərə açıq, təhlükəsiz bir məkan yarat.</span>
+          </p>
+        </div>
+      </section>
     </div>
   );
 };

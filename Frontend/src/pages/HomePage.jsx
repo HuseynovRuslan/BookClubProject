@@ -1,144 +1,133 @@
-﻿import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  ArrowRight,
-  BookOpen,
-  Search,
-  Star,
-  Library,
-  TrendingUp,
-  Clock,
-  Trophy,
-  MessageCircle,
-  Users,
-  Bell,
-  Target,
-  ChevronRight,
-  BookMarked,
-  Heart,
-  Plus,
-  X,
-  CheckCircle,
-  LogOut,
-  User,
-  ChevronDown,
-  Quote,
-  Loader2,
-  Shield,
-  Sparkles,
-  Menu,
-} from 'lucide-react';
-import BookCard from '../components/BookCard';
 import ReadingChallengeCard from '../components/ReadingChallengeCard';
 import QuoteCard from '../components/QuoteCard';
 import AddEditQuoteModal from '../components/AddEditQuoteModal';
-import NotificationDropdown from '../components/NotificationDropdown';
+import {
+  Activity,
+  Avatar,
+  BookCard,
+  BookCover,
+  Button,
+  ButtonLink,
+  Dialog,
+  EmptyState,
+  Eyebrow,
+  Icon,
+  LoadingState,
+  SearchField,
+  SectionTitle,
+} from '../components/app/ui';
+import { bookAuthor, displayName, shelfName, timeAgo } from '../components/app/format';
 import { getAllBooks } from '../api/books';
 import { getUserShelves, getShelfById } from '../api/shelves';
 import { getUserYearChallenge, getSocialFeed, getConversations } from '../api/dashboard';
 import { getCurrentUserProfile } from '../api/users';
 import { getAllQuotes } from '../api/quotes';
-import { getUnreadCount as getNotificationUnreadCount, getNotifications } from '../api/notifications';
 import { useAuth } from '../context/AuthContext';
 import { useSignalR } from '../context/SignalRContext';
+import '../styles/app/dashboard.css';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
+// Dashboard (/dashboard) in the Bookla 2.0 "Dashboard" layout. The header, navigation, notifications
+// and unread counters live in AppShell; this page only loads and shows the dashboard's own data.
 
-// Helper to get profile picture URL
-const getProfilePictureUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url}`;
+// Real API shelf names (the UI shows them through shelfName()).
+const SHELF_CURRENT = 'Currently Reading';
+const SHELF_READ = 'Read';
+const SHELF_WANT = 'Want to Read';
+
+const shelfCount = (shelf) => (shelf ? shelf.bookCount || shelf.books?.length || 0 : 0);
+
+const shorten = (text, max) => {
+  if (!text) return '';
+  const clean = text.replace(/\s+/g, ' ').trim();
+  return clean.length > max ? `${clean.slice(0, max).replace(/\s+\S*$/, '')}…` : clean;
 };
 
-// Skeleton Loader Components
-const StatCardSkeleton = () => (
-  <div className="bg-white rounded-xl border border-stone-200 p-5 animate-pulse">
-    <div className="flex items-center gap-4">
-      <div className="w-12 h-12 bg-stone-200 rounded-xl"></div>
-      <div className="flex-1">
-        <div className="h-4 bg-stone-200 rounded w-20 mb-2"></div>
-        <div className="h-6 bg-stone-200 rounded w-12"></div>
-      </div>
-    </div>
+const profilePath = (person) => `/profile/${person?.username || person?.userName || person?.id}`;
+
+const BookLink = ({ id, title }) => (id ? <Link to={`/books/${id}`}>{title}</Link> : title);
+
+// One line describing a social feed item (FeedItemDto: Review | Quote | BookAdded).
+const activityText = (item) => {
+  const bookId = item.book?.id || item.review?.bookId || item.quote?.bookId;
+  const title = item.book?.title || item.review?.bookTitle || item.quote?.book?.title;
+  switch (item.activityType) {
+    case 'Review':
+      return title ? (
+        <>
+          “<BookLink id={bookId} title={title} />” haqqında rəy yazdı.
+        </>
+      ) : (
+        'kitab haqqında rəy yazdı.'
+      );
+    case 'Quote':
+      return title ? (
+        <>
+          “<BookLink id={bookId} title={title} />” kitabından sitat paylaşdı.
+        </>
+      ) : (
+        'sitat paylaşdı.'
+      );
+    case 'BookAdded':
+      return title ? (
+        <>
+          “<BookLink id={bookId} title={title} />” kitabını “{shelfName(item.shelfName)}” rəfinə əlavə etdi.
+        </>
+      ) : (
+        'rəfinə yeni kitab əlavə etdi.'
+      );
+    default:
+      return 'yeni paylaşım etdi.';
+  }
+};
+
+const ErrorNote = ({ text, onRetry }) => (
+  <div className="dash-error" role="alert">
+    <p>{text}</p>
+    {onRetry && (
+      <Button onClick={onRetry} variant="secondary">
+        Yenidən cəhd et
+      </Button>
+    )}
   </div>
 );
 
-const BookCardSkeleton = () => (
-  <div className="bg-white rounded-xl border border-stone-200 animate-pulse">
-    <div className="aspect-[2/3] bg-stone-200 rounded-t-xl"></div>
-    <div className="p-3">
-      <div className="h-4 bg-stone-200 rounded w-4/5 mb-2"></div>
-      <div className="h-3 bg-stone-200 rounded w-3/5"></div>
-    </div>
-  </div>
-);
-
-const FeedItemSkeleton = () => (
-  <div className="flex items-start gap-3 p-3 animate-pulse">
-    <div className="w-10 h-10 bg-stone-200 rounded-full"></div>
-    <div className="flex-1">
-      <div className="h-4 bg-stone-200 rounded w-3/4 mb-2"></div>
-      <div className="h-3 bg-stone-200 rounded w-1/2"></div>
-    </div>
-  </div>
-);
-
-// Section Component
-const Section = ({ title, icon: Icon, books, loading, onSeeAll, count = 5 }) => {
+// A Make "book-row" section: SectionTitle + five book cards, with loading and empty states.
+const BookRowSection = ({ id, eyebrow, title, books, loading, emptyText, count = 5 }) => {
   // Safety check: ensure books is an array
   const safeBooks = Array.isArray(books) ? books : [];
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Icon className="w-5 h-5 text-stone-600" />
-          <h3 className="text-lg font-semibold text-stone-800">{title}</h3>
-        </div>
-        {onSeeAll && (
-          <button
-            onClick={onSeeAll}
-            className="flex items-center gap-1 text-stone-500 hover:text-stone-800 text-sm font-medium transition-colors"
-          >
-            View all <ChevronRight className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
+    <section aria-labelledby={id} className="book-row-section">
+      <SectionTitle
+        action={
+          <ButtonLink to="/books" variant="quiet">
+            Hamısına bax <Icon name="arrow" />
+          </ButtonLink>
+        }
+        eyebrow={eyebrow}
+        id={id}
+        title={title}
+      />
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: count }).map((_, idx) => (
-            <BookCardSkeleton key={idx} />
-          ))}
-        </div>
+        <LoadingState count={count} kind="books" />
       ) : safeBooks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 bg-stone-50 rounded-xl border border-dashed border-stone-200">
-          <BookOpen className="w-8 h-8 text-stone-300 mb-2" />
-          <p className="text-stone-500 text-sm">No books found</p>
-        </div>
+        <p className="dash-note book-row-empty">{emptyText}</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="book-row">
           {safeBooks.slice(0, count).map((book) => (
-            <BookCard key={book.id} book={book} />
+            <BookCard book={book} key={book.id} />
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
 const HomePage = () => {
-  const { user, isAuthenticated, logout } = useAuth();
-  const {
-    unreadCount: signalRUnread,
-    newMessage,
-    setTotalUnreadCount,
-    newNotification,
-    notificationUnreadCount,
-    clearNewNotification,
-    setNotificationCount
-  } = useSignalR();
+  const { user, isAuthenticated } = useAuth();
+  // Live total of unread messages; AppShell keeps it up to date.
+  const { unreadCount: unreadMessages } = useSignalR();
   const navigate = useNavigate();
 
   // Data states
@@ -148,15 +137,13 @@ const HomePage = () => {
   const [feed, setFeed] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Use ref instead of state to avoid re-render loops
-  const addNotificationCallbackRef = useRef(null);
-
-  // Loading states
+  // Loading and error states
   const [loadingBooks, setLoadingBooks] = useState(true);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [dashboardLoaded, setDashboardLoaded] = useState(false);
+  const [booksError, setBooksError] = useState(false);
+  const [dashboardErrors, setDashboardErrors] = useState({ shelves: false, feed: false, conversations: false });
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -167,46 +154,16 @@ const HomePage = () => {
   // Quotes state
   const [quotes, setQuotes] = useState([]);
   const [loadingQuotes, setLoadingQuotes] = useState(true);
+  const [quotesError, setQuotesError] = useState(false);
+  const [quoteIndex, setQuoteIndex] = useState(0);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [quoteModalMode, setQuoteModalMode] = useState('add');
   const [editingQuote, setEditingQuote] = useState(null);
 
   useEffect(() => {
     fetchAllData();
-  }, [isAuthenticated]);
-
-  // Fetch notification unread count on mount
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotificationUnreadCount();
-    }
-  }, [isAuthenticated]);
-
-  // Handle new notification from SignalR
-  useEffect(() => {
-    if (newNotification) {
-      // Ignore MessageReceived notifications (type 4) - they don't go to notification dropdown
-      // Messages are handled separately via the messages system
-      if (newNotification.type === 4) {
-        clearNewNotification();
-        return;
-      }
-
-      // For other notifications, add to dropdown
-      if (addNotificationCallbackRef.current) {
-        addNotificationCallbackRef.current(newNotification);
-      }
-      clearNewNotification();
-
-      // Refresh unread count from backend to ensure accuracy
-      // This ensures we get the correct count from the server
-      fetchNotificationUnreadCount();
-
-      // Optional: Play subtle sound (you can add a notification sound file)
-      // new Audio('/notification-sound.mp3').play().catch(() => {});
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newNotification, clearNewNotification]);
+  }, [isAuthenticated]);
 
   const fetchAllData = async () => {
     // Always fetch books and quotes
@@ -221,42 +178,16 @@ const HomePage = () => {
     }
   };
 
-  const fetchNotificationUnreadCount = async () => {
-    try {
-      // Get all notifications to filter out MessageReceived (type 4)
-      const response = await getNotifications(1, 100);
-      const items = response?.items || response?.data || [];
-
-      // Count only non-message notifications (exclude type 4 - MessageReceived)
-      const nonMessageNotifications = items.filter(n => n.type !== 4);
-      const unreadCount = nonMessageNotifications.filter(n => !n.isRead).length;
-
-      setNotificationCount(unreadCount);
-    } catch (error) {
-      console.error('Error fetching notification unread count:', error);
-      // Fallback to API count if filtering fails
-      try {
-        const count = await getNotificationUnreadCount();
-        setNotificationCount(count);
-      } catch (fallbackError) {
-        console.error('Error fetching fallback unread count:', fallbackError);
-      }
-    }
-  };
-
-  // Memoized callback to prevent re-render loops
-  const handleNewNotification = useCallback((callback) => {
-    addNotificationCallbackRef.current = callback;
-  }, []);
-
   const fetchQuotes = async () => {
     try {
       setLoadingQuotes(true);
+      setQuotesError(false);
       const res = await getAllQuotes(1, 30);
       const items = res?.items || res?.data || res || [];
-      setQuotes(items);
+      setQuotes(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error('Error loading quotes:', err);
+      setQuotesError(true);
     } finally {
       setLoadingQuotes(false);
     }
@@ -265,6 +196,7 @@ const HomePage = () => {
   const fetchAllBooks = async () => {
     try {
       setLoadingBooks(true);
+      setBooksError(false);
       // Fetch all books in a single call with large page size
       const response = await getAllBooks(1, 1000);
 
@@ -274,6 +206,7 @@ const HomePage = () => {
     } catch (err) {
       console.error('Error loading books:', err);
       setAllBooks([]); // Set empty array on error
+      setBooksError(true);
     } finally {
       setLoadingBooks(false);
     }
@@ -314,50 +247,61 @@ const HomePage = () => {
         setFeed(feedData?.items || feedData || []);
       }
 
-      // Process conversations
+      // Process conversations (the unread total itself is kept by AppShell)
       if (results[3].status === 'fulfilled') {
         const convData = results[3].value;
-        const convItems = convData?.items || convData || [];
-        setConversations(convItems);
-
-        // Initial unread count-u SignalR context-ə set et
-        const totalUnread = convItems.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-        setTotalUnreadCount(totalUnread);
+        setConversations(convData?.items || convData || []);
       }
 
       // Process user profile
       if (results[4].status === 'fulfilled') {
         setUserProfile(results[4].value);
       }
+
+      setDashboardErrors({
+        shelves: results[0].status === 'rejected',
+        feed: results[2].status === 'rejected',
+        conversations: results[3].status === 'rejected',
+      });
     } catch (err) {
       console.error('Error loading dashboard:', err);
     } finally {
       setLoadingDashboard(false);
+      setDashboardLoaded(true);
     }
   };
 
   // Computed data
+  // Books across all shelves; a book kept on several shelves counts once.
   const totalBooksInShelves = useMemo(() => {
-    return shelves.reduce((sum, shelf) => sum + (shelf.bookCount || shelf.books?.length || 0), 0);
+    const ids = new Set();
+    let withoutList = 0;
+    shelves.forEach((shelf) => {
+      if (Array.isArray(shelf.books) && shelf.books.length > 0) shelf.books.forEach((book) => ids.add(book.id));
+      else withoutList += shelf.bookCount || 0;
+    });
+    return ids.size + withoutList;
   }, [shelves]);
 
-  // SignalR context-dən gələn unread count-u istifadə et (real-time)
-  const unreadMessages = signalRUnread;
+  const currentShelf = useMemo(() => shelves.find((s) => s.name === SHELF_CURRENT), [shelves]);
+  const readShelf = useMemo(() => shelves.find((s) => s.name === SHELF_READ), [shelves]);
+  const wantShelf = useMemo(() => shelves.find((s) => s.name === SHELF_WANT), [shelves]);
+  const currentBooks = currentShelf?.books || [];
+  const currentCount = shelfCount(currentShelf);
+  const currentBook = currentBooks[0];
 
   // Client-side filtering and sorting for book sections
   const trendingBooks = useMemo(() => {
     if (!allBooks || allBooks.length === 0) return [];
     // Trending: Most rated/popular (by rating count)
-    return [...allBooks]
-      .sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0))
-      .slice(0, 10);
+    return [...allBooks].sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0)).slice(0, 10);
   }, [allBooks]);
 
   const topRatedBooks = useMemo(() => {
     if (!allBooks || allBooks.length === 0) return [];
     // Top Rated: Highest average rating (filter out 0 ratings)
     return [...allBooks]
-      .filter(book => (book.averageRating || 0) > 0)
+      .filter((book) => (book.averageRating || 0) > 0)
       .sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
       .slice(0, 10);
   }, [allBooks]);
@@ -366,7 +310,7 @@ const HomePage = () => {
     if (!allBooks || allBooks.length === 0) return [];
     // New Arrivals: Most recently created
     return [...allBooks]
-      .filter(book => book.createdAt) // Only include books with createdAt
+      .filter((book) => book.createdAt) // Only include books with createdAt
       .sort((a, b) => {
         const dateA = new Date(a.createdAt).getTime();
         const dateB = new Date(b.createdAt).getTime();
@@ -385,10 +329,10 @@ const HomePage = () => {
     if (!challenge) return;
 
     // Find "Read" shelf
-    const readShelf = shelves.find(s => s.name === 'Read');
-    if (readShelf?.id) {
+    const readShelfForChallenge = shelves.find((s) => s.name === SHELF_READ);
+    if (readShelfForChallenge?.id) {
       try {
-        const shelfData = await getShelfById(readShelf.id);
+        const shelfData = await getShelfById(readShelfForChallenge.id);
         setChallengeBooks(shelfData?.books || []);
       } catch (error) {
         console.error('Error fetching Read shelf:', error);
@@ -396,13 +340,6 @@ const HomePage = () => {
       }
     }
     setShowChallengeModal(true);
-  };
-
-  // Handle logout
-  const handleLogout = async () => {
-    setShowUserMenu(false);
-    await logout();
-    navigate('/login');
   };
 
   // Quote modal handlers
@@ -424,962 +361,467 @@ const HomePage = () => {
   };
 
   const handleQuoteSuccess = () => {
+    // A new quote is listed first; show it.
+    if (quoteModalMode === 'add') setQuoteIndex(0);
     fetchQuotes(); // Refresh quotes list
   };
 
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (showUserMenu && !e.target.closest('.user-menu-container')) {
-        setShowUserMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showUserMenu]);
-
   // Calculate challenge progress
-  const challengeProgress = challenge ? Math.min((challenge.completedBooksCount || 0) / (challenge.targetBooksCount || 1) * 100, 100) : 0;
+  const challengeProgress = challenge
+    ? Math.min(((challenge.completedBooksCount || 0) / (challenge.targetBooksCount || 1)) * 100, 100)
+    : 0;
+  const currentYear = new Date().getFullYear();
+
+  const firstName = userProfile?.firstName || user?.firstName || user?.username || '';
+  const dashboardPending = loadingDashboard && !dashboardLoaded;
+  const stripValue = (value) => (dashboardPending || dashboardErrors.shelves ? '–' : value);
+
+  // Quotes carousel: keep the index inside the list after a delete or refresh.
+  const activeQuoteIndex = quotes.length ? Math.min(quoteIndex, quotes.length - 1) : 0;
+  const activeQuote = quotes[activeQuoteIndex];
+  const showQuote = (step) => setQuoteIndex((activeQuoteIndex + step + quotes.length) % quotes.length);
+
+  const recentConversations = conversations.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-stone-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-stone-900 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
+    <div className="page page-dashboard">
+      {/* Greeting and search */}
+      <section className="dashboard-intro">
+        <div>
+          <Eyebrow>{firstName ? `Salam, ${firstName}` : 'Salam'}</Eyebrow>
+          <h1>
+            <span className="heading-line">Oxu dünyana</span>
+            <span className="heading-line">
+              <em>yenidən xoş gəldin.</em>
+            </span>
+          </h1>
+          <p>Yarımçıq qalan hekayələr, dostlarından yeni rəylər və növbəti kitabın burada səni gözləyir.</p>
+        </div>
+        <form onSubmit={handleSearch} role="search">
+          <SearchField
+            label="Kitab axtar"
+            large
+            onChange={setSearchTerm}
+            placeholder="Kitab, müəllif və ya janr axtar..."
+            value={searchTerm}
+          />
+          {searchTerm.trim() && (
+            <Button className="dashboard-search-action" type="submit" variant="quiet">
+              “{searchTerm.trim()}” üçün axtar <Icon name="arrow" />
+            </Button>
+          )}
+        </form>
+      </section>
+
+      {/* Currently reading + yearly challenge */}
+      <section className="dashboard-grid">
+        <div aria-busy={dashboardPending} aria-labelledby="reading-now-title" className="reading-now">
+          {dashboardPending ? (
+            <>
+              <SectionTitle eyebrow="Hazırda oxuyursan" id="reading-now-title" title="Rəfin yüklənir…" />
+              <div aria-label="Məzmun yüklənir" className="reading-now-loading" role="status">
+                <span className="dash-skeleton" />
+                <div>
+                  <span className="dash-skeleton" />
+                  <span className="dash-skeleton" />
+                  <span className="dash-skeleton" />
+                </div>
               </div>
-              <span className="text-xl font-bold text-stone-900">Bookla</span>
-            </Link>
-
-            <div className="hidden md:flex items-center gap-6">
-              <Link to="/news" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
-                News
-              </Link>
-              {isAuthenticated && (
-                <>
-                  <Link to="/feed" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
-                    Feed
-                  </Link>
-                  <Link to="/community" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
-                    Community
-                  </Link>
-                  <Link to="/books" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
-                    Browse
-                  </Link>
-                  <Link to="/my-shelves" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
-                    My Shelves
-                  </Link>
-                  <Link to="/ai-recommendations" className="flex items-center gap-1 text-purple-600 hover:text-purple-700 font-medium transition-colors">
-                    <Sparkles className="w-4 h-4" />
-                    AI Picks
-                  </Link>
-                </>
-              )}
-              <Link to="/feedback" className="text-stone-600 hover:text-stone-900 font-medium transition-colors">
-                Feedback
-              </Link>
+            </>
+          ) : dashboardErrors.shelves ? (
+            <div className="reading-now-empty">
+              <SectionTitle eyebrow="Hazırda oxuyursan" id="reading-now-title" title="Rəflərini yükləmək alınmadı" />
+              <p>Bağlantını yoxla və yenidən cəhd et.</p>
+              <Button onClick={fetchDashboardData} variant="secondary">
+                Yenidən cəhd et
+              </Button>
             </div>
-
-            <div className="flex items-center gap-3">
-              {/* Hamburger Menu Button - Mobile Only */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 hover:bg-stone-100 rounded-lg transition-colors"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-6 h-6 text-stone-600" />
-                ) : (
-                  <Menu className="w-6 h-6 text-stone-600" />
-                )}
-              </button>
-
-              {isAuthenticated ? (
-                <>
-                  {/* Notification Dropdown */}
-                  <NotificationDropdown
-                    unreadCount={notificationUnreadCount}
-                    onNewNotification={handleNewNotification}
-                  />
-
-                  <div className="relative user-menu-container">
-                    {/* User Menu Button */}
-                    <button
-                      onClick={() => setShowUserMenu(!showUserMenu)}
-                      className="flex items-center gap-2 px-3 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
-                        {userProfile?.profilePictureUrl ? (
-                          <img
-                            src={getProfilePictureUrl(userProfile.profilePictureUrl)}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          userProfile?.firstName?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'
-                        )}
-                      </div>
-                      <span className="hidden sm:block text-sm font-medium text-stone-700 max-w-[120px] truncate">
-                        {userProfile?.firstName || user?.username || 'User'}
-                      </span>
-                      <ChevronDown className={`w-4 h-4 text-stone-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {showUserMenu && (
-                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-stone-200 py-2 z-50">
-                        {/* User Info Header */}
-                        <div className="px-4 py-3 border-b border-stone-100 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-stone-700 flex items-center justify-center text-white font-medium overflow-hidden flex-shrink-0">
-                            {userProfile?.profilePictureUrl ? (
-                              <img
-                                src={getProfilePictureUrl(userProfile.profilePictureUrl)}
-                                alt=""
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              userProfile?.firstName?.[0]?.toUpperCase() || user?.username?.[0]?.toUpperCase() || 'U'
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-stone-900 truncate">
-                              {userProfile?.firstName
-                                ? `${userProfile.firstName} ${userProfile.lastName || ''}`.trim()
-                                : user?.username || 'User'}
-                            </p>
-                            <p className="text-xs text-stone-500 truncate">{user?.email}</p>
-                          </div>
-                        </div>
-
-                        {/* Menu Items */}
-                        <div className="py-1">
-                          <Link
-                            to="/profile"
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                          >
-                            <User className="w-4 h-4 text-stone-500" />
-                            <span className="text-sm">My Profile</span>
-                          </Link>
-                          <Link
-                            to="/my-shelves"
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                          >
-                            <Library className="w-4 h-4 text-stone-500" />
-                            <span className="text-sm">My Library</span>
-                          </Link>
-                          <Link
-                            to="/feed"
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                          >
-                            <TrendingUp className="w-4 h-4 text-stone-500" />
-                            <span className="text-sm">Activity Feed</span>
-                          </Link>
-                          <Link
-                            to="/community"
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                          >
-                            <Users className="w-4 h-4 text-stone-500" />
-                            <span className="text-sm">Community</span>
-                          </Link>
-                          <Link
-                            to="/messages"
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 transition-colors"
-                          >
-                            <MessageCircle className="w-4 h-4 text-stone-500" />
-                            <span className="text-sm">Messages</span>
-                            {unreadMessages > 0 && (
-                              <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full">
-                                {unreadMessages}
-                              </span>
-                            )}
-                          </Link>
-                          {user?.role === 'Admin' && (
-                            <Link
-                              to="/admin"
-                              onClick={() => setShowUserMenu(false)}
-                              className="flex items-center gap-3 px-4 py-2.5 text-amber-700 hover:bg-amber-50 transition-colors"
-                            >
-                              <Shield className="w-4 h-4 text-amber-600" />
-                              <span className="text-sm font-medium">Admin Panel</span>
-                            </Link>
-                          )}
-                        </div>
-
-                        {/* Logout */}
-                        <div className="border-t border-stone-100 pt-1 mt-1">
-                          <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            <span className="text-sm font-medium">Log Out</span>
-                          </button>
-                        </div>
-                      </div>
+          ) : currentBook ? (
+            <>
+              <SectionTitle
+                eyebrow="Hazırda oxuyursan"
+                id="reading-now-title"
+                title={currentCount > 1 ? `${currentCount} hekayə davam edir` : 'Hekayən davam edir'}
+              />
+              <div className="current-book">
+                <Link aria-hidden="true" className="current-cover" tabIndex={-1} to={`/books/${currentBook.id}`}>
+                  <BookCover book={currentBook} />
+                </Link>
+                <div>
+                  {bookAuthor(currentBook) && <p className="book-genre">{bookAuthor(currentBook)}</p>}
+                  <h3>
+                    <Link to={`/books/${currentBook.id}`}>{currentBook.title}</Link>
+                  </h3>
+                  {currentBook.description && <p>{shorten(currentBook.description, 150)}</p>}
+                  <span className="current-shelf-note">
+                    “{shelfName(SHELF_CURRENT)}” rəfində <strong>{currentCount} kitab</strong> var
+                  </span>
+                  <div className="current-actions">
+                    <ButtonLink to={`/books/${currentBook.id}`}>
+                      Kitabın səhifəsi <Icon name="arrow" />
+                    </ButtonLink>
+                    {currentCount > 1 && currentShelf?.id && (
+                      <ButtonLink to={`/shelves/${currentShelf.id}`} variant="quiet">
+                        Rəfdəki bütün kitablar <Icon name="arrow" />
+                      </ButtonLink>
                     )}
                   </div>
-                </>
-              ) : (
-                <>
-                  <Link to="/login" className="hidden sm:block px-4 py-2 text-stone-600 hover:text-stone-900 text-sm font-medium">
-                    Sign In
-                  </Link>
-                  <Link to="/register" className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium rounded-lg">
-                    Get Started
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile Menu Drawer */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-
-          {/* Drawer */}
-          <div className="absolute top-0 left-0 w-72 h-full bg-white shadow-xl overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-stone-200">
-              <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-lg bg-stone-900 flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-stone-900">Bookla</span>
-              </Link>
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 hover:bg-stone-100 rounded-lg"
-              >
-                <X className="w-5 h-5 text-stone-500" />
-              </button>
+              </div>
+            </>
+          ) : (
+            <div className="reading-now-empty">
+              <SectionTitle eyebrow="Hazırda oxuyursan" id="reading-now-title" title="Hələ heç bir kitaba başlamamısan" />
+              <p>
+                Bir kitab seç və onu “{shelfName(SHELF_CURRENT)}” rəfinə əlavə et — oxuduğun hekayə burada
+                görünəcək.
+              </p>
+              <ButtonLink to="/books">
+                Kitablara bax <Icon name="arrow" />
+              </ButtonLink>
             </div>
-
-            {/* Navigation Links */}
-            <div className="p-4 space-y-1">
-              <Link
-                to="/news"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
-              >
-                <Bell className="w-5 h-5 text-stone-500" />
-                <span className="font-medium">News</span>
-              </Link>
-
-              {isAuthenticated ? (
-                <>
-                  <Link
-                    to="/feed"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
-                  >
-                    <TrendingUp className="w-5 h-5 text-stone-500" />
-                    <span className="font-medium">Feed</span>
-                  </Link>
-                  <Link
-                    to="/community"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
-                  >
-                    <Users className="w-5 h-5 text-stone-500" />
-                    <span className="font-medium">Community</span>
-                  </Link>
-                  <Link
-                    to="/books"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
-                  >
-                    <BookOpen className="w-5 h-5 text-stone-500" />
-                    <span className="font-medium">Browse Books</span>
-                  </Link>
-                  <Link
-                    to="/my-shelves"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
-                  >
-                    <Library className="w-5 h-5 text-stone-500" />
-                    <span className="font-medium">My Shelves</span>
-                  </Link>
-                  <Link
-                    to="/ai-recommendations"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
-                  >
-                    <Sparkles className="w-5 h-5 text-purple-500" />
-                    <span className="font-medium">AI Picks</span>
-                  </Link>
-                  <Link
-                    to="/messages"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
-                  >
-                    <MessageCircle className="w-5 h-5 text-stone-500" />
-                    <span className="font-medium">Messages</span>
-                    {unreadMessages > 0 && (
-                      <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full">
-                        {unreadMessages}
-                      </span>
-                    )}
-                  </Link>
-                  <Link
-                    to="/profile"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
-                  >
-                    <User className="w-5 h-5 text-stone-500" />
-                    <span className="font-medium">My Profile</span>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/books"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
-                  >
-                    <BookOpen className="w-5 h-5 text-stone-500" />
-                    <span className="font-medium">Browse Books</span>
-                  </Link>
-                </>
-              )}
-
-              <Link
-                to="/feedback"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-stone-700 hover:bg-stone-50 rounded-lg transition-colors"
-              >
-                <MessageCircle className="w-5 h-5 text-stone-500" />
-                <span className="font-medium">Feedback</span>
-              </Link>
-            </div>
-
-            {/* Auth Actions */}
-            <div className="p-4 border-t border-stone-200">
-              {isAuthenticated ? (
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleLogout();
-                  }}
-                  className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <LogOut className="w-5 h-5" />
-                  <span className="font-medium">Log Out</span>
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  <Link
-                    to="/login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block w-full px-4 py-3 text-center text-stone-700 border border-stone-300 hover:bg-stone-50 rounded-lg font-medium transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block w-full px-4 py-3 text-center text-white bg-stone-900 hover:bg-stone-800 rounded-lg font-medium transition-colors"
-                  >
-                    Get Started
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
+
+        <ReadingChallengeCard onUpdate={fetchDashboardData} onViewBooks={handleOpenChallengeModal} year={currentYear} />
+      </section>
+
+      {/* Library counts */}
+      <section aria-busy={dashboardPending} aria-label="Kitabxanam" className="library-strip">
+        <div>
+          <span>Kitabxanam</span>
+          <strong>{stripValue(totalBooksInShelves)}</strong>
+          <small>{dashboardPending || dashboardErrors.shelves ? 'ümumi kitab' : `kitab, ${shelves.length} rəf`}</small>
+        </div>
+        <div>
+          <span>Oxunur</span>
+          <strong>{stripValue(currentCount)}</strong>
+          <small>aktiv hekayə</small>
+        </div>
+        <div>
+          <span>Oxunub</span>
+          <strong>{stripValue(shelfCount(readShelf))}</strong>
+          <small>tamamlanıb</small>
+        </div>
+        <div>
+          <span>Saxlanılıb</span>
+          <strong>{stripValue(shelfCount(wantShelf))}</strong>
+          <small>növbədədir</small>
+        </div>
+        <ButtonLink to="/my-shelves" variant="quiet">
+          Rəflərimə bax <Icon name="arrow" />
+        </ButtonLink>
+      </section>
+
+      {/* Book rows from the real catalogue */}
+      {booksError ? (
+        <section aria-labelledby="books-error-title">
+          <SectionTitle eyebrow="Kitablar" id="books-error-title" title="Növbəti səhifən burada başlaya bilər" />
+          <ErrorNote onRetry={fetchAllBooks} text="Kitabları yükləmək alınmadı." />
+        </section>
+      ) : !loadingBooks && allBooks.length === 0 ? (
+        <section aria-labelledby="books-empty-title">
+          <SectionTitle eyebrow="Kitablar" id="books-empty-title" title="Növbəti səhifən burada başlaya bilər" />
+          <EmptyState text="Kataloqa kitab əlavə olunanda burada görünəcək." title="Hələ kitab yoxdur" />
+        </section>
+      ) : (
+        <BookRowSection
+          books={trendingBooks}
+          emptyText="Hələ kitab tapılmadı."
+          eyebrow="Gündəmdə"
+          id="trending-title"
+          loading={loadingBooks}
+          title="Növbəti səhifən burada başlaya bilər"
+        />
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Authenticated User Dashboard */}
-        {isAuthenticated ? (
-          <div className="space-y-8">
-            {/* Welcome Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-stone-900">
-                  Welcome back, {userProfile?.firstName || user?.username || 'Reader'}! 👋
-                </h1>
-                <p className="text-stone-500 mt-1">
-                  Here's what's happening in your reading world
-                </p>
-              </div>
-
-              {/* Search */}
-              <form onSubmit={handleSearch} className="flex gap-2">
-                <div className="flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-lg">
-                  <Search className="w-4 h-4 text-stone-400" />
-                  <input
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-40 sm:w-48 bg-transparent text-stone-900 placeholder:text-stone-400 focus:outline-none text-sm"
-                    placeholder="Search books..."
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  Search
+      {/* Quote + social preview */}
+      <section className="quote-social-grid">
+        <div aria-labelledby="quotes-title" className="quote-card" role="region">
+          <div className="quote-card-head">
+            <Eyebrow>
+              <span id="quotes-title">İcmadan sitatlar</span>
+            </Eyebrow>
+            {!loadingQuotes && quotes.length > 1 && (
+              <div className="quote-nav">
+                <button aria-label="Əvvəlki sitat" onClick={() => showQuote(-1)} type="button">
+                  <Icon name="back" />
                 </button>
-              </form>
-            </div>
-
-            {/* Dashboard Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {loadingDashboard ? (
-                <>
-                  <StatCardSkeleton />
-                  <StatCardSkeleton />
-                  <StatCardSkeleton />
-                  <StatCardSkeleton />
-                </>
-              ) : (
-                <>
-                  {/* My Library Card */}
-                  <Link
-                    to="/my-shelves"
-                    className="group bg-white rounded-xl border border-stone-200 p-5 hover:border-stone-300 hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center group-hover:bg-amber-200 transition-colors">
-                        <Library className="w-6 h-6 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-stone-500">My Library</p>
-                        <p className="text-2xl font-bold text-stone-900">{totalBooksInShelves}</p>
-                        <p className="text-xs text-stone-500">{shelves.length} shelves</p>
-                      </div>
-                    </div>
-                  </Link>
-
-                  {/* Reading Challenge Card */}
-                  <button
-                    onClick={handleOpenChallengeModal}
-                    disabled={!challenge}
-                    className="group bg-white rounded-xl border border-stone-200 p-5 hover:border-stone-300 hover:shadow-md transition-all text-left w-full cursor-pointer disabled:cursor-default disabled:hover:border-stone-200 disabled:hover:shadow-none"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
-                        <Trophy className="w-6 h-6 text-emerald-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-stone-500">{new Date().getFullYear()} Challenge</p>
-                        {challenge ? (
-                          <>
-                            <p className="text-lg font-bold text-stone-900">
-                              {challenge.completedBooksCount || 0}/{challenge.targetBooksCount || 0}
-                            </p>
-                            <div className="w-full h-1.5 bg-stone-100 rounded-full mt-1">
-                              <div
-                                className="h-full bg-emerald-500 rounded-full transition-all"
-                                style={{ width: `${challengeProgress}%` }}
-                              ></div>
-                            </div>
-                          </>
-                        ) : (
-                          <p className="text-sm text-emerald-600 font-medium">
-                            Set goal in sidebar →
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* Messages Card */}
-                  <Link
-                    to="/messages"
-                    className="group bg-white rounded-xl border border-stone-200 p-5 hover:border-stone-300 hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition-colors relative">
-                        <MessageCircle className="w-6 h-6 text-blue-600" />
-                        {unreadMessages > 0 && (
-                          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                            {unreadMessages}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm text-stone-500">Messages</p>
-                        <p className="text-lg font-bold text-stone-900">
-                          {unreadMessages > 0 ? `${unreadMessages} unread` : 'All read'}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-
-                  {/* Social Feed Card */}
-                  <Link
-                    to="/feed"
-                    className="group bg-white rounded-xl border border-stone-200 p-5 hover:border-stone-300 hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                        <Users className="w-6 h-6 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-stone-500">Social Feed</p>
-                        <p className="text-sm font-medium text-stone-700">
-                          See what friends are reading
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                </>
-              )}
-            </div>
-
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-              {/* Books Sections - 3/4 width */}
-              <div className="lg:col-span-3 space-y-8">
-                <Section
-                  title="Trending Now"
-                  icon={TrendingUp}
-                  books={trendingBooks}
-                  loading={loadingBooks}
-                  onSeeAll={() => navigate('/books')}
-                />
-
-                <Section
-                  title="Top Rated"
-                  icon={Star}
-                  books={topRatedBooks}
-                  loading={loadingBooks}
-                  onSeeAll={() => navigate('/books')}
-                />
-
-                <Section
-                  title="New Arrivals"
-                  icon={Clock}
-                  books={newArrivals}
-                  loading={loadingBooks}
-                  onSeeAll={() => navigate('/books')}
-                />
-              </div>
-
-              {/* Sidebar - 1/4 width */}
-              <div className="space-y-6">
-                {/* Reading Challenge */}
-                <ReadingChallengeCard
-                  year={new Date().getFullYear()}
-                  onUpdate={fetchDashboardData}
-                />
-
-                {/* Community Quotes Section */}
-                <div className="bg-white rounded-xl border border-stone-200 overflow-hidden flex flex-col" style={{ maxHeight: '600px' }}>
-                  <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <Quote className="w-4 h-4 text-amber-500" />
-                      <h3 className="font-semibold text-stone-800 text-sm">Community Quotes</h3>
-                    </div>
-                    <button
-                      onClick={handleOpenAddQuote}
-                      className="flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-medium rounded-lg transition-colors"
-                    >
-                      <Plus className="w-3 h-3" />
-                      Add
-                    </button>
-                  </div>
-
-                  <div className="p-3 overflow-y-auto flex-1">
-                    {loadingQuotes ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
-                      </div>
-                    ) : quotes.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Quote className="w-8 h-8 text-stone-300 mx-auto mb-2" />
-                        <p className="text-sm text-stone-500">No quotes yet</p>
-                        <p className="text-xs text-stone-400 mt-1">Be the first to share!</p>
-                        <button
-                          onClick={handleOpenAddQuote}
-                          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition-colors"
-                        >
-                          <Plus className="w-3 h-3" />
-                          Share a Quote
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {quotes.map((quote) => (
-                          <QuoteCard
-                            key={quote.id}
-                            quote={quote}
-                            onEdit={handleOpenEditQuote}
-                            onDelete={fetchQuotes}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-white rounded-xl border border-stone-200 p-4">
-                  <h3 className="font-semibold text-stone-800 text-sm mb-3">Quick Actions</h3>
-                  <div className="space-y-2">
-                    <Link
-                      to="/books"
-                      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-stone-50 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-stone-100 rounded-lg flex items-center justify-center">
-                        <Search className="w-4 h-4 text-stone-600" />
-                      </div>
-                      <span className="text-sm text-stone-700">Browse Books</span>
-                    </Link>
-                    <Link
-                      to="/my-shelves"
-                      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-stone-50 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-stone-100 rounded-lg flex items-center justify-center">
-                        <Plus className="w-4 h-4 text-stone-600" />
-                      </div>
-                      <span className="text-sm text-stone-700">Create Shelf</span>
-                    </Link>
-                    <Link
-                      to="/ai-recommendations"
-                      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-purple-50 transition-colors group"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg flex items-center justify-center group-hover:from-purple-200 group-hover:to-blue-200 transition-colors">
-                        <Sparkles className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <span className="text-sm text-purple-700 font-medium">AI Picks</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Guest View */
-          <div className="space-y-12">
-            {/* Hero for guests */}
-            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
-              <div className="grid lg:grid-cols-2">
-                <div className="p-8 lg:p-12 space-y-6">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 text-sm font-medium">
-                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    Discover great reads
-                  </div>
-
-                  <h1 className="text-3xl lg:text-4xl font-bold text-stone-900 leading-tight">
-                    Your personal library,{' '}
-                    <span className="text-stone-500">anywhere you go</span>
-                  </h1>
-
-                  <p className="text-stone-600 text-lg leading-relaxed">
-                    Track your reading, discover new books, and connect with fellow readers.
-                  </p>
-
-                  <form onSubmit={handleSearch} className="flex gap-2">
-                    <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-stone-100 rounded-xl">
-                      <Search className="w-5 h-5 text-stone-400" />
-                      <input
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="flex-1 bg-transparent text-stone-900 placeholder:text-stone-400 focus:outline-none"
-                        placeholder="Search books..."
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white font-medium rounded-xl transition-colors"
-                    >
-                      Search
-                    </button>
-                  </form>
-
-                  <div className="flex flex-wrap gap-3">
-                    <Link
-                      to="/register"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-medium rounded-xl transition-colors"
-                    >
-                      Get Started Free
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                    <Link
-                      to="/books"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 border border-stone-300 hover:border-stone-400 text-stone-700 font-medium rounded-xl transition-colors"
-                    >
-                      Browse Books
-                    </Link>
-                  </div>
-                </div>
-
-                <div className="bg-stone-100 p-8 lg:p-12 flex items-center">
-                  <div className="grid grid-cols-2 gap-4 w-full">
-                    <div className="bg-white rounded-xl p-5 text-center">
-                      <div className="text-3xl font-bold text-stone-900">10k+</div>
-                      <div className="text-sm text-stone-500 mt-1">Books</div>
-                    </div>
-                    <div className="bg-white rounded-xl p-5 text-center">
-                      <div className="text-3xl font-bold text-stone-900">4.8</div>
-                      <div className="text-sm text-stone-500 mt-1">Avg Rating</div>
-                    </div>
-                    <div className="bg-white rounded-xl p-5 text-center">
-                      <div className="text-3xl font-bold text-stone-900">2k+</div>
-                      <div className="text-sm text-stone-500 mt-1">Readers</div>
-                    </div>
-                    <div className="bg-white rounded-xl p-5 text-center">
-                      <div className="text-3xl font-bold text-stone-900">50+</div>
-                      <div className="text-sm text-stone-500 mt-1">Categories</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Book Sections */}
-            <Section
-              title="Trending Now"
-              icon={TrendingUp}
-              books={trendingBooks}
-              loading={loadingBooks}
-              onSeeAll={() => navigate('/books')}
-            />
-
-            <Section
-              title="Top Rated"
-              icon={Star}
-              books={topRatedBooks}
-              loading={loadingBooks}
-              onSeeAll={() => navigate('/books')}
-            />
-
-            <Section
-              title="New Arrivals"
-              icon={Clock}
-              books={newArrivals}
-              loading={loadingBooks}
-              onSeeAll={() => navigate('/books')}
-            />
-
-            {/* Features */}
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-xl border border-stone-200 p-6">
-                <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-4">
-                  <Library className="w-6 h-6 text-stone-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-stone-900 mb-2">Organize Your Books</h3>
-                <p className="text-stone-500 text-sm leading-relaxed">
-                  Create custom shelves and organize your reading list the way you want.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-xl border border-stone-200 p-6">
-                <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-4">
-                  <Target className="w-6 h-6 text-stone-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-stone-900 mb-2">Set Reading Goals</h3>
-                <p className="text-stone-500 text-sm leading-relaxed">
-                  Challenge yourself with yearly reading goals and track your progress.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-xl border border-stone-200 p-6">
-                <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-4">
-                  <Heart className="w-6 h-6 text-stone-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-stone-900 mb-2">Connect & Share</h3>
-                <p className="text-stone-500 text-sm leading-relaxed">
-                  Follow friends, share reviews, and discover what others are reading.
-                </p>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="bg-stone-900 rounded-2xl p-8 lg:p-12 text-center">
-              <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3">
-                Ready to start reading?
-              </h2>
-              <p className="text-stone-400 mb-6 max-w-xl mx-auto">
-                Join thousands of readers who track their books, share reviews, and discover new favorites.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link
-                  to="/register"
-                  className="px-6 py-3 bg-white hover:bg-stone-100 text-stone-900 font-semibold rounded-xl transition-colors"
-                >
-                  Create Free Account
-                </Link>
-                <Link
-                  to="/login"
-                  className="px-6 py-3 border border-stone-700 hover:border-stone-600 text-white font-semibold rounded-xl transition-colors"
-                >
-                  Sign In
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-stone-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-stone-900 flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-semibold text-stone-900">Bookla</span>
-            </div>
-            <p className="text-sm text-stone-500">
-              © 2026 Bookla. Your personal reading companion.
-            </p>
-          </div>
-        </div>
-      </footer>
-
-      {/* Challenge Books Modal */}
-      {showChallengeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowChallengeModal(false)}
-          />
-
-          {/* Modal */}
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-stone-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <Trophy className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-stone-900">
-                    {new Date().getFullYear()} Reading Challenge
-                  </h2>
-                  <p className="text-sm text-stone-500">
-                    {challenge?.completedBooksCount || 0} / {challenge?.targetBooksCount || 0} books completed
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowChallengeModal(false)}
-                className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-stone-500" />
-              </button>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="px-5 py-3 bg-stone-50 border-b border-stone-100">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-stone-700">Progress</span>
-                <span className="text-sm font-bold text-emerald-600">{Math.round(challengeProgress)}%</span>
-              </div>
-              <div className="h-2.5 bg-stone-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-400 to-green-500 rounded-full transition-all"
-                  style={{ width: `${challengeProgress}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Books List */}
-            <div className="p-5 overflow-y-auto max-h-[50vh]">
-              <h3 className="text-sm font-semibold text-stone-700 mb-3">Books Read This Year</h3>
-
-              {challengeBooks.length === 0 ? (
-                <div className="text-center py-10">
-                  <BookOpen className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-                  <p className="text-stone-500">No books read yet</p>
-                  <p className="text-sm text-stone-400 mt-1">
-                    Add books to your "Read" shelf to track progress
-                  </p>
-                  <Link
-                    to="/books"
-                    onClick={() => setShowChallengeModal(false)}
-                    className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-stone-900 text-white text-sm font-medium rounded-lg hover:bg-stone-800 transition-colors"
-                  >
-                    Browse Books
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {challengeBooks.map((book) => (
-                    <Link
-                      key={book.id}
-                      to={`/books/${book.id}`}
-                      onClick={() => setShowChallengeModal(false)}
-                      className="flex items-center gap-4 p-3 rounded-xl hover:bg-stone-50 transition-colors group"
-                    >
-                      {/* Book Cover */}
-                      <div className="w-12 h-16 bg-stone-200 rounded-lg overflow-hidden shrink-0">
-                        {book.coverImage || book.coverImageUrl ? (
-                          <img
-                            src={book.coverImage || book.coverImageUrl}
-                            alt={book.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <BookOpen className="w-5 h-5 text-stone-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Book Info */}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-stone-900 truncate group-hover:text-emerald-600 transition-colors">
-                          {book.title}
-                        </h4>
-                        <p className="text-sm text-stone-500 truncate">
-                          {book.author?.name || book.authorName || 'Unknown Author'}
-                        </p>
-                      </div>
-
-                      {/* Check Icon */}
-                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
-                        <CheckCircle className="w-4 h-4 text-emerald-600" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            {challengeBooks.length > 0 && (
-              <div className="p-4 border-t border-stone-200 bg-stone-50">
-                <Link
-                  to="/my-shelves"
-                  onClick={() => setShowChallengeModal(false)}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 transition-colors"
-                >
-                  <Library className="w-4 h-4" />
-                  View All Shelves
-                </Link>
+                <span aria-live="polite">
+                  {activeQuoteIndex + 1} / {quotes.length}
+                </span>
+                <button aria-label="Növbəti sitat" onClick={() => showQuote(1)} type="button">
+                  <Icon name="arrow" />
+                </button>
               </div>
             )}
           </div>
+
+          {loadingQuotes && quotes.length === 0 ? (
+            <div aria-label="Sitatlar yüklənir" className="quote-card-loading" role="status">
+              <span className="dash-skeleton" />
+              <span className="dash-skeleton" />
+              <span className="dash-skeleton" />
+            </div>
+          ) : quotesError ? (
+            <ErrorNote onRetry={fetchQuotes} text="Sitatları yükləmək alınmadı." />
+          ) : activeQuote ? (
+            <QuoteCard key={activeQuote.id} onDelete={fetchQuotes} onEdit={handleOpenEditQuote} quote={activeQuote} />
+          ) : (
+            <div className="quote-card-empty">
+              <h3>Hələ heç kim sitat paylaşmayıb.</h3>
+              <p>İlk sətri sən paylaş — sevdiyin kitabdan səni düşündürən bir parça.</p>
+            </div>
+          )}
+
+          <div className="quote-card-foot">
+            <Button onClick={handleOpenAddQuote} variant="secondary">
+              <Icon name="plus" size={16} /> Sitat paylaş
+            </Button>
+          </div>
         </div>
+
+        <div aria-labelledby="social-title" className="social-preview" role="region">
+          <SectionTitle
+            action={
+              <ButtonLink to="/feed" variant="quiet">
+                Lentə keç <Icon name="arrow" />
+              </ButtonLink>
+            }
+            eyebrow="İcmadan"
+            id="social-title"
+            title="Oxucular nə paylaşır?"
+          />
+          {dashboardPending ? (
+            <div aria-label="Lent yüklənir" className="dash-activity-loading" role="status">
+              {[0, 1, 2].map((key) => (
+                <div key={key}>
+                  <span className="dash-skeleton" />
+                  <span className="dash-skeleton" />
+                </div>
+              ))}
+            </div>
+          ) : dashboardErrors.feed ? (
+            <ErrorNote onRetry={fetchDashboardData} text="Lenti yükləmək alınmadı." />
+          ) : feed.length === 0 ? (
+            <EmptyState
+              action={
+                <ButtonLink to="/community" variant="secondary">
+                  Oxucuları kəşf et
+                </ButtonLink>
+              }
+              text="İzlədiyin oxucuların rəyləri, sitatları və rəf yenilikləri burada görünəcək."
+              title="Hələ paylaşım yoxdur"
+            />
+          ) : (
+            feed.map((item) => (
+              <Activity
+                compact
+                key={`${item.activityType}-${item.id}`}
+                person={item.user}
+                text={activityText(item)}
+                time={timeAgo(item.createdAt)}
+                to={item.user ? profilePath(item.user) : undefined}
+              />
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* The error / empty-catalogue message is shown once, above. */}
+      {(loadingBooks || (!booksError && allBooks.length > 0)) && (
+        <>
+          <BookRowSection
+            books={topRatedBooks}
+            emptyText="Hələ reytinq alan kitab yoxdur."
+            eyebrow="Ən yüksək reytinq"
+            id="top-rated-title"
+            loading={loadingBooks}
+            title="Oxucuların ən çox bəyəndikləri"
+          />
+
+          <BookRowSection
+            books={newArrivals}
+            emptyText="Hələ yeni əlavə olunan kitab yoxdur."
+            eyebrow="Yeni əlavələr"
+            id="new-arrivals-title"
+            loading={loadingBooks}
+            title="Kitabxanaya yeni gələnlər"
+          />
+        </>
+      )}
+
+      {/* Recent conversations + shortcuts */}
+      <section className="dash-extras">
+        <div aria-labelledby="messages-title" className="dash-panel" role="region">
+          <SectionTitle
+            action={
+              <ButtonLink to="/messages" variant="quiet">
+                Mesajlara keç <Icon name="arrow" />
+              </ButtonLink>
+            }
+            eyebrow="Mesajlar"
+            id="messages-title"
+            title="Son söhbətlər"
+          />
+          {unreadMessages > 0 && (
+            <p className="dash-unread">
+              <strong>{unreadMessages}</strong> oxunmamış mesajın var
+            </p>
+          )}
+          {dashboardPending ? (
+            <div aria-label="Söhbətlər yüklənir" className="dash-activity-loading" role="status">
+              {[0, 1].map((key) => (
+                <div key={key}>
+                  <span className="dash-skeleton" />
+                  <span className="dash-skeleton" />
+                </div>
+              ))}
+            </div>
+          ) : dashboardErrors.conversations ? (
+            <ErrorNote onRetry={fetchDashboardData} text="Söhbətləri yükləmək alınmadı." />
+          ) : recentConversations.length === 0 ? (
+            <EmptyState
+              action={
+                <ButtonLink to="/community" variant="secondary">
+                  Oxucularla tanış ol
+                </ButtonLink>
+              }
+              text="İcmadan bir oxucuya yaz — söhbətlərin burada görünəcək."
+              title="Hələ söhbətin yoxdur"
+            />
+          ) : (
+            <ul className="dash-conversations">
+              {recentConversations.map((conversation) => {
+                const name = displayName(conversation.otherUser);
+                const unread = conversation.unreadCount || 0;
+                return (
+                  <li key={conversation.id}>
+                    <Link
+                      className={`dash-conversation ${unread > 0 ? 'is-unread' : ''}`}
+                      to={conversation.otherUser?.id ? `/messages?user=${conversation.otherUser.id}` : '/messages'}
+                    >
+                      <Avatar name={name} size="small" src={conversation.otherUser?.profilePictureUrl} />
+                      <span>
+                        <strong>{name}</strong>
+                        <small>{conversation.lastMessageText || 'Hələ mesaj yoxdur'}</small>
+                      </span>
+                      {conversation.lastMessageAt && (
+                        <time dateTime={conversation.lastMessageAt}>{timeAgo(conversation.lastMessageAt)}</time>
+                      )}
+                      {unread > 0 && (
+                        <span aria-label={`${unread} oxunmamış`} className="nav-badge">
+                          {unread}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <nav aria-labelledby="shortcuts-title" className="dash-shortcuts">
+          <SectionTitle eyebrow="Qısa yollar" id="shortcuts-title" title="Növbəti addımın" />
+          <ul>
+            <li>
+              <Link to="/books">
+                <span>
+                  <strong>Kitablara bax</strong>
+                  <small>Kataloqda axtar və yeni kitab tap</small>
+                </span>
+                <Icon name="arrow" />
+              </Link>
+            </li>
+            <li>
+              <Link to="/my-shelves">
+                <span>
+                  <strong>Yeni rəf yarat</strong>
+                  <small>Kitablarını öz qaydanla düz</small>
+                </span>
+                <Icon name="arrow" />
+              </Link>
+            </li>
+            <li>
+              <Link to="/ai-recommendations">
+                <span>
+                  <strong>Süni intellekt tövsiyələri</strong>
+                  <small>Zövqünə uyğun kitab təklifləri</small>
+                </span>
+                <Icon name="arrow" />
+              </Link>
+            </li>
+          </ul>
+        </nav>
+      </section>
+
+      {/* Challenge books */}
+      {showChallengeModal && (
+        <Dialog className="dash-modal-wide" labelledBy="challenge-books-title" onClose={() => setShowChallengeModal(false)}>
+          <Eyebrow>{currentYear} oxu hədəfi</Eyebrow>
+          <h2 id="challenge-books-title">Oxuduqların</h2>
+          <p>
+            {challenge?.completedBooksCount || 0} / {challenge?.targetBooksCount || 0} kitab tamamlanıb
+          </p>
+          <div className="progress-label">
+            <span>İrəliləyiş</span>
+            <strong>{Math.round(challengeProgress)}%</strong>
+          </div>
+          <div
+            aria-label="Hədəf irəliləyişi"
+            aria-valuemax={100}
+            aria-valuemin={0}
+            aria-valuenow={Math.round(challengeProgress)}
+            className="progress"
+            role="progressbar"
+          >
+            <i style={{ width: `${challengeProgress}%` }} />
+          </div>
+
+          <h3 className="dash-dialog-subtitle">“{shelfName(SHELF_READ)}” rəfindəki kitablar</h3>
+          {challengeBooks.length === 0 ? (
+            <div className="dash-dialog-empty">
+              <p>Hələ oxunmuş kitab yoxdur. İrəliləyişi izləmək üçün kitabları “{shelfName(SHELF_READ)}” rəfinə əlavə et.</p>
+              <ButtonLink onClick={() => setShowChallengeModal(false)} to="/books">
+                Kitablara bax <Icon name="arrow" />
+              </ButtonLink>
+            </div>
+          ) : (
+            <ul className="dash-book-list">
+              {challengeBooks.map((book) => (
+                <li key={book.id}>
+                  <Link onClick={() => setShowChallengeModal(false)} to={`/books/${book.id}`}>
+                    <BookCover book={book} className="cover-thumb" />
+                    <span>
+                      <strong>{book.title}</strong>
+                      <small>{bookAuthor(book) || 'Müəllif məlum deyil'}</small>
+                    </span>
+                    <span aria-label="Oxunub" className="dash-check" role="img">
+                      <Icon name="check" size={16} />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {challengeBooks.length > 0 && (
+            <div className="modal-actions">
+              <ButtonLink onClick={() => setShowChallengeModal(false)} to="/my-shelves" variant="secondary">
+                Bütün rəflərə bax
+              </ButtonLink>
+            </div>
+          )}
+        </Dialog>
       )}
 
       {/* Add/Edit Quote Modal */}
       <AddEditQuoteModal
-        isOpen={showQuoteModal}
-        onClose={handleCloseQuoteModal}
-        mode={quoteModalMode}
         initialData={editingQuote}
+        isOpen={showQuoteModal}
+        mode={quoteModalMode}
+        onClose={handleCloseQuoteModal}
         onSuccess={handleQuoteSuccess}
       />
     </div>

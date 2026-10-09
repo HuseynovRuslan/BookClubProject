@@ -1,0 +1,51 @@
+/* Bookla 2.0 — shelves screens (/my-shelves, /shelves/:id). Additions to the Make "Shelves" rules in
+   bookla-app.css for real data: real cover images in the mini covers, empty shelves, loading skeleton,
+   link-styled buttons and the shelf page header. */
+
+/* Shelf cards are buttons: full width of their grid cell, keyboard focus visible. */
+.bk-app .shelves-page .shelf-card { width: 100%; color: inherit; cursor: pointer; }
+
+/* Mini covers: a real cover image inside the Make tone block when the book has one. */
+.bk-app .shelves-page .mini-covers i { position: relative; overflow: hidden; }
+.bk-app .shelves-page .mini-covers i img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* An empty shelf shows three empty slots instead of book covers. */
+.bk-app .shelves-page .mini-covers-empty i { border: 1px dashed rgba(24, 61, 53, .28); background: var(--cream); box-shadow: none; }
+
+/* Loading skeleton in the shape of the shelf cards. */
+.bk-app .shelves-page .shelf-card-skeleton { cursor: default; }
+.bk-app .shelves-page .shelf-card-skeleton:hover { border-color: var(--line); transform: none; }
+.bk-app .shelves-page .shelf-card-skeleton .mini-covers i { background: linear-gradient(100deg, var(--sand) 35%, #f6f4ed 50%, var(--sand) 65%); background-size: 200% 100%; box-shadow: none; animation: shimmer 1.4s infinite; }
+.bk-app .shelves-page .shelf-card-skeleton > span { width: 70%; height: 12px; margin-top: 18px; border-radius: 5px; background: var(--sand); }
+.bk-app .shelves-page .shelf-card-skeleton > span:last-child { width: 40%; margin-top: 8px; }
+.bk-app .shelf-loading-books { margin-top: clamp(72px, 9vw, 126px); }
+.bk-app .shelf-loading-books .loading-books { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* Links that look like the Make buttons (no underline). */
+.bk-app .shelves-page a.button, .bk-app .shelf-detail-page a.button { text-decoration: none; }
+.bk-app .shelves-page .shelf-actions, .bk-app .shelf-detail-page .shelf-actions { align-items: center; }
+.bk-app .shelves-page .shelf-actions .button-quiet, .bk-app .shelf-detail-page .shelf-actions .button-quiet { min-height: 36px; }
+
+/* "Rəfdən çıxar" while the request runs. */
+.bk-app .shelves-page .shelf-book > button:disabled, .bk-app .shelf-detail-page .shelf-book > button:disabled { text-decoration: none; }
+.bk-app .shelves-page .shelf-book > button:hover:not(:disabled), .bk-app .shelf-detail-page .shelf-book > button:hover:not(:disabled) { color: var(--danger); }
+
+/* Shelf page (/shelves/:id). */
+.bk-app .shelf-detail-page .back-link { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 35px; text-decoration: none; }
+.bk-app .shelf-detail-page .back-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.bk-app .shelf-detail-page .page-heading-row h1 { overflow-wrap: anywhere; }
+.bk-app .shelf-detail-page .page-heading-row .shelf-actions { flex: 0 0 auto; justify-content: flex-end; }
+.bk-app .shelf-detail-page .shelf-heading-skeleton { display: grid; gap: 14px; margin-bottom: 65px; }
+.bk-app .shelf-detail-page .shelf-heading-skeleton i { display: block; width: 140px; height: 12px; border-radius: 5px; background: var(--sand); }
+.bk-app .shelf-detail-page .shelf-heading-skeleton i:nth-child(2) { width: min(420px, 80%); height: 54px; border-radius: 9px; }
+.bk-app .shelf-detail-page .shelf-heading-skeleton i:nth-child(3) { width: 90px; }
+
+@media (max-width: 1080px) {
+  .bk-app .shelf-loading-books .loading-books { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 540px) {
+  .bk-app .shelf-loading-books .loading-books { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bk-app .shelf-detail-page .page-heading-row .shelf-actions { justify-content: flex-start; }
+}
+.bk-app .shelf-detail-page .shelf-loading-books { margin-top: 0; }
+/* Request errors inside the dialogs (".modal > p" would make them grey). */
+.bk-app .shelves-page .modal > p.form-error, .bk-app .shelf-detail-page .modal > p.form-error { color: var(--danger); }

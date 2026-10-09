@@ -1,19 +1,12 @@
-﻿import { X, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
-
-// Helper to get full image URL
-const getImageUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url}`;
-};
+import { Link } from 'react-router-dom';
+import { Avatar, Dialog, Eyebrow, Icon } from './app/ui';
+import { displayName } from './app/format';
+import '../styles/app/profile.css';
 
 // Helper to check if user is admin
 const isAdmin = (user) => {
   if (!user) return false;
-  const isAdminByRole = user?.role === 'Admin' || 
+  const isAdminByRole = user?.role === 'Admin' ||
          user?.roles?.includes('Admin') ||
          user?.userRole === 'Admin' ||
          (Array.isArray(user?.roles) && user.roles.some(r => r === 'Admin' || r?.name === 'Admin'));
@@ -23,99 +16,45 @@ const isAdmin = (user) => {
 };
 
 /**
- * UserListModal - A reusable modal to display a list of users
+ * UserListModal - A reusable modal to display a list of users (Make Dialog with avatar rows)
  * @param {boolean} isOpen - Whether the modal is open
  * @param {function} onClose - Function to close the modal
- * @param {string} title - Modal title (e.g., "Followers", "Following")
+ * @param {string} title - Modal title (e.g., "İzləyicilər", "İzlənilənlər")
  * @param {Array} users - Array of user objects to display
+ * @param {string} [eyebrow] - Small line above the title (e.g. whose list it is)
  */
-const UserListModal = ({ isOpen, onClose, title, users = [] }) => {
-  const navigate = useNavigate();
-
+const UserListModal = ({ isOpen, onClose, title, users = [], eyebrow }) => {
   if (!isOpen) return null;
 
-  const handleUserClick = (username) => {
-    navigate(`/profile/${username}`);
-    onClose();
-  };
-
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  const visibleUsers = users.filter((u) => !isAdmin(u));
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={handleBackdropClick}
-    >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-[80vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-stone-200">
-          <h2 className="text-xl font-bold text-stone-900">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-stone-100 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-stone-500" />
-          </button>
-        </div>
+    <Dialog className="user-list-modal" labelledBy="user-list-title" onClose={onClose}>
+      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+      <h2 id="user-list-title">{title}</h2>
 
-        {/* User List */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {users.length === 0 ? (
-            <div className="text-center py-12">
-              <User className="w-12 h-12 mx-auto text-stone-300 mb-3" />
-              <p className="text-stone-500">No users to display</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {users.filter(u => !isAdmin(u)).map((user) => {
-                const profilePicUrl = getImageUrl(user.profilePictureUrl);
-                const initials = user.firstName && user.lastName
-                  ? `${user.firstName[0]}${user.lastName[0]}`
-                  : user.username?.[0]?.toUpperCase() || '?';
-                const fullName = user.firstName && user.lastName
-                  ? `${user.firstName} ${user.lastName}`
-                  : user.username;
-
-                return (
-                  <button
-                    key={user.id}
-                    onClick={() => handleUserClick(user.username)}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-stone-50 transition-colors text-left"
-                  >
-                    {/* Avatar */}
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-stone-700 to-stone-900 flex items-center justify-center text-white font-semibold overflow-hidden flex-shrink-0">
-                      {profilePicUrl ? (
-                        <img
-                          src={profilePicUrl}
-                          alt={fullName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        initials
-                      )}
-                    </div>
-
-                    {/* User Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-stone-900 truncate">
-                        {fullName}
-                      </p>
-                      <p className="text-sm text-stone-500 truncate">
-                        @{user.username}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      {visibleUsers.length === 0 ? (
+        <p className="user-list-empty">Burada hələ heç kim yoxdur.</p>
+      ) : (
+        <ul className="user-list">
+          {visibleUsers.map((user) => {
+            const fullName = displayName(user);
+            return (
+              <li key={user.id}>
+                <Link onClick={onClose} to={`/profile/${user.username || user.id}`}>
+                  <Avatar name={fullName} size="medium" src={user.profilePictureUrl} />
+                  <span>
+                    <strong>{fullName}</strong>
+                    {user.username && <small>@{user.username}</small>}
+                  </span>
+                  <Icon name="arrow" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Dialog>
   );
 };
 

@@ -1,10 +1,12 @@
-﻿import { useState } from 'react';
-import { Star } from 'lucide-react';
+import { useRef, useState } from 'react';
+
+const starPath = 'm12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z';
 
 /**
- * Reusable Star Rating Component
- * Supports both read-only (display) and interactive (input) modes
- * 
+ * Star rating in the Bookla 2.0 style.
+ * Read-only (no onRatingChange, or disabled): the Make "★★★★★" line, terracotta for filled stars.
+ * Interactive (onRatingChange): a keyboard-accessible radio group of star buttons.
+ *
  * @param {Object} props
  * @param {number} props.rating - Current rating value (1-5)
  * @param {Function} [props.onRatingChange] - Callback when rating changes (makes it interactive)
@@ -12,6 +14,7 @@ import { Star } from 'lucide-react';
  * @param {string} [props.size='md'] - Size: 'sm', 'md', 'lg', 'xl'
  * @param {boolean} [props.showValue=false] - Show numeric value next to stars
  * @param {boolean} [props.disabled=false] - Disable interaction
+ * @param {string} [props.label] - Accessible name of the input group
  * @param {string} [props.className] - Additional CSS classes
  */
 const StarRating = ({
@@ -21,103 +24,90 @@ const StarRating = ({
   size = 'md',
   showValue = false,
   disabled = false,
+  label = 'Qiymət',
   className = '',
 }) => {
   const [hoverRating, setHoverRating] = useState(0);
+  const buttonsRef = useRef([]);
 
   const isInteractive = !!onRatingChange && !disabled;
+  const sizeClass = `star-rating-${['sm', 'md', 'lg', 'xl'].includes(size) ? size : 'md'}`;
+  const value = showValue && (
+    <span className="star-rating-value">{rating > 0 ? Number(rating).toFixed(1) : '—'}</span>
+  );
 
-  // Size configurations
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-5 h-5',
-    lg: 'w-6 h-6',
-    xl: 'w-8 h-8',
+  if (!onRatingChange) {
+    const filled = Math.max(0, Math.min(maxStars, Math.round(rating)));
+    return (
+      <span className={`star-rating star-rating-readonly ${sizeClass} ${className}`}>
+        <span className="stars" role="img" aria-label={`${maxStars} ulduzdan ${filled}`}>
+          {'★'.repeat(filled)}
+          <span className="stars-empty">{'★'.repeat(maxStars - filled)}</span>
+        </span>
+        {value}
+      </span>
+    );
+  }
+
+  const select = (starIndex) => {
+    if (isInteractive) onRatingChange(starIndex);
   };
 
-  const textSizeClasses = {
-    sm: 'text-xs',
-    md: 'text-sm',
-    lg: 'text-base',
-    xl: 'text-lg',
-  };
-
-  const gapClasses = {
-    sm: 'gap-0.5',
-    md: 'gap-1',
-    lg: 'gap-1',
-    xl: 'gap-1.5',
-  };
-
-  const starSize = sizeClasses[size] || sizeClasses.md;
-  const textSize = textSizeClasses[size] || textSizeClasses.md;
-  const gap = gapClasses[size] || gapClasses.md;
-
-  const handleClick = (starIndex) => {
-    if (isInteractive) {
-      onRatingChange(starIndex);
-    }
-  };
-
-  const handleMouseEnter = (starIndex) => {
-    if (isInteractive) {
-      setHoverRating(starIndex);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (isInteractive) {
-      setHoverRating(0);
-    }
+  // Arrow keys move the selection like a native radio group.
+  const handleKeyDown = (event) => {
+    if (!isInteractive) return;
+    const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[event.key];
+    let next = null;
+    if (step) next = Math.min(maxStars, Math.max(1, (rating || 0) + step));
+    if (event.key === 'Home') next = 1;
+    if (event.key === 'End') next = maxStars;
+    if (next === null) return;
+    event.preventDefault();
+    onRatingChange(next);
+    buttonsRef.current[next - 1]?.focus();
   };
 
   const displayRating = hoverRating || rating;
+  const focusIndex = rating > 0 ? rating : 1;
 
   return (
-    <div className={`flex items-center ${gap} ${className}`}>
-      <div
-        className={`flex items-center ${gap}`}
-        onMouseLeave={handleMouseLeave}
+    <span className={`star-rating star-rating-input ${sizeClass} ${disabled ? 'is-disabled' : ''} ${className}`}>
+      <span
+        aria-disabled={disabled || undefined}
+        aria-label={label}
+        className="star-rating-stars"
+        onKeyDown={handleKeyDown}
+        onMouseLeave={() => setHoverRating(0)}
+        role="radiogroup"
       >
         {Array.from({ length: maxStars }, (_, index) => {
           const starIndex = index + 1;
           const isFilled = starIndex <= displayRating;
-          const isHalfFilled = !isFilled && starIndex - 0.5 <= displayRating;
-
           return (
             <button
-              key={starIndex}
-              type="button"
-              onClick={() => handleClick(starIndex)}
-              onMouseEnter={() => handleMouseEnter(starIndex)}
+              aria-checked={rating === starIndex}
+              aria-label={`${maxStars} ulduzdan ${starIndex}`}
+              className={`star-button ${isFilled ? 'filled' : ''}`}
               disabled={!isInteractive}
-              className={`
-                ${isInteractive ? 'cursor-pointer hover:scale-110' : 'cursor-default'}
-                transition-transform duration-150 ease-out
-                focus:outline-none
-                disabled:cursor-default
-              `}
-              aria-label={`Rate ${starIndex} out of ${maxStars}`}
+              key={starIndex}
+              onClick={() => select(starIndex)}
+              onMouseEnter={() => isInteractive && setHoverRating(starIndex)}
+              ref={(node) => {
+                buttonsRef.current[index] = node;
+              }}
+              role="radio"
+              tabIndex={starIndex === focusIndex ? 0 : -1}
+              type="button"
             >
-              <Star
-                className={`
-                  ${starSize}
-                  ${isFilled ? 'text-amber-400 fill-amber-400' : 'text-stone-300'}
-                  ${isHalfFilled ? 'text-amber-400' : ''}
-                  transition-colors duration-150
-                `}
-              />
+              <svg aria-hidden="true" className="icon" viewBox="0 0 24 24">
+                <path d={starPath} />
+              </svg>
             </button>
           );
         })}
-      </div>
-
-      {showValue && (
-        <span className={`${textSize} text-stone-600 font-medium ml-1`}>
-          {rating > 0 ? rating.toFixed(1) : '—'}
-        </span>
-      )}
-    </div>
+      </span>
+      {value}
+    </span>
   );
 };
 

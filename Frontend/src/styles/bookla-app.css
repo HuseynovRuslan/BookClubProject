@@ -1,0 +1,538 @@
+/* Bookla 2.0 application design system.
+   Generated from the Figma Make project "Bookla 2.0 — Application" (src/index.css) and scoped under
+   .bk-app so it never reaches the landing page, auth pages or admin screens. Colour tokens point at the
+   Bookla theme in index.css; fonts come from bookla-fonts.css. Deliberate changes from the Make file are
+   marked "Bookla:". */
+.bk-app { --cream: var(--color-bookla-paper);
+  --forest: var(--color-bookla-forest);
+  --forest-soft: #285149;
+  --terracotta: var(--color-bookla-clay);
+  --terracotta-dark: var(--color-bookla-clay-strong);
+  --sage: var(--color-bookla-sage);
+  --sand: var(--color-bookla-sand);
+  --ink: var(--color-bookla-ink);
+  --muted: var(--color-bookla-muted-strong);
+  --line: var(--color-bookla-line);
+  --white: #fffdf8;
+  --rose: var(--color-bookla-blush);
+  --danger: #8f3e2e;
+  --shadow: 0 18px 45px rgba(24, 61, 53, 0.1);
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 24px;
+  --font-ui: "Inter:Regular", Inter, sans-serif;
+  --font-medium: "Inter:Medium", Inter, sans-serif;
+  --font-semibold: "Inter:Semi Bold", Inter, sans-serif;
+  --font-editorial: "Lora:Regular", Lora, serif;
+  --font-editorial-semibold: "Lora:SemiBold", Lora, serif; }
+.bk-app * { box-sizing: border-box; }
+.bk-app { max-width: 100%; overflow-x: clip; background: var(--cream); color: var(--ink); scroll-behavior: smooth; }
+.bk-app { max-width: 100%; overflow-x: clip; }
+.bk-app { margin: 0; min-width: 320px; background: var(--cream); font-family: var(--font-ui); font-size: 15px; line-height: 1.55; }
+.bk-app button, .bk-app input, .bk-app select, .bk-app textarea { color: inherit; font: inherit; }
+.bk-app button, .bk-app a, .bk-app select { -webkit-tap-highlight-color: transparent; }
+.bk-app button { border: 0; cursor: pointer; }
+.bk-app button:focus-visible, .bk-app input:focus-visible, .bk-app select:focus-visible, .bk-app textarea:focus-visible, .bk-app a:focus-visible { outline: 2px solid var(--terracotta-dark); outline-offset: 3px; /* Bookla: Make uses a 35% terracotta ring (about 1.4:1 on ivory); solid for WCAG 2.2 focus visibility. */ }
+.bk-app button:disabled { cursor: not-allowed; opacity: 0.45; }
+.bk-app h1, .bk-app h2, .bk-app h3, .bk-app p { margin-top: 0; }
+.bk-app h1, .bk-app h2 { color: var(--forest); font-family: var(--font-editorial); font-weight: 400; line-height: 1.09; }
+.bk-app h1 { margin-bottom: 20px; font-size: clamp(42px, 5vw, 72px); letter-spacing: -0.035em; }
+.bk-app h2 { margin-bottom: 0; font-size: clamp(28px, 3vw, 42px); letter-spacing: -0.025em; }
+.bk-app h3 { margin-bottom: 8px; color: var(--forest); font-family: var(--font-editorial-semibold); font-size: 19px; line-height: 1.25; }
+.bk-app em { font-family: "Lora:Italic", Lora, serif; font-weight: 400; }
+.bk-app .heading-line { display: block; }
+.bk-app .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+.bk-app .icon { display: inline-block; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; vertical-align: middle; }
+.bk-app .app-shell { min-height: 100dvh; }
+.bk-app .topbar { position: sticky; z-index: 50; top: 0; display: flex; height: 76px; align-items: center; justify-content: space-between; padding: 0 clamp(24px, 5vw, 80px); border-bottom: 1px solid var(--line); background: rgba(248, 246, 240, 0.96); backdrop-filter: blur(16px); }
+.bk-app .logo { display: flex; align-items: center; gap: 8px; padding: 0; background: none; color: var(--forest); }
+.bk-app .logo img { width: 25px; height: 25px; }
+.bk-app .logo span { font-family: var(--font-editorial-semibold); font-size: 26px; line-height: 1; }
+.bk-app .logo i { width: 5px; height: 5px; align-self: flex-end; margin: 0 0 4px -4px; border-radius: 50%; background: var(--terracotta); }
+.bk-app .nav { display: flex; height: 100%; align-items: center; gap: clamp(10px, 1.3vw, 26px); }
+.bk-app .nav button { position: relative; height: 100%; padding: 0; background: none; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.bk-app .nav button::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--terracotta); content: ""; opacity: 0; transform: scaleX(0.2); transition: 180ms; }
+.bk-app .nav button.active { color: var(--forest); font-family: var(--font-semibold); }
+.bk-app .nav button.active::after { opacity: 1; transform: scaleX(1); }
+.bk-app .top-actions { display: flex; align-items: center; gap: 8px; }
+.bk-app .icon-button, .bk-app .avatar-button { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 50%; background: transparent; color: var(--forest); }
+.bk-app .icon-button:hover { background: var(--sand); }
+.bk-app .notification-button { position: relative; }
+.bk-app .notification-button > span { position: absolute; top: 8px; right: 8px; width: 7px; height: 7px; border: 2px solid var(--cream); border-radius: 50%; background: var(--terracotta-dark); }
+.bk-app .menu-button { display: none; }
+.bk-app .avatar { display: block; flex: 0 0 auto; border-radius: 50%; object-fit: cover; }
+.bk-app .avatar-small { width: 36px; height: 36px; }
+.bk-app .avatar-medium { width: 48px; height: 48px; }
+.bk-app .avatar-large { width: 78px; height: 78px; }
+.bk-app .avatar-hero { width: 148px; height: 148px; border: 8px solid var(--cream); box-shadow: var(--shadow); }
+.bk-app .notification-panel { position: absolute; top: 66px; right: clamp(20px, 5vw, 80px); width: min(390px, calc(100vw - 32px)); padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); box-shadow: var(--shadow); }
+.bk-app .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--forest); font-family: var(--font-semibold); }
+.bk-app .panel-head button { display: grid; place-items: center; background: none; }
+.bk-app .notice { display: flex; align-items: center; gap: 12px; margin: 0 -10px; padding: 12px 10px; border-radius: var(--radius-sm); }
+.bk-app .notice.unread { background: var(--sage); }
+.bk-app .notice p { margin: 0; font-size: 13px; line-height: 1.4; }
+.bk-app .notice p span { display: block; color: var(--muted); font-size: 11px; }
+.bk-app .notice-book { display: grid; width: 36px; height: 42px; place-items: center; border-radius: 3px; background: var(--forest); color: white; font-family: var(--font-editorial-semibold); font-size: 10px; }
+.bk-app .notification-panel > .button { width: 100%; margin-top: 12px; }
+.bk-app .app-main { min-height: calc(100dvh - 76px); }
+.bk-app .page { width: min(1280px, calc(100% - clamp(40px, 9vw, 144px))); margin: 0 auto; padding: clamp(50px, 7vw, 94px) 0 100px; }
+.bk-app .page > section + section { margin-top: clamp(72px, 9vw, 126px); }
+.bk-app .eyebrow { margin-bottom: 12px; color: var(--forest); font-family: var(--font-semibold); font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; }
+.bk-app .section-heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 34px; }
+.bk-app .section-heading .eyebrow { margin-bottom: 8px; }
+.bk-app .button { display: inline-flex; min-height: 43px; align-items: center; justify-content: center; gap: 9px; padding: 10px 18px; border: 1px solid transparent; border-radius: 9px; font-family: var(--font-semibold); font-size: 12px; transition: 180ms ease; }
+.bk-app .button:hover { transform: translateY(-1px); }
+.bk-app .button-primary { background: var(--forest); color: white; box-shadow: 0 8px 18px rgba(24, 61, 53, 0.12); }
+.bk-app .button-primary:hover { background: var(--forest-soft); }
+.bk-app .button-secondary { border-color: var(--line); background: var(--white); color: var(--forest); }
+.bk-app .button-quiet { padding-right: 0; padding-left: 0; background: transparent; color: var(--forest); }
+.bk-app .button-terracotta { background: var(--terracotta-dark); color: white; }
+.bk-app .button-danger { background: var(--danger); color: white; }
+.bk-app .field { display: flex; height: 46px; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--white); color: var(--forest); }
+.bk-app .field:focus-within { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(24,61,53,.08); }
+.bk-app .field input { width: 100%; border: 0; outline: 0; background: transparent; }
+.bk-app .field input::placeholder { color: #8a928b; }
+.bk-app .field-large { height: 58px; border-radius: 13px; box-shadow: 0 10px 30px rgba(24,61,53,.07); }
+.bk-app .dashboard-intro { display: grid; grid-template-columns: 1.15fr .85fr; align-items: end; gap: 9vw; }
+.bk-app .dashboard-intro h1 { margin-bottom: 16px; }
+.bk-app .dashboard-intro p:not(.eyebrow) { max-width: 600px; margin-bottom: 0; color: var(--muted); }
+.bk-app .dashboard-intro .field { margin-bottom: 12px; }
+.bk-app .dashboard-search-action { margin-top: 2px; }
+.bk-app .dashboard-grid { display: grid; grid-template-columns: 1.7fr .8fr; gap: 22px; }
+.bk-app .reading-now, .bk-app .challenge { padding: clamp(24px, 3vw, 42px); border-radius: var(--radius-lg); }
+.bk-app .reading-now { background: var(--sage); }
+.bk-app .challenge { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--forest); color: white; text-align: center; }
+.bk-app .challenge .eyebrow, .bk-app .challenge h3 { color: white; }
+.bk-app .challenge p { max-width: 250px; color: #dce8e2; font-size: 13px; }
+.bk-app .challenge > span { margin-top: 10px; color: #dce8e2; font-size: 11px; }
+.bk-app .challenge .progress { width: 100%; background: rgba(255,255,255,.18); }
+.bk-app .challenge .progress i { width: 75%; background: var(--terracotta); }
+.bk-app .challenge-ring { display: flex; width: 132px; height: 132px; flex-direction: column; align-items: center; justify-content: center; margin: 8px 0 18px; border: 8px solid rgba(255,255,255,.16); border-top-color: var(--terracotta); border-radius: 50%; }
+.bk-app .challenge-ring strong { font-family: var(--font-editorial); font-size: 42px; line-height: 1; }
+.bk-app .challenge-ring span { margin-top: 7px; font-size: 11px; }
+.bk-app .current-book { display: grid; grid-template-columns: 155px 1fr; align-items: center; gap: clamp(25px, 4vw, 52px); }
+.bk-app .current-book > div > p { max-width: 520px; color: var(--muted); }
+.bk-app .current-book h3 { font-size: 28px; }
+.bk-app .progress-label { display: flex; justify-content: space-between; margin: 22px 0 8px; color: var(--muted); font-size: 11px; }
+.bk-app .progress-label strong { color: var(--forest); }
+.bk-app .progress { height: 6px; overflow: hidden; margin-bottom: 22px; border-radius: 99px; background: rgba(24, 61, 53, .13); }
+.bk-app .progress i { display: block; width: 67%; height: 100%; border-radius: inherit; background: var(--forest); }
+.bk-app .library-strip { display: flex; align-items: stretch; padding: 22px 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
+.bk-app .library-strip > div { display: grid; min-width: 130px; flex: 1; grid-template-columns: auto 1fr; column-gap: 8px; padding: 3px 24px; border-right: 1px solid var(--line); }
+.bk-app .library-strip > div:first-child { padding-left: 0; }
+.bk-app .library-strip span { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+.bk-app .library-strip strong { color: var(--forest); font-family: var(--font-editorial); font-size: 27px; font-weight: 400; }
+.bk-app .library-strip small { align-self: center; color: var(--muted); }
+.bk-app .library-strip .button { align-self: center; margin-left: 24px; }
+.bk-app .book-row, .bk-app .book-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(18px, 2.5vw, 34px); }
+.bk-app .book-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); row-gap: 52px; }
+.bk-app .book-card { min-width: 0; cursor: pointer; }
+.bk-app .book-card:hover .book-cover { transform: translateY(-7px) rotate(.3deg); box-shadow: 0 22px 40px rgba(24, 61, 53, .18), -8px 8px 0 rgba(24,61,53,.06); }
+.bk-app .book-cover { position: relative; display: flex; aspect-ratio: 2 / 3; min-height: 0; flex-direction: column; overflow: hidden; justify-content: space-between; padding: 16% 13% 12%; border-radius: 5px 9px 9px 5px; box-shadow: 0 13px 28px rgba(24,61,53,.16), -5px 5px 0 rgba(24,61,53,.06); transition: 220ms ease; }
+.bk-app .book-cover::before { position: absolute; inset: 0 auto 0 7px; width: 1px; background: rgba(255,255,255,.24); content: ""; }
+.bk-app .book-cover::after { position: absolute; right: 10%; bottom: 9%; width: 35%; height: 1px; background: currentColor; content: ""; opacity: .4; }
+.bk-app .book-cover strong { position: relative; z-index: 1; max-width: 95%; font-family: var(--font-editorial-semibold); font-size: clamp(15px, 1.45vw, 23px); line-height: 1.08; }
+.bk-app .book-cover small { position: relative; z-index: 1; max-width: 82%; font-size: 8px; letter-spacing: .09em; text-transform: uppercase; }
+.bk-app .book-cover .cover-mark { position: relative; z-index: 1; font-family: "Lora:Italic"; font-size: 9px; } /* Bookla: full opacity (Make .75) for AA contrast. */
+.bk-app .book-cover i { position: absolute; right: -15%; bottom: 12%; width: 65%; height: 35%; border: 1px solid currentColor; border-radius: 50%; opacity: .18; transform: rotate(-20deg); }
+.bk-app .book-cover-large { width: min(320px, 85vw); }
+.bk-app .book-cover-large strong { font-size: clamp(31px, 4vw, 48px); }
+.bk-app .cover-emerald { background: #174d43; color: #f4e7cf; }
+.bk-app .cover-ochre { background: #9c6031; /* Bookla: Make #b56f39, darkened for AA text contrast */ color: #fff3df; }
+.bk-app .cover-night { background: #233642; color: #f6dfaf; }
+.bk-app .cover-rose { background: #c98e81; color: #34241f; }
+.bk-app .cover-sand { background: #d8c8a9; color: #35382e; }
+.bk-app .cover-blue { background: #536f81; /* Bookla: Make #59778a, darkened for AA text contrast */ color: #f6eee2; }
+.bk-app .cover-forest { background: #324e3b; color: #ede0c2; }
+.bk-app .cover-clay { background: #9a4d39; color: #f8e6cc; }
+.bk-app .cover-moss { background: #697458; /* Bookla: Make #7f8d6b, darkened for AA text contrast */ color: #fff8e8; }
+.bk-app .cover-ink { background: #333b3d; color: #f2d9b9; }
+.bk-app .cover-wine { background: #683c3d; color: #f5e1cc; }
+.bk-app .cover-sage { background: #a7b9a8; color: #213a34; }
+.bk-app .book-meta { padding-top: 18px; }
+.bk-app .book-meta h3 { overflow: hidden; margin-bottom: 3px; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .book-meta > p:not(.book-genre) { margin-bottom: 7px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .book-genre { margin-bottom: 6px; color: var(--terracotta-dark); font-family: var(--font-semibold); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
+.bk-app .rating { display: inline-flex; align-items: center; gap: 4px; color: var(--forest); font-family: var(--font-semibold); font-size: 11px; }
+.bk-app .rating .icon { fill: var(--terracotta); stroke: var(--terracotta); }
+.bk-app .quote-social-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 24px; }
+.bk-app .quote-card { padding: clamp(28px, 4vw, 52px); border-radius: var(--radius-lg); background: var(--rose); }
+.bk-app .quote-card blockquote { margin: 25px 0; color: var(--forest); font-family: "Lora:Italic"; font-size: clamp(24px, 3vw, 36px); line-height: 1.35; }
+.bk-app .quote-card > p { color: var(--muted); font-size: 12px; }
+.bk-app .social-preview { padding: clamp(28px, 4vw, 52px); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--white); }
+.bk-app .activity { display: flex; align-items: flex-start; gap: 12px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.bk-app .activity > div { min-width: 0; flex: 1; }
+.bk-app .activity p { margin: 0; font-size: 13px; }
+.bk-app .activity span { color: var(--muted); font-size: 11px; }
+.bk-app .activity > button { background: transparent; color: var(--muted); }
+.bk-app .activity-compact:last-child { border-bottom: 0; }
+.bk-app .page-hero { margin: 0 0 65px; padding: 72px 0; background: var(--sage); box-shadow: 0 0 0 100vmax var(--sage); clip-path: inset(0 -100vmax); }
+.bk-app .page-hero h1 { max-width: 720px; }
+.bk-app .page-hero > p { max-width: 550px; color: var(--muted); }
+.bk-app .page-hero .field { width: min(680px, 100%); margin-top: 34px; }
+.bk-app .filter-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 42px; }
+.bk-app .filter-row > span { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.bk-app .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.bk-app .chips button { padding: 9px 15px; border: 1px solid var(--line); border-radius: 99px; background: transparent; color: var(--muted); font-size: 12px; }
+.bk-app .chips button.active { border-color: var(--forest); background: var(--forest); color: white; }
+.bk-app .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 72px; }
+.bk-app .pagination button { display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--forest); }
+.bk-app .pagination button.active { background: var(--forest); color: white; }
+.bk-app .empty-state { display: flex; max-width: 650px; min-height: 400px; flex-direction: column; align-items: center; justify-content: center; margin: 30px auto; padding: 50px; text-align: center; }
+.bk-app .empty-state h3 { font-size: 27px; }
+.bk-app .empty-state p { max-width: 460px; color: var(--muted); }
+.bk-app .empty-books { display: flex; height: 80px; align-items: flex-end; gap: 5px; margin-bottom: 28px; }
+.bk-app .empty-books i { display: block; width: 28px; height: 60px; border: 1px solid var(--forest); border-radius: 3px; background: var(--sage); transform: rotate(-7deg); }
+.bk-app .empty-books i:nth-child(2) { height: 75px; background: var(--rose); transform: rotate(2deg); }
+.bk-app .empty-books i:nth-child(3) { height: 52px; background: var(--sand); transform: rotate(8deg); }
+.bk-app .skeleton-card i { display: block; aspect-ratio: 2/3; border-radius: 6px; background: linear-gradient(100deg,var(--sand) 35%,#f6f4ed 50%,var(--sand) 65%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+.bk-app .skeleton-card span { display: block; width: 80%; height: 12px; margin-top: 18px; border-radius: 5px; background: var(--sand); }
+.bk-app .skeleton-card span:last-child { width: 50%; margin-top: 8px; }
+.bk-app .loading-state { display: grid; gap: clamp(18px, 2.5vw, 34px); }
+.bk-app .loading-books { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.bk-app .loading-readers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bk-app .loading-readers .skeleton-card, .bk-app .loading-feed .skeleton-card { padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
+.bk-app .loading-readers .skeleton-card i { width: 78px; height: 78px; aspect-ratio: 1; border-radius: 50%; }
+.bk-app .loading-feed { grid-template-columns: 1fr; }
+.bk-app .loading-feed .skeleton-card i { height: 220px; aspect-ratio: auto; }
+@keyframes shimmer { to { background-position-x: -200%; } }
+.bk-app .back-link { margin-bottom: 35px; background: transparent; color: var(--forest); font-family: var(--font-medium); font-size: 12px; }
+.bk-app .detail-hero { display: grid; grid-template-columns: .75fr 1.25fr; gap: clamp(55px, 9vw, 130px); padding: 20px 3vw 70px; }
+.bk-app .cover-stage { display: flex; flex-direction: column; align-items: center; gap: 25px; }
+.bk-app .cover-stage > span { color: var(--muted); font-size: 11px; text-align: center; }
+.bk-app .detail-copy { align-self: center; }
+.bk-app .detail-copy h1 { margin-bottom: 10px; }
+.bk-app .author-link { padding: 0; background: none; color: var(--forest); font-family: var(--font-editorial); font-size: 20px; text-decoration: underline; text-underline-offset: 5px; }
+.bk-app .rating-line { display: flex; align-items: center; gap: 20px; margin: 26px 0; color: var(--muted); font-size: 11px; }
+.bk-app .lead { max-width: 750px; color: var(--muted); font-size: 16px; line-height: 1.8; }
+.bk-app .genre-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 30px; }
+.bk-app .genre-list span { padding: 7px 12px; border-radius: 99px; background: var(--sand); color: var(--forest); font-size: 11px; }
+.bk-app .detail-actions { display: flex; align-items: flex-end; gap: 12px; }
+.bk-app .detail-actions label { display: grid; gap: 6px; color: var(--muted); font-size: 10px; }
+.bk-app .detail-actions select { min-width: 200px; height: 43px; padding: 0 35px 0 13px; border: 1px solid var(--line); border-radius: 9px; background: var(--white); }
+.bk-app .demo-note { display: block; margin-top: 13px; color: var(--muted); font-size: 10px; }
+.bk-app .detail-content { display: grid; grid-template-columns: 1.4fr .6fr; align-items: start; gap: clamp(40px, 8vw, 100px); padding-top: 70px; border-top: 1px solid var(--line); }
+.bk-app .tabs { display: flex; gap: 30px; margin-bottom: 35px; border-bottom: 1px solid var(--line); }
+.bk-app .tabs button { position: relative; padding: 0 0 14px; background: none; color: var(--muted); font-size: 12px; }
+.bk-app .tabs button.active { color: var(--forest); font-family: var(--font-semibold); }
+.bk-app .tabs button.active::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--terracotta); content: ""; }
+.bk-app .prose { max-width: 780px; }
+.bk-app .prose h2 { margin-bottom: 24px; }
+.bk-app .prose p { color: var(--muted); font-size: 15px; line-height: 1.9; }
+.bk-app .author-card { padding: 30px; border-radius: var(--radius); background: var(--sage); }
+.bk-app .author-line { display: flex; align-items: center; gap: 15px; margin: 22px 0; }
+.bk-app .author-line h3 { margin: 0; }
+.bk-app .author-line span { color: var(--muted); font-size: 11px; }
+.bk-app .author-monogram { display: grid; width: 58px; height: 58px; place-items: center; border-radius: 50%; background: var(--forest); color: white; font-family: var(--font-editorial); }
+.bk-app .author-card > p { color: var(--muted); font-size: 12px; }
+.bk-app .review-summary { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; padding: 22px; border-radius: var(--radius); background: var(--sage); }
+.bk-app .review-summary > strong { color: var(--forest); font-family: var(--font-editorial); font-size: 44px; font-weight: 400; }
+.bk-app .stars { color: var(--terracotta-dark); letter-spacing: .09em; }
+.bk-app .review-summary span { color: var(--muted); font-size: 10px; }
+.bk-app .review { display: flex; gap: 12px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+.bk-app .review > div { flex: 1; }
+.bk-app .review > div > div { display: flex; justify-content: space-between; }
+.bk-app .review p { margin: 9px 0; color: var(--muted); font-size: 13px; }
+.bk-app .review small { color: var(--muted); }
+.bk-app .page-heading-row { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 65px; }
+.bk-app .page-heading-row h1 { margin-bottom: 12px; }
+.bk-app .page-heading-row p { margin-bottom: 0; color: var(--muted); }
+.bk-app .shelf-overview { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 15px; }
+.bk-app .shelf-card { min-width: 0; padding: 22px 18px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); text-align: left; transition: 180ms; }
+.bk-app .shelf-card:hover, .bk-app .shelf-card.active { border-color: var(--forest); transform: translateY(-3px); }
+.bk-app .shelf-card strong, .bk-app .shelf-card span { display: block; }
+.bk-app .shelf-card strong { overflow: hidden; margin-top: 18px; color: var(--forest); font-family: var(--font-editorial-semibold); text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .shelf-card span { color: var(--muted); font-size: 11px; }
+.bk-app .mini-covers { display: flex; height: 78px; align-items: end; justify-content: center; }
+.bk-app .mini-covers i { display: block; width: 48px; height: 70px; margin: 0 -9px; border-radius: 3px; box-shadow: 0 5px 10px rgba(24,61,53,.18); }
+.bk-app .shelf-actions { display: flex; flex-wrap: wrap; gap: 18px; }
+.bk-app .shelf-books { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.bk-app .shelf-book > button { margin-top: 12px; padding: 0; background: transparent; color: var(--terracotta-dark); font-size: 10px; text-decoration: underline; text-underline-offset: 3px; }
+.bk-app .modal-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; padding: 20px; place-items: center; background: rgba(18, 35, 30, .54); backdrop-filter: blur(5px); }
+.bk-app .modal { position: relative; width: min(520px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; padding: clamp(30px, 5vw, 50px); border-radius: var(--radius-lg); background: var(--cream); box-shadow: var(--shadow); }
+.bk-app .modal h2 { margin-bottom: 15px; }
+.bk-app .modal > p { color: var(--muted); }
+.bk-app .modal-close { position: absolute; top: 20px; right: 20px; display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; background: var(--sand); color: var(--forest); }
+.bk-app .text-field { display: grid; gap: 7px; margin-top: 20px; color: var(--muted); font-size: 11px; }
+.bk-app .text-field input, .bk-app .text-field textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; outline: 0; background: var(--white); resize: vertical; }
+.bk-app .text-field input:focus, .bk-app .text-field textarea:focus { border-color: var(--forest); }
+.bk-app .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 28px; }
+.bk-app .profile-hero { position: relative; margin: -94px 0 0; padding: 0; }
+.bk-app .profile-pattern { height: 220px; margin: 0; background-color: var(--sage); background-image: radial-gradient(rgba(24,61,53,.11) 1px, transparent 1px); background-size: 17px 17px; box-shadow: 0 0 0 100vmax var(--sage); clip-path: inset(0 -100vmax); }
+.bk-app .profile-main { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 30px; margin-top: -72px; }
+.bk-app .profile-copy { padding-top: 82px; }
+.bk-app .profile-copy h1 { margin: 0; font-size: clamp(38px, 5vw, 62px); }
+.bk-app .profile-copy > span { color: var(--muted); font-size: 13px; }
+.bk-app .profile-copy > p { max-width: 680px; margin: 20px 0 12px; color: var(--muted); }
+.bk-app .social-links { display: flex; gap: 25px; color: var(--muted); font-size: 11px; }
+.bk-app .social-links a { color: var(--forest); }
+.bk-app .profile-stats { display: flex; gap: 45px; margin-top: 40px; padding: 22px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.bk-app .profile-stats button { display: flex; align-items: baseline; gap: 7px; background: transparent; }
+.bk-app .profile-stats strong { color: var(--forest); font-family: var(--font-editorial); font-size: 24px; font-weight: 400; }
+.bk-app .profile-stats span { color: var(--muted); font-size: 11px; }
+.bk-app .profile-layout { display: grid; grid-template-columns: 1fr 340px; align-items: start; gap: 70px; }
+.bk-app .profile-shelves { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; }
+.bk-app .profile-shelves > button { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); text-align: left; }
+.bk-app .profile-shelves > button > strong, .bk-app .profile-shelves > button > span { display: block; }
+.bk-app .profile-shelves > button > strong { margin-top: 15px; color: var(--forest); font-family: var(--font-editorial-semibold); }
+.bk-app .profile-shelves > button > span { color: var(--muted); font-size: 10px; }
+.bk-app .stacked-covers { display: flex; height: 120px; align-items: center; justify-content: center; }
+.bk-app .stacked-covers .book-cover { width: 75px; padding: 10px; }
+.bk-app .stacked-covers .book-cover strong, .bk-app .stacked-covers .book-cover span, .bk-app .stacked-covers .book-cover small { display: none; }
+.bk-app .stacked-covers .book-cover:nth-child(1) { transform: rotate(-8deg) translateX(20px); }
+.bk-app .stacked-covers .book-cover:nth-child(2) { z-index: 2; }
+.bk-app .stacked-covers .book-cover:nth-child(3) { transform: rotate(8deg) translateX(-20px); }
+.bk-app .reading-year { padding: 32px; border-radius: var(--radius-lg); background: var(--forest); color: white; }
+.bk-app .reading-year h2, .bk-app .reading-year .eyebrow { color: white; }
+.bk-app .reading-year p { color: #c8d9d3; font-size: 12px; }
+.bk-app .month-bars { display: flex; height: 110px; align-items: end; gap: 6px; margin-top: 30px; }
+.bk-app .month-bars i { flex: 1; min-height: 5%; border-radius: 4px 4px 0 0; background: var(--terracotta); }
+.bk-app .month-labels { display: flex; justify-content: space-between; color: #c8d9d3; font-size: 9px; }
+.bk-app .timeline { border-top: 1px solid var(--line); }
+.bk-app .settings-entry { display: flex; width: 100%; align-items: center; justify-content: space-between; margin-top: 75px; padding: 22px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: transparent; color: var(--forest); font-family: var(--font-semibold); text-align: left; }
+.bk-app .community-hero { display: grid; grid-template-columns: 1fr .82fr; overflow: hidden; margin: -94px 0 0; padding-left: 0; background: var(--sage); box-shadow: 0 0 0 100vmax var(--sage); clip-path: inset(0 -100vmax); }
+.bk-app .community-hero > div { align-self: center; padding: 70px 60px 70px 0; }
+.bk-app .community-hero p { max-width: 550px; color: var(--muted); }
+.bk-app .community-hero .field { max-width: 600px; margin-top: 30px; }
+.bk-app .community-hero img { width: 100%; height: 100%; min-height: 540px; object-fit: cover; }
+.bk-app .reader-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.bk-app .reader-card { padding: 30px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); transition: 180ms; }
+.bk-app .reader-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+.bk-app .reader-name { display: block; margin-top: 17px; padding: 0; background: none; text-align: left; }
+.bk-app .reader-name h3 { margin: 0; }
+.bk-app .reader-name span { color: var(--muted); font-size: 11px; }
+.bk-app .reader-card > p { min-height: 65px; margin: 17px 0; color: var(--muted); font-size: 12px; }
+.bk-app .reader-card > div:not(.reader-name) { display: flex; gap: 20px; margin-bottom: 20px; color: var(--muted); font-size: 10px; }
+.bk-app .reader-card > div strong { color: var(--forest); }
+.bk-app .reader-card > .button { width: 100%; }
+.bk-app .community-note { padding: clamp(40px, 7vw, 85px); border-radius: var(--radius-lg); background: var(--forest); color: white; }
+.bk-app .community-note .eyebrow, .bk-app .community-note h2 { color: white; }
+.bk-app .community-note > div { display: grid; grid-template-columns: repeat(3,1fr); gap: 35px; margin-top: 45px; }
+.bk-app .community-note p { margin: 0; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.2); }
+.bk-app .community-note strong, .bk-app .community-note span { display: block; }
+.bk-app .community-note span { margin-top: 8px; color: #c8d9d3; font-size: 12px; }
+.bk-app .feed-layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; align-items: start; gap: 60px; }
+.bk-app .feed-card { margin-bottom: 18px; padding: 0 28px 22px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
+.bk-app .feed-card .activity { margin-bottom: 22px; }
+.bk-app .feed-book, .bk-app .finished-book { display: grid; grid-template-columns: 135px 1fr; align-items: center; gap: 25px; padding: 22px; border-radius: var(--radius-sm); background: var(--sage); }
+.bk-app .feed-book h3, .bk-app .finished-book h3 { font-size: 23px; }
+.bk-app .feed-book p, .bk-app .finished-book p { color: var(--muted); font-size: 13px; }
+.bk-app .feed-actions { display: flex; gap: 22px; margin-top: 18px; }
+.bk-app .feed-actions button { padding: 0; background: transparent; color: var(--muted); font-size: 11px; }
+.bk-app .feed-actions button.liked { color: var(--terracotta-dark); }
+.bk-app .quote-feed blockquote { margin: 30px 6%; color: var(--forest); font-family: "Lora:Italic"; font-size: 29px; line-height: 1.45; }
+.bk-app .quote-feed > p { margin: 0 6%; color: var(--muted); font-size: 11px; }
+.bk-app .suggested { position: sticky; top: 105px; padding: 27px; border-radius: var(--radius); background: var(--sage); }
+.bk-app .suggested .section-heading { margin-bottom: 10px; }
+.bk-app .suggested .section-heading h2 { font-size: 27px; }
+.bk-app .suggested-reader { display: flex; align-items: center; gap: 10px; padding: 15px 0; border-bottom: 1px solid rgba(24,61,53,.12); }
+.bk-app .suggested-reader > button:not(.button) { min-width: 0; flex: 1; padding: 0; background: none; text-align: left; }
+.bk-app .suggested-reader strong, .bk-app .suggested-reader span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .suggested-reader strong { color: var(--forest); font-size: 11px; }
+.bk-app .suggested-reader span { color: var(--muted); font-size: 9px; }
+.bk-app .suggested-reader .button { min-height: auto; }
+.bk-app .suggested > .button { width: 100%; margin-top: 20px; }
+.bk-app .messages-page { padding-bottom: 40px; }
+.bk-app .messenger { display: grid; height: min(680px, calc(100dvh - 230px)); min-height: 520px; grid-template-columns: 340px 1fr; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--white); }
+.bk-app .messenger > aside { overflow-y: auto; padding: 20px; border-right: 1px solid var(--line); }
+.bk-app .messenger > aside .field { margin-bottom: 20px; }
+.bk-app .messenger > aside > button { display: flex; width: 100%; align-items: center; gap: 11px; padding: 13px 10px; border-radius: var(--radius-sm); background: none; text-align: left; }
+.bk-app .messenger > aside > button.active { background: var(--sage); }
+.bk-app .messenger > aside > button > span { min-width: 0; flex: 1; }
+.bk-app .messenger > aside strong, .bk-app .messenger > aside small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-app .messenger > aside strong { color: var(--forest); font-size: 12px; }
+.bk-app .messenger > aside small { color: var(--muted); font-size: 10px; }
+.bk-app .messenger > aside button > i { width: 7px; height: 7px; border-radius: 50%; background: var(--terracotta); }
+.bk-app .conversation { display: grid; min-width: 0; grid-template-rows: auto 1fr auto; }
+.bk-app .conversation > header { display: flex; align-items: center; gap: 11px; padding: 17px 22px; border-bottom: 1px solid var(--line); }
+.bk-app .conversation > header strong, .bk-app .conversation > header span { display: block; }
+.bk-app .conversation > header strong { color: var(--forest); font-size: 12px; }
+.bk-app .conversation > header span { color: var(--muted); font-size: 9px; }
+.bk-app .messages { display: flex; overflow-y: auto; flex-direction: column; align-items: flex-start; gap: 10px; padding: 25px; background: linear-gradient(rgba(248,246,240,.78),rgba(248,246,240,.78)), radial-gradient(var(--line) 1px, transparent 1px); background-size: auto, 18px 18px; }
+.bk-app .day-label { align-self: center; color: var(--muted); font-size: 9px; }
+.bk-app .bubble { max-width: min(70%, 520px); margin: 0; padding: 12px 15px; border-radius: 5px 15px 15px 15px; background: white; box-shadow: 0 4px 14px rgba(24,61,53,.06); font-size: 12px; }
+.bk-app .bubble.outgoing { align-self: flex-end; border-radius: 15px 5px 15px 15px; background: var(--forest); color: white; }
+.bk-app .conversation > form { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--line); }
+.bk-app .conversation > form input { min-width: 0; flex: 1; padding: 0 15px; border: 1px solid var(--line); border-radius: 99px; outline: 0; }
+.bk-app .conversation > form button { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 50%; background: var(--forest); color: white; }
+.bk-app .message-note { text-align: center; }
+.bk-app .app-footer { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 30px; padding: 34px clamp(24px, 5vw, 80px); border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+.bk-app .app-footer p { margin: 0; color: var(--forest); font-family: var(--font-editorial); font-size: 15px; }
+.bk-app .app-footer > span { justify-self: end; }
+.bk-app .footer-logo span { font-size: 21px; }
+.bk-app .footer-logo img { width: 20px; height: 20px; }
+@media (max-width: 1080px) {
+.bk-app .nav { position: fixed; top: 76px; right: 0; left: 0; display: none; height: auto; flex-direction: column; align-items: stretch; gap: 0; padding: 15px 24px 25px; border-bottom: 1px solid var(--line); background: var(--cream); box-shadow: var(--shadow); }
+.bk-app .nav-open { display: flex; }
+.bk-app .nav button { height: 48px; border-bottom: 1px solid var(--line); text-align: left; }
+.bk-app .nav button::after { display: none; }
+.bk-app .menu-button { display: grid; }
+.bk-app .dashboard-grid { grid-template-columns: 1.4fr .7fr; }
+.bk-app .book-row, .bk-app .book-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.bk-app .loading-books { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.bk-app .loading-readers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bk-app .book-row .book-card:nth-child(5) { display: none; }
+.bk-app .shelf-overview { grid-template-columns: repeat(3, 1fr); }
+.bk-app .reader-grid { grid-template-columns: repeat(2,1fr); }
+.bk-app .profile-layout { grid-template-columns: 1fr; }
+.bk-app .reading-year { width: 100%; }
+}
+@media (max-width: 780px) {
+.bk-app .topbar { height: 68px; padding: 0 20px; }
+.bk-app .nav { top: 68px; }
+.bk-app .page { width: min(100% - 40px, 680px); padding: 50px 0 72px; }
+.bk-app .dashboard-intro, .bk-app .dashboard-grid, .bk-app .quote-social-grid, .bk-app .detail-hero, .bk-app .detail-content, .bk-app .community-hero, .bk-app .feed-layout { grid-template-columns: 1fr; }
+.bk-app .dashboard-intro { gap: 30px; }
+.bk-app .dashboard-intro .heading-line { display: inline; }
+.bk-app .dashboard-intro .heading-line + .heading-line::before { content: " "; }
+.bk-app .dashboard-grid { gap: 14px; }
+.bk-app .challenge { min-height: 380px; }
+.bk-app .library-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 0; }
+.bk-app .library-strip > div { padding: 5px 18px; }
+.bk-app .library-strip > div:nth-child(2) { border-right: 0; }
+.bk-app .library-strip .button { grid-column: 1 / -1; justify-self: start; margin: 0; }
+.bk-app .book-row, .bk-app .book-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bk-app .loading-books { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bk-app .book-row .book-card:nth-child(4) { display: none; }
+.bk-app .page-hero { margin-top: -50px; padding-top: 55px; }
+.bk-app .detail-hero { gap: 50px; padding: 0 0 50px; }
+.bk-app .detail-copy { text-align: center; }
+.bk-app .rating-line, .bk-app .genre-list, .bk-app .detail-actions { justify-content: center; }
+.bk-app .lead { text-align: left; }
+.bk-app .profile-hero { margin-top: -50px; }
+.bk-app .profile-main { grid-template-columns: auto 1fr; }
+.bk-app .profile-copy { padding-top: 90px; }
+.bk-app .profile-action { grid-column: 1 / -1; }
+.bk-app .profile-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.bk-app .profile-shelves { grid-template-columns: 1fr 1fr; }
+.bk-app .community-hero { margin-top: -50px; padding: 0; }
+.bk-app .community-hero > div { padding: 55px 20px; }
+.bk-app .community-hero img { min-height: 360px; }
+.bk-app .suggested { position: static; }
+.bk-app .messenger { grid-template-columns: 250px 1fr; }
+.bk-app .app-footer { grid-template-columns: 1fr 1fr; }
+.bk-app .app-footer p { display: none; }
+}
+@media (max-width: 540px) {
+.bk-app { font-size: 14px; }
+.bk-app h1 { font-size: 42px; }
+.bk-app .logo span { font-size: 23px; }
+.bk-app .page { width: calc(100% - 32px); padding-top: 40px; }
+.bk-app .page > section + section { margin-top: 70px; }
+.bk-app .section-heading { align-items: flex-start; }
+.bk-app .section-heading > .button { display: none; }
+.bk-app .current-book { grid-template-columns: 100px 1fr; gap: 20px; }
+.bk-app .current-book .book-cover { width: 100px; }
+.bk-app .current-book h3 { font-size: 21px; }
+.bk-app .current-book > div > p:not(.book-genre) { display: none; }
+.bk-app .reading-now { padding: 24px 18px; }
+.bk-app .library-strip { padding: 18px; }
+.bk-app .library-strip > div { min-width: 0; }
+.bk-app .book-row, .bk-app .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 14px; }
+.bk-app .book-row .book-card:nth-child(4) { display: block; }
+.bk-app .book-cover strong { font-size: 15px; }
+.bk-app .quote-card, .bk-app .social-preview { padding: 25px; }
+.bk-app .page-hero { margin-bottom: 40px; padding-right: 16px; padding-left: 16px; }
+.bk-app .page-hero .heading-line, .bk-app .community-hero .heading-line { display: inline; }
+.bk-app .page-hero .heading-line + .heading-line::before, .bk-app .community-hero .heading-line + .heading-line::before { content: " "; }
+.bk-app .filter-row { align-items: flex-start; flex-direction: column; }
+.bk-app .chips { flex-wrap: nowrap; width: 100%; max-width: 100%; overflow-x: auto; padding-bottom: 8px; }
+.bk-app .chips button { white-space: nowrap; }
+.bk-app .book-grid { row-gap: 35px; }
+.bk-app .loading-books { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 14px; }
+.bk-app .loading-readers { grid-template-columns: 1fr; }
+.bk-app .book-meta h3 { font-size: 15px; }
+.bk-app .detail-hero { padding: 0 0 45px; }
+.bk-app .detail-copy { text-align: left; }
+.bk-app .rating-line, .bk-app .genre-list, .bk-app .detail-actions { justify-content: flex-start; }
+.bk-app .rating-line { flex-wrap: wrap; gap: 10px 18px; }
+.bk-app .detail-actions { align-items: stretch; flex-direction: column; }
+.bk-app .detail-actions select { width: 100%; }
+.bk-app .author-card { padding: 25px; }
+.bk-app .page-heading-row { align-items: flex-start; flex-direction: column; margin-bottom: 45px; }
+.bk-app .shelf-overview { display: flex; width: 100%; max-width: 100%; overflow-x: auto; padding: 4px 0 18px; }
+.bk-app .shelf-card { min-width: 180px; }
+.bk-app .section-heading:has(.shelf-actions) { align-items: flex-start; flex-direction: column; }
+.bk-app .shelf-actions { width: 100%; gap: 14px; }
+.bk-app .shelf-books { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.bk-app .profile-pattern { height: 170px; }
+.bk-app .profile-main { display: flex; align-items: flex-start; flex-direction: column; gap: 15px; margin-top: -62px; }
+.bk-app .avatar-hero { width: 125px; height: 125px; }
+.bk-app .profile-copy { padding-top: 0; }
+.bk-app .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.bk-app .profile-shelves { grid-template-columns: 1fr; }
+.bk-app .reader-grid { grid-template-columns: 1fr; }
+.bk-app .community-note > div { grid-template-columns: 1fr; }
+.bk-app .feed-card { padding: 0 18px 18px; }
+.bk-app .feed-book, .bk-app .finished-book { grid-template-columns: 85px 1fr; gap: 15px; padding: 16px; }
+.bk-app .quote-feed blockquote { margin: 24px 0; font-size: 23px; }
+.bk-app .quote-feed > p { margin: 0; }
+.bk-app .messenger { height: auto; min-height: 0; grid-template-columns: 1fr; }
+.bk-app .messenger > aside { display: flex; overflow-x: auto; gap: 7px; border-right: 0; border-bottom: 1px solid var(--line); }
+.bk-app .messenger > aside .field { display: none; }
+.bk-app .messenger > aside > button { width: auto; min-width: 55px; flex-direction: column; padding: 8px; }
+.bk-app .messenger > aside > button > span, .bk-app .messenger > aside button > i { display: none; }
+.bk-app .conversation { min-height: 520px; }
+.bk-app .bubble { max-width: 85%; }
+.bk-app .app-footer { padding: 28px 20px; }
+.bk-app .app-footer > span { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+.bk-app * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+
+/* ---------------------------------------------------------------------------------------------------
+   Bookla: adaptations for real data and real navigation (not in the Make file).
+   --------------------------------------------------------------------------------------------------- */
+.bk-app a { color: inherit; }
+.bk-app .logo { text-decoration: none; }
+/* Navigation uses links instead of the Make buttons; same look. */
+.bk-app .nav a { position: relative; display: flex; height: 100%; align-items: center; gap: 6px; padding: 0; color: var(--muted); font-size: 12px; text-decoration: none; white-space: nowrap; }
+.bk-app .nav a::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--terracotta); content: ""; opacity: 0; transform: scaleX(0.2); transition: 180ms; }
+.bk-app .nav a.active { color: var(--forest); font-family: var(--font-semibold); }
+.bk-app .nav a.active::after { opacity: 1; transform: scaleX(1); }
+.bk-app .nav-badge { display: inline-grid; min-width: 17px; height: 17px; place-items: center; padding: 0 5px; border-radius: 99px; background: var(--terracotta-dark); color: white; font-family: var(--font-semibold); font-size: 9px; }
+.bk-app .notification-button > b { position: absolute; top: 3px; right: 1px; display: grid; min-width: 17px; height: 17px; place-items: center; padding: 0 4px; border: 2px solid var(--cream); border-radius: 99px; background: var(--terracotta-dark); color: white; font-family: var(--font-semibold); font-size: 9px; font-weight: 400; line-height: 1; }
+.bk-app .notification-panel { z-index: 60; max-height: min(560px, calc(100dvh - 96px)); overflow-y: auto; }
+.bk-app .notice-main { display: flex; min-width: 0; flex: 1; align-items: center; gap: 12px; padding: 0; background: none; text-align: left; }
+.bk-app .notice-main > p { min-width: 0; flex: 1; margin: 0; font-size: 13px; line-height: 1.4; }
+.bk-app .notice:hover { background: var(--sand); }
+.bk-app .notice.unread:hover { background: #d3dfd3; }
+.bk-app .notification-panel .panel-more { width: 100%; }
+.bk-app .notice-remove { display: grid; width: 28px; height: 28px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: none; color: var(--muted); }
+.bk-app .notice-remove:hover { background: rgba(24, 61, 53, .08); color: var(--forest); }
+.bk-app .panel-empty { padding: 26px 0 10px; color: var(--muted); font-size: 13px; text-align: center; }
+.bk-app .account-panel { position: absolute; z-index: 60; top: 66px; right: clamp(20px, 5vw, 80px); width: 250px; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); box-shadow: var(--shadow); }
+.bk-app .account-panel > p { margin: 4px 10px 8px; color: var(--forest); font-family: var(--font-semibold); font-size: 13px; }
+.bk-app .account-panel > p span { display: block; color: var(--muted); font-family: var(--font-ui); font-size: 11px; }
+.bk-app .account-panel a, .bk-app .account-panel button { display: flex; width: 100%; align-items: center; gap: 10px; padding: 10px; border-radius: var(--radius-sm); background: none; color: var(--forest); font-size: 13px; text-align: left; text-decoration: none; }
+.bk-app .account-panel a:hover, .bk-app .account-panel button:hover { background: var(--sand); }
+.bk-app .account-panel hr { margin: 6px 0; border: 0; border-top: 1px solid var(--line); }
+/* Real cover images inside the Make cover frame. */
+.bk-app .book-cover.has-image { padding: 0; background: var(--sand); }
+.bk-app .book-cover.has-image::after { display: none; }
+.bk-app .book-cover.has-image::before { z-index: 1; }
+.bk-app .book-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bk-app .book-card-link { display: block; color: inherit; text-decoration: none; }
+.bk-app .book-card-link:hover .book-cover { transform: translateY(-7px) rotate(.3deg); box-shadow: 0 22px 40px rgba(24, 61, 53, .18), -8px 8px 0 rgba(24,61,53,.06); }
+.bk-app .book-card:hover .book-cover { transform: none; }
+.bk-app .book-card:has(.book-card-link:hover) .book-cover { transform: translateY(-7px) rotate(.3deg); }
+/* People without a profile photo. */
+.bk-app .avatar-initials { display: inline-grid; place-items: center; background: var(--sage); color: var(--forest); font-family: var(--font-editorial-semibold); font-size: 13px; }
+.bk-app .avatar-medium.avatar-initials { font-size: 16px; }
+.bk-app .avatar-large.avatar-initials { font-size: 26px; }
+.bk-app .avatar-hero.avatar-initials { font-size: 46px; }
+.bk-app .activity-name { color: var(--forest); font-family: var(--font-semibold); text-decoration: none; }
+.bk-app .activity-name:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bk-app .pagination button:disabled { opacity: .35; }
+.bk-app .empty-state p { margin-bottom: 24px; } /* Bookla: Make leaves no gap between the text and the action button. */
+.bk-app .form-error { margin: 8px 0 0; color: var(--danger); font-size: 12px; }
+.bk-app .modal .form-error { padding: 12px 14px; border-radius: 9px; background: #f6e5df; }
+@media (max-width: 540px) {
+  .bk-app .modal-actions { flex-wrap: wrap; }
+  .bk-app .modal-actions .button { flex: 1 1 auto; }
+}
+@media (max-width: 1080px) {
+  .bk-app .nav a { height: 48px; border-bottom: 1px solid var(--line); }
+  .bk-app .nav a::after { display: none; }
+}

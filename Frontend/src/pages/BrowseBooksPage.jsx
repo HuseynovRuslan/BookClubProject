@@ -1,250 +1,156 @@
-﻿import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BookOpen, ChevronLeft, ChevronRight, Loader, ArrowLeft, Search } from 'lucide-react';
+import { toast } from 'react-toastify';
 import BookCard from '../components/BookCard';
 import { getAllBooks } from '../api/books';
-import { toast } from 'react-toastify';
+import { Button, EmptyState, Eyebrow, LoadingState, Pagination, SearchField } from '../components/app/ui';
+import '../styles/app/books.css';
+
+const pageSize = 12;
 
 const BrowseBooksPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const urlQuery = (searchParams.get('search') || '').trim();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const pageSize = 12;
+  // What the search field shows; the server search always uses the ?search= value from the URL.
+  const [searchQuery, setSearchQuery] = useState(urlQuery);
+  const requestRef = useRef(0);
 
-  // Read search query from URL
+  // Read search query from URL (also when it changes from outside, e.g. back/forward)
   useEffect(() => {
-    const search = searchParams.get('search') || '';
-    setSearchQuery(search);
+    setSearchQuery((current) => (current.trim() === urlQuery ? current : urlQuery));
     setCurrentPage(1); // Reset to first page when search changes
-  }, [searchParams]);
+  }, [urlQuery]);
 
-  useEffect(() => {
-    fetchBooks(currentPage, searchQuery);
-  }, [currentPage, searchQuery]);
-
-  const fetchBooks = async (page, query = '') => {
+  const fetchBooks = useCallback(async (page, query = '') => {
+    const requestId = ++requestRef.current;
     try {
       setLoading(true);
+      setLoadError(false);
       const response = await getAllBooks(page, pageSize, query || null);
-      
+      if (requestId !== requestRef.current) return; // a newer search already replaced this one
+
       setBooks(response.items || []);
       setTotalPages(response.totalPages || 1);
       setTotalCount(response.totalCount || 0);
     } catch (error) {
+      if (requestId !== requestRef.current) return;
       console.error('Error fetching books:', error);
-      toast.error('Failed to load books. Please try again.');
+      setLoadError(true);
+      toast.error('Kitablar yüklənmədi. Yenidən cəhd et.');
     } finally {
-      setLoading(false);
+      if (requestId === requestRef.current) setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchBooks(currentPage, urlQuery);
+  }, [currentPage, urlQuery, fetchBooks]);
+
+  const handleSearchChange = (value) => {
+    setSearchQuery(value);
+    // Update URL without page reload
+    const params = new URLSearchParams(searchParams);
+    if (value.trim()) {
+      params.set('search', value.trim());
+    } else {
+      params.delete('search');
+    }
+    const search = params.toString();
+    navigate(`/books${search ? `?${search}` : ''}`, { replace: true });
+    setCurrentPage(1); // Reset to first page on search
   };
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+  const goToPage = (page) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
+  const firstShown = (currentPage - 1) * pageSize + 1;
+  const lastShown = Math.min(currentPage * pageSize, totalCount);
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      {/* Header */}
-      <div className="bg-white border-b border-stone-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-          {/* Back Button */}
-          <button
-            onClick={() => navigate('/')}
-            className="group inline-flex items-center gap-2 text-stone-500 hover:text-stone-800 transition-colors mb-6"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-medium">Back to Home</span>
-          </button>
+    <div className="page books-page">
+      <header className="page-hero books-hero">
+        <Eyebrow>KİTAB KƏŞFİ</Eyebrow>
+        <h1>
+          <span className="heading-line">Yeni dünyalara</span>
+          <span className="heading-line">açılan rəflər.</span>
+        </h1>
+        <p>Azərbaycan və dünya ədəbiyyatından seçilmiş hekayələri kəşf et.</p>
+        <form onSubmit={(event) => event.preventDefault()} role="search">
+          <SearchField
+            label="Kitab axtar"
+            large
+            onChange={handleSearchChange}
+            placeholder="Kitab, müəllif və ya janr axtar..."
+            type="search"
+            value={searchQuery}
+          />
+        </form>
+      </header>
 
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-stone-900 rounded-xl flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-stone-900">Browse Books</h1>
-              <p className="text-stone-500 text-sm mt-0.5">
-                Discover your next great read
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSearchQuery(value);
-                // Update URL without page reload
-                const params = new URLSearchParams(searchParams);
-                if (value.trim()) {
-                  params.set('search', value.trim());
-                } else {
-                  params.delete('search');
-                }
-                navigate(`/books?${params.toString()}`, { replace: true });
-                setCurrentPage(1); // Reset to first page on search
-              }}
-              placeholder="Search books by title, author, or genre..."
-              className="w-full pl-12 pr-4 py-3.5 bg-white border border-stone-200 rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition-all"
-            />
-          </div>
-        </div>
-
-        {/* Stats Bar */}
-        {!loading && (
-          <div className="mb-6 flex items-center justify-between">
-            <p className="text-stone-600 text-sm">
-              {searchQuery ? (
+      <div className="filter-row">
+        <p aria-live="polite" className="results-summary">
+          {loading ? (
+            'Kitablar yüklənir...'
+          ) : loadError || books.length === 0 ? (
+            ''
+          ) : (
+            <>
+              {urlQuery ? (
                 <>
-                  Found <span className="font-medium text-stone-900">{totalCount}</span> book{totalCount !== 1 ? 's' : ''} matching "{searchQuery}"
+                  “<strong>{urlQuery}</strong>” üzrə {totalCount} kitab tapıldı
                 </>
               ) : (
                 <>
-                  Showing{' '}
-                  <span className="font-medium text-stone-900">
-                    {(currentPage - 1) * pageSize + 1}
-                  </span>
-                  {' – '}
-                  <span className="font-medium text-stone-900">
-                    {Math.min(currentPage * pageSize, totalCount)}
-                  </span>
-                  {' of '}
-                  <span className="font-medium text-stone-900">{totalCount}</span> books
+                  <strong>
+                    {firstShown}–{lastShown}
+                  </strong>{' '}
+                  arası göstərilir
                 </>
               )}
-            </p>
-            <p className="text-sm text-stone-500">
-              Page {currentPage} of {totalPages}
-            </p>
-          </div>
-        )}
+              {' · '}Səhifə {currentPage} / {totalPages}
+            </>
+          )}
+        </p>
+        {!loading && !loadError && books.length > 0 && <span>{totalCount} nəticə</span>}
+      </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="relative mb-4">
-              <div className="w-12 h-12 border-4 border-stone-200 rounded-full"></div>
-              <div className="w-12 h-12 border-4 border-stone-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
-            </div>
-            <p className="text-stone-500">Loading books...</p>
-          </div>
-        )}
-
-        {/* Books Grid */}
-        {!loading && books.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+      {loading ? (
+        <LoadingState count={10} />
+      ) : loadError ? (
+        <EmptyState
+          action={<Button onClick={() => fetchBooks(currentPage, urlQuery)}>Yenidən cəhd et</Button>}
+          text="Bağlantını yoxlayıb yenidən cəhd et."
+          title="Kitablar yüklənmədi"
+        />
+      ) : books.length > 0 ? (
+        <>
+          <h2 className="sr-only">Kitablar</h2>
+          <div className="book-grid">
             {books.map((book) => (
-              <BookCard key={book.id} book={book} />
+              <BookCard book={book} key={book.id} />
             ))}
           </div>
-        )}
-
-        {/* Empty State */}
-        {!loading && books.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mb-4">
-              <BookOpen className="w-10 h-10 text-stone-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-stone-900 mb-2">No books found</h3>
-            <p className="text-stone-500">Try adjusting your search or filters</p>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {!loading && books.length > 0 && (
-          <div className="mt-12 flex items-center justify-center gap-3">
-            <button
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-              className={`
-                flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm
-                transition-colors
-                ${
-                  currentPage === 1
-                    ? 'bg-stone-100 text-stone-400 cursor-not-allowed'
-                    : 'bg-white text-stone-700 border border-stone-200 hover:border-stone-300 hover:bg-stone-50'
-                }
-              `}
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
-            </button>
-
-            {/* Page Numbers */}
-            <div className="hidden sm:flex items-center gap-1">
-              {[...Array(Math.min(5, totalPages))].map((_, index) => {
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = index + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = index + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + index;
-                } else {
-                  pageNum = currentPage - 2 + index;
-                }
-
-                return (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`
-                      w-10 h-10 rounded-lg font-medium text-sm transition-colors
-                      ${
-                        currentPage === pageNum
-                          ? 'bg-stone-900 text-white'
-                          : 'bg-white text-stone-700 border border-stone-200 hover:border-stone-300 hover:bg-stone-50'
-                      }
-                    `}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              className={`
-                flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm
-                transition-colors
-                ${
-                  currentPage === totalPages
-                    ? 'bg-stone-100 text-stone-400 cursor-not-allowed'
-                    : 'bg-stone-900 text-white hover:bg-stone-800'
-                }
-              `}
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-      </div>
+          <Pagination onChange={goToPage} page={currentPage} totalPages={totalPages} />
+        </>
+      ) : urlQuery ? (
+        <EmptyState
+          action={<Button onClick={() => handleSearchChange('')}>Axtarışı təmizlə</Button>}
+          text="Başqa söz və ya müəllif adı ilə yenidən axtar."
+          title="Bu axtarışa uyğun kitab tapılmadı"
+        />
+      ) : (
+        <EmptyState text="Kitablar əlavə olunduqca burada görünəcək." title="Kataloqda hələ kitab yoxdur" />
+      )}
     </div>
   );
 };

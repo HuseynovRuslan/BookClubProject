@@ -1,49 +1,16 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Quote,
-  Heart,
-  Pencil,
-  Trash2,
-  BookOpen,
-  User,
-  Loader2,
-  AlertTriangle,
-  X
-} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { deleteQuote, toggleQuoteLike } from '../api/quotes';
 import { toast } from 'react-toastify';
+import { Avatar, Button, Dialog, Eyebrow, Icon } from './app/ui';
+import { displayName, timeAgo } from './app/format';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
-
-// Helper to get profile picture URL
-const getProfilePictureUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url}`;
-};
-
-// Helper to get book cover URL
-const getBookCoverUrl = (book) => {
-  if (!book) return null;
-
-  const isbn = book.isbn || book.ISBN;
-  if (isbn) {
-    const cleanISBN = isbn.replace(/[-\s]/g, '');
-    return `https://covers.openlibrary.org/b/isbn/${cleanISBN}-S.jpg`;
-  }
-
-  if (book.coverImageUrl) {
-    if (book.coverImageUrl.startsWith('http')) return book.coverImageUrl;
-    return `${BASE_URL}${book.coverImageUrl.startsWith('/') ? '' : '/'}${book.coverImageUrl}`;
-  }
-
-  return null;
-};
+const LONG_QUOTE = 160;
 
 /**
- * QuoteCard - Displays a single quote with optional edit/delete actions
+ * QuoteCard - One quote in the Make "quote-card" style: the quote, its book, who shared it, like and
+ * (for the owner) edit/delete actions. Rendered inside the rose `.quote-card` panel of the dashboard.
  * @param {object} quote - Quote data from API
  * @param {function} onEdit - Callback when edit is clicked
  * @param {function} onDelete - Callback when quote is deleted (to refresh list)
@@ -61,7 +28,7 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
 
   const handleToggleLike = async () => {
     if (!isAuthenticated) {
-      toast.info('Please login to like quotes');
+      toast.info('Sitatı bəyənmək üçün daxil ol.');
       return;
     }
 
@@ -69,9 +36,9 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
     try {
       const newLikedState = await toggleQuoteLike(quote.id);
       setIsLiked(newLikedState);
-      setLikesCount(prev => newLikedState ? prev + 1 : prev - 1);
-    } catch (error) {
-      toast.error('Failed to update like');
+      setLikesCount((prev) => (newLikedState ? prev + 1 : prev - 1));
+    } catch {
+      toast.error('Bəyənməni yeniləmək alınmadı.');
     } finally {
       setLikeLoading(false);
     }
@@ -81,203 +48,100 @@ const QuoteCard = ({ quote, onEdit, onDelete }) => {
     setDeleting(true);
     try {
       await deleteQuote(quote.id);
-      toast.success('Quote deleted successfully');
+      toast.success('Sitat silindi.');
       setShowDeleteConfirm(false);
       if (onDelete) onDelete();
-    } catch (error) {
-      toast.error('Failed to delete quote');
+    } catch {
+      toast.error('Sitatı silmək alınmadı.');
     } finally {
       setDeleting(false);
     }
   };
 
-  const userName = quote.user?.firstName
-    ? `${quote.user.firstName} ${quote.user.lastName || ''}`.trim()
-    : quote.user?.userName || 'Anonymous';
-
-  const bookTitle = quote.book?.title || 'Unknown Book';
+  const userName = quote.user ? displayName(quote.user) : 'Anonim oxucu';
+  const profilePath = quote.user ? `/profile/${quote.user.username || quote.user.userName || quote.createdByUserId}` : null;
+  const bookTitle = quote.book?.title || 'Naməlum kitab';
   const authorName = quote.book?.authorName || quote.book?.author?.name || '';
+  const text = quote.text || '';
 
   return (
     <>
-      <div className="group relative bg-white rounded-xl border border-stone-200 p-5 hover:shadow-md hover:border-stone-300 transition-all">
-        {/* Owner Actions - Edit & Delete (visible on hover) */}
-        {isOwner && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => onEdit && onEdit(quote)}
-              className="p-1.5 bg-stone-100 hover:bg-amber-100 rounded-lg transition-colors"
-              title="Edit quote"
-            >
-              <Pencil className="w-3.5 h-3.5 text-stone-600 hover:text-amber-600" />
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-1.5 bg-stone-100 hover:bg-red-100 rounded-lg transition-colors"
-              title="Delete quote"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-stone-600 hover:text-red-600" />
-            </button>
-          </div>
-        )}
+      <blockquote className={text.length > LONG_QUOTE ? 'is-long' : ''}>“{text}”</blockquote>
+      <p className="quote-source">
+        {authorName && <>{authorName} · </>}
+        <Link to={`/books/${quote.bookId}`}>{bookTitle}</Link>
+      </p>
 
-        {/* Quote Icon */}
-        <div className="absolute -top-2 -left-2 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-          <Quote className="w-4 h-4 text-amber-600" />
+      {quote.tags && quote.tags.length > 0 && (
+        <ul aria-label="Teqlər" className="quote-tags">
+          {quote.tags.slice(0, 3).map((tag, idx) => (
+            <li key={idx}>#{tag}</li>
+          ))}
+          {quote.tags.length > 3 && <li>+{quote.tags.length - 3}</li>}
+        </ul>
+      )}
+
+      <div className="quote-meta">
+        <div className="quote-by">
+          <Avatar name={userName} size="small" src={quote.user?.profilePictureUrl} />
+          <span>
+            {profilePath ? <Link to={profilePath}>{userName}</Link> : <strong>{userName}</strong>}
+            {quote.createdAt && <small>{timeAgo(quote.createdAt)} paylaşdı</small>}
+          </span>
         </div>
-
-        {/* Quote Text */}
-        <blockquote className="mt-2 mb-4 text-stone-700 font-serif italic text-lg leading-relaxed line-clamp-4">
-          "{quote.text}"
-        </blockquote>
-
-        {/* Book Info */}
-        <div className="flex items-center gap-3 mb-4 p-2.5 bg-stone-50 rounded-lg">
-          <div className="w-10 h-14 bg-stone-200 rounded-lg overflow-hidden shrink-0">
-            {getBookCoverUrl(quote.book) ? (
-              <img
-                src={getBookCoverUrl(quote.book)}
-                alt={bookTitle}
-                loading="lazy"
-                className="w-full h-full object-cover"
-                onError={(e) => e.target.style.display = 'none'}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-stone-400" />
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <Link
-              to={`/books/${quote.bookId}`}
-              className="font-medium text-stone-900 hover:text-amber-600 truncate block text-sm transition-colors"
-            >
-              {bookTitle}
-            </Link>
-            {authorName && (
-              <p className="text-xs text-stone-500 truncate">{authorName}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Tags */}
-        {quote.tags && quote.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {quote.tags.slice(0, 3).map((tag, idx) => (
-              <span
-                key={idx}
-                className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs font-medium rounded-full"
-              >
-                #{tag}
-              </span>
-            ))}
-            {quote.tags.length > 3 && (
-              <span className="px-2 py-0.5 text-stone-400 text-xs">
-                +{quote.tags.length - 3} more
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Footer: User Info & Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-stone-100">
-          {/* User Info */}
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-stone-200 overflow-hidden flex items-center justify-center">
-              {quote.user?.profilePictureUrl ? (
-                <img
-                  src={getProfilePictureUrl(quote.user.profilePictureUrl)}
-                  alt={userName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-4 h-4 text-stone-400" />
-              )}
-            </div>
-            <div>
-              <p className="text-xs font-medium text-stone-700">{userName}</p>
-              <p className="text-[10px] text-stone-400">
-                {quote.createdAt
-                  ? new Date(quote.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })
-                  : ''}
-              </p>
-            </div>
-          </div>
-
-          {/* Like Button */}
+        <div className="quote-actions">
           <button
-            onClick={handleToggleLike}
+            aria-label={isLiked ? `Bəyənməni geri al (${likesCount})` : `Bəyən (${likesCount})`}
+            aria-pressed={isLiked}
+            className="quote-action"
             disabled={likeLoading}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all ${isLiked
-                ? 'bg-red-50 text-red-600'
-                : 'bg-stone-50 text-stone-500 hover:bg-stone-100'
-              }`}
+            onClick={handleToggleLike}
+            type="button"
           >
-            {likeLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            )}
-            <span className="text-xs font-medium">{likesCount}</span>
+            <Icon name="heart" size={16} />
+            <span aria-hidden="true">{likesCount}</span>
           </button>
+          {isOwner && (
+            <>
+              <button
+                aria-label="Sitatı redaktə et"
+                className="quote-action icon-only"
+                onClick={() => onEdit && onEdit(quote)}
+                title="Redaktə et"
+                type="button"
+              >
+                <Icon name="edit" size={16} />
+              </button>
+              <button
+                aria-label="Sitatı sil"
+                className="quote-action icon-only"
+                onClick={() => setShowDeleteConfirm(true)}
+                title="Sil"
+                type="button"
+              >
+                <Icon name="trash" size={16} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete confirmation */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => !deleting && setShowDeleteConfirm(false)}
-          />
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-stone-900">Delete Quote</h3>
-                <p className="text-sm text-stone-500">This action cannot be undone</p>
-              </div>
-            </div>
-
-            <p className="text-sm text-stone-600 mb-6">
-              Are you sure you want to delete this quote? It will be permanently removed.
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deleting}
-                className="flex-1 px-4 py-2.5 border border-stone-200 text-stone-700 font-medium rounded-lg hover:bg-stone-50 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {deleting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </>
-                )}
-              </button>
-            </div>
+        <Dialog labelledBy={`delete-quote-${quote.id}`} onClose={() => !deleting && setShowDeleteConfirm(false)}>
+          <Eyebrow>Sitatı sil</Eyebrow>
+          <h2 id={`delete-quote-${quote.id}`}>Bu sitat silinsin?</h2>
+          <p>Sitat birdəfəlik silinəcək. Bu əməliyyatı geri qaytarmaq olmur.</p>
+          <div className="modal-actions">
+            <Button disabled={deleting} onClick={() => setShowDeleteConfirm(false)} variant="secondary">
+              Ləğv et
+            </Button>
+            <Button disabled={deleting} onClick={handleDelete} variant="danger">
+              <Icon name="trash" size={16} />
+              {deleting ? 'Silinir…' : 'Sil'}
+            </Button>
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   );
