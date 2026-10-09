@@ -8,7 +8,7 @@ import {
   updateReview,
   deleteReview,
 } from '../api/reviews';
-import { toggleLike, getComments, addComment, updateComment, deleteComment } from '../api/interactions';
+import { getComments, addComment, updateComment, deleteComment } from '../api/interactions';
 import { useAuth } from '../context/AuthContext';
 import { Avatar, Button, ButtonLink, Dialog, EmptyState, Eyebrow, Icon } from './app/ui';
 import { displayName, timeAgo } from './app/format';
@@ -179,9 +179,6 @@ const ReviewSection = ({ bookId, onStatsChange }) => {
       setDeletingReviewId(null);
     }
   };
-
-  const patchReview = (reviewId, changes) =>
-    setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, ...changes(r) } : r)));
 
   // Rating distribution
   const ratingCounts = [5, 4, 3, 2, 1].map((stars) => ({
@@ -370,7 +367,6 @@ const ReviewSection = ({ bookId, onStatsChange }) => {
                     isOwn={isOwn}
                     onDelete={() => setShowDeleteConfirm(review.id)}
                     onEdit={() => handleStartEdit(review)}
-                    onPatch={(changes) => patchReview(review.id, changes)}
                     review={review}
                   />
                 </div>
@@ -405,32 +401,13 @@ const ReviewSection = ({ bookId, onStatsChange }) => {
   );
 };
 
-// Time, likes, comments and (for the author) edit/delete under one review.
-const ReviewFooter = ({ review, isOwn, isEditing, onEdit, onDelete, onPatch }) => {
-  const [likeLoading, setLikeLoading] = useState(false);
+// Time, comments and (for the author) edit/delete under one review.
+// The reviews endpoint returns placeholder like/comment numbers (always 0 / not liked), so the book page
+// shows no like button (likes stay on the feed, where the API reports them) and shows the comment count
+// only once the comments have been loaded.
+const ReviewFooter = ({ review, isOwn, isEditing, onEdit, onDelete }) => {
   const [commentsOpen, setCommentsOpen] = useState(false);
-  const liked = !!review.isLiked;
-  const likesCount = review.likesCount ?? 0;
-  const commentsCount = review.commentsCount ?? 0;
-
-  const handleLike = async () => {
-    if (!review.id || likeLoading) return;
-    // Optimistic update, rolled back on error
-    onPatch(() => ({ isLiked: !liked, likesCount: liked ? Math.max(0, likesCount - 1) : likesCount + 1 }));
-    setLikeLoading(true);
-    try {
-      const response = await toggleLike(review.id, 'Review');
-      if (response && typeof response.isLiked === 'boolean') {
-        const count = response.newCount ?? response.likesCount;
-        onPatch((r) => ({ isLiked: response.isLiked, likesCount: typeof count === 'number' ? count : r.likesCount }));
-      }
-    } catch {
-      onPatch(() => ({ isLiked: liked, likesCount }));
-      toast.error('Bəyənməni yeniləmək alınmadı');
-    } finally {
-      setLikeLoading(false);
-    }
-  };
+  const [commentsCount, setCommentsCount] = useState(null);
 
   const commentsId = `review-comments-${review.id}`;
 
@@ -442,26 +419,15 @@ const ReviewFooter = ({ review, isOwn, isEditing, onEdit, onDelete, onPatch }) =
         </small>
         <div className="review-actions">
           <button
-            aria-label={liked ? 'Bəyənməni geri al' : 'Rəyi bəyən'}
-            aria-pressed={liked}
-            className={`review-action ${liked ? 'is-liked' : ''}`}
-            disabled={likeLoading}
-            onClick={handleLike}
-            type="button"
-          >
-            <Icon name="heart" size={16} />
-            <span>{likesCount}</span>
-          </button>
-          <button
             aria-controls={commentsId}
             aria-expanded={commentsOpen}
-            aria-label={`Şərhlər (${commentsCount})`}
+            aria-label={commentsCount === null ? 'Şərhlər' : `Şərhlər (${commentsCount})`}
             className={`review-action ${commentsOpen ? 'is-open' : ''}`}
             onClick={() => setCommentsOpen((open) => !open)}
             type="button"
           >
             <Icon name="comment" size={16} />
-            <span>{commentsCount}</span>
+            {commentsCount !== null && <span>{commentsCount}</span>}
           </button>
           {isOwn && !isEditing && (
             <>
@@ -478,7 +444,8 @@ const ReviewFooter = ({ review, isOwn, isEditing, onEdit, onDelete, onPatch }) =
       {commentsOpen && (
         <ReviewComments
           id={commentsId}
-          onCountChange={(delta) => onPatch((r) => ({ commentsCount: Math.max(0, (r.commentsCount ?? 0) + delta) }))}
+          onCountChange={(delta) => setCommentsCount((n) => Math.max(0, (n ?? 0) + delta))}
+          onLoaded={setCommentsCount}
           reviewId={review.id}
         />
       )}
@@ -487,7 +454,7 @@ const ReviewFooter = ({ review, isOwn, isEditing, onEdit, onDelete, onPatch }) =
 };
 
 // Comments under a review: list, add, and edit/delete for the comment's author.
-const ReviewComments = ({ id, reviewId, onCountChange }) => {
+const ReviewComments = ({ id, reviewId, onCountChange, onLoaded }) => {
   const { user } = useAuth();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -503,13 +470,15 @@ const ReviewComments = ({ id, reviewId, onCountChange }) => {
     setLoading(true);
     try {
       const response = await getComments(reviewId);
-      setComments(response?.items || response?.data || []);
+      const items = response?.items || response?.data || [];
+      setComments(items);
+      onLoaded(typeof response?.totalCount === 'number' ? response.totalCount : items.length);
     } catch {
       toast.error('Şərhlər yüklənmədi');
     } finally {
       setLoading(false);
     }
-  }, [reviewId]);
+  }, [reviewId, onLoaded]);
 
   useEffect(() => {
     fetchComments();
@@ -522,7 +491,6 @@ const ReviewComments = ({ id, reviewId, onCountChange }) => {
     try {
       await addComment(reviewId, 'Review', newComment.trim());
       setNewComment('');
-      onCountChange(1);
       await fetchComments();
       toast.success('Şərh əlavə edildi');
     } catch {

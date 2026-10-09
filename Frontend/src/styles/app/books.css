@@ -120,8 +120,6 @@
 .bk-app .review-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 2px; }
 .bk-app .review-action { display: inline-flex; min-width: 34px; height: 32px; align-items: center; justify-content: center; gap: 5px; padding: 0 9px; border-radius: 99px; background: none; color: var(--muted); font-size: 12px; }
 .bk-app .review-action:hover, .bk-app .review-action.is-open { background: var(--sand); color: var(--forest); }
-.bk-app .review-action.is-liked { color: var(--terracotta-dark); }
-.bk-app .review-action.is-liked .icon { fill: var(--terracotta); stroke: var(--terracotta-dark); }
 .bk-app .review-action-danger:hover { background: rgba(143, 62, 46, .1); color: var(--danger); }
 
 .bk-app .review-comments { margin-top: 12px; padding: 6px 18px 18px; border-radius: var(--radius-sm); background: var(--sand); }
