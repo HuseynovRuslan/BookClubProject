@@ -2,6 +2,7 @@
 import { AuthProvider } from './context/AuthContext';
 import { SignalRProvider } from './context/SignalRContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AppShell from './components/app/AppShell';
 import EmailVerificationBanner from './components/EmailVerificationBanner';
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
@@ -69,87 +70,26 @@ function App() {
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
 
-              {/* Protected Routes - Require Authentication AND Email Verification */}
+              {/* Protected Routes - Require Authentication AND Email Verification.
+                  The Bookla 2.0 application screens share one header and footer (AppShell). */}
               <Route
-                path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <HomePage />
+                    <AppShell />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/books"
-                element={
-                  <ProtectedRoute>
-                    <BrowseBooksPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/books/:id"
-                element={
-                  <ProtectedRoute>
-                    <BookDetailsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/my-shelves"
-                element={
-                  <ProtectedRoute>
-                    <MyShelvesPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/shelves/:id"
-                element={
-                  <ProtectedRoute>
-                    <ShelfDetailsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile/:identifier"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/messages"
-                element={
-                  <ProtectedRoute>
-                    <ChatPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/feed"
-                element={
-                  <ProtectedRoute>
-                    <SocialFeedPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/community"
-                element={
-                  <ProtectedRoute>
-                    <CommunityPage />
-                  </ProtectedRoute>
-                }
-              />
+              >
+                <Route path="/dashboard" element={<HomePage />} />
+                <Route path="/books" element={<BrowseBooksPage />} />
+                <Route path="/books/:id" element={<BookDetailsPage />} />
+                <Route path="/my-shelves" element={<MyShelvesPage />} />
+                <Route path="/shelves/:id" element={<ShelfDetailsPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/profile/:identifier" element={<ProfilePage />} />
+                <Route path="/messages" element={<ChatPage />} />
+                <Route path="/feed" element={<SocialFeedPage />} />
+                <Route path="/community" element={<CommunityPage />} />
+              </Route>
               <Route
                 path="/ai-recommendations"
                 element={

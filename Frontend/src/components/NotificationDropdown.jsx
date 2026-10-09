@@ -1,57 +1,28 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, X, Check, Loader2, Heart, MessageCircle, UserPlus, Star, BookMarked } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  getNotifications, 
-  getUnreadCount, 
-  markAsRead, 
-  markAllAsRead, 
-  deleteNotification 
+import {
+  getNotifications,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification
 } from '../api/notifications';
+import { Avatar, Button, Icon } from './app/ui';
+import { displayName, timeAgo } from './app/format';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7050';
-
-// Helper to get profile picture URL
-const getProfilePictureUrl = (url) => {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url}`;
+// What the actor did, by notification type (backend NotificationType). Titles from the API are
+// English and contain user-chosen names, so they are only a fallback and always rendered as text.
+const actionText = {
+  1: 'sitatınızı bəyəndi.',
+  2: 'sitatınıza şərh yazdı.',
+  3: 'sizi izləməyə başladı.',
+  5: 'rəyinizi bəyəndi.',
+  6: 'rəyinizə şərh yazdı.',
+  7: 'rəfinə kitab əlavə etdi.',
+  8: 'yeni rəy yazdı.',
 };
 
-// Helper to format relative time
-const formatRelativeTime = (date) => {
-  const now = new Date();
-  const past = new Date(date);
-  const diffInSeconds = Math.floor((now - past) / 1000);
-
-  if (diffInSeconds < 60) return 'just now';
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} mins ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-  return past.toLocaleDateString();
-};
-
-// Get icon for notification type
-const getNotificationIcon = (type) => {
-  switch (type) {
-    case 5: // ReviewLike
-    case 1: // QuoteLike
-      return <Heart className="w-4 h-4 text-red-500" />;
-    case 2: // QuoteComment
-    case 6: // ReviewComment
-      return <MessageCircle className="w-4 h-4 text-blue-500" />;
-    case 3: // UserFollow
-      return <UserPlus className="w-4 h-4 text-green-500" />;
-    case 8: // ReviewCreated
-      return <Star className="w-4 h-4 text-amber-500" />;
-    case 7: // BookAddedToShelf
-      return <BookMarked className="w-4 h-4 text-purple-500" />;
-    default:
-      return <Bell className="w-4 h-4 text-stone-500" />;
-  }
-};
-
+// Bell button and notification panel of the application header (Make "notification-panel").
 const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotification }) => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -62,47 +33,53 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
   const [page, setPage] = useState(1);
   const [isShaking, setIsShaking] = useState(false);
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
   const navigate = useNavigate();
 
-  // Close dropdown when clicking outside
+  // Close on outside click and on Escape.
   useEffect(() => {
+    if (!isOpen) return undefined;
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
+    const handleKey = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKey);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
     };
   }, [isOpen]);
 
-  // Fetch notifications when dropdown opens
+  // Fetch notifications when the panel opens
   useEffect(() => {
     if (isOpen && notifications.length === 0) {
       fetchNotifications(1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // Sync unread count with parent component
+  // Sync unread count with the header
   useEffect(() => {
     setUnreadCount(initialUnreadCount);
   }, [initialUnreadCount]);
 
-  // Fetch notifications
   const fetchNotifications = async (pageNum) => {
     try {
       setLoading(true);
       const response = await getNotifications(pageNum, 20);
       const items = response?.items || response?.data || [];
-      
-      // Filter out MessageReceived notifications (type 4) - they go to messages page instead
+
+      // MessageReceived notifications (type 4) belong to the messages page
       const filteredItems = items.filter(item => item.type !== 4);
-      
+
       if (pageNum === 1) {
         setNotifications(filteredItems);
       } else {
@@ -118,14 +95,13 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
     }
   };
 
-  // Load more notifications
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       fetchNotifications(page + 1);
     }
   };
 
-  // Mark notification as read and navigate
+  // Mark as read and open the related page
   const handleNotificationClick = async (notification) => {
     try {
       if (!notification.isRead) {
@@ -136,7 +112,6 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
 
-      // Navigate based on notification type
       setIsOpen(false);
       navigateToEntity(notification);
     } catch (error) {
@@ -144,30 +119,26 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
     }
   };
 
-  // Navigate to related entity
   const navigateToEntity = (notification) => {
     const { relatedEntityType, relatedEntityId, type, actorId } = notification;
     const currentUserId = user?.id;
 
-    // Don't navigate if it's a MessageReceived notification and the actor is the current user
-    // (user sent a message themselves, don't navigate to their own message)
+    // A message the user sent themselves has nothing to open
     if (type === 4 && actorId === currentUserId) {
-      return; // MessageReceived (type 4) from current user - don't navigate
+      return;
     }
 
     if (!relatedEntityType || !relatedEntityId) return;
 
     switch (relatedEntityType.toLowerCase()) {
       case 'book':
-        navigate(`/books/${relatedEntityId}`);
-        break;
       case 'review':
-        // Navigate to book details (reviews are shown there)
+        // Reviews are shown on the book page
         navigate(`/books/${relatedEntityId}`);
         break;
       case 'quote':
-        // Navigate to home (quotes carousel)
-        navigate('/');
+        // Quotes are listed on the dashboard
+        navigate('/dashboard');
         break;
       case 'user':
         navigate(`/profile/${relatedEntityId}`);
@@ -177,9 +148,7 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
     }
   };
 
-  // Mark all as read
-  const handleMarkAllAsRead = async (e) => {
-    e.stopPropagation();
+  const handleMarkAllAsRead = async () => {
     try {
       await markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -189,9 +158,7 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
     }
   };
 
-  // Delete notification
-  const handleDelete = async (e, notificationId) => {
-    e.stopPropagation();
+  const handleDelete = async (notificationId) => {
     try {
       await deleteNotification(notificationId);
       const deleted = notifications.find(n => n.id === notificationId);
@@ -204,26 +171,23 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
     }
   };
 
-  // Trigger shake animation
   const triggerShake = useCallback(() => {
     setIsShaking(true);
     setTimeout(() => setIsShaking(false), 500);
   }, []);
 
-  // Add new notification (called from parent) - memoized to prevent re-creation
+  // Called by the header when SignalR delivers a notification
   const addNewNotification = useCallback((notification) => {
-    // Don't add MessageReceived notifications (type 4) to dropdown - they go to messages page
+    // MessageReceived (type 4) goes to the messages page, not here
     if (notification.type === 4) {
-      return; // MessageReceived - don't add to dropdown
+      return;
     }
-    
+
     setNotifications(prev => [notification, ...prev]);
-    // Don't increment count here - backend already sends updated count via SignalR
-    // The count will be updated from SignalRContext
+    // The unread count itself comes from the backend via SignalR
     triggerShake();
   }, [triggerShake]);
 
-  // Expose addNewNotification to parent
   useEffect(() => {
     if (onNewNotification) {
       onNewNotification(addNewNotification);
@@ -231,131 +195,83 @@ const NotificationDropdown = ({ unreadCount: initialUnreadCount = 0, onNewNotifi
   }, [addNewNotification, onNewNotification]);
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Bell Icon Button */}
+    <div className="contents" ref={dropdownRef}>
       <button
+        ref={buttonRef}
+        aria-expanded={isOpen}
+        aria-label={unreadCount > 0 ? `Bildirişlər, ${unreadCount} oxunmamış` : 'Bildirişlər'}
+        className={`icon-button notification-button ${isShaking ? 'animate-shake' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative p-2 rounded-lg hover:bg-stone-100 transition-colors ${
-          isShaking ? 'animate-shake' : ''
-        }`}
+        type="button"
       >
-        <Bell className="w-5 h-5 text-stone-600" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
-            {unreadCount > 99 ? '99+' : unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
+        <Icon name="bell" />
+        {/* Make shows a dot; the exact count is in the button's label. */}
+        {unreadCount > 0 && <span aria-hidden="true" />}
       </button>
 
-      {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-stone-200 z-50 overflow-hidden">
-          {/* Header */}
-          <div className="p-4 border-b border-stone-100 flex items-center justify-between bg-linear-to-r from-stone-50 to-white">
-            <h3 className="text-lg font-bold text-stone-900">Notifications</h3>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllAsRead}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition-colors"
-              >
-                <Check className="w-3 h-3" />
-                Mark all read
-              </button>
-            )}
+        <aside aria-label="Bildirişlər" className="notification-panel">
+          <div className="panel-head">
+            <strong>Bildirişlər</strong>
+            <button aria-label="Bildirişləri bağla" onClick={() => setIsOpen(false)} type="button">
+              <Icon name="close" />
+            </button>
           </div>
 
-          {/* Notification List */}
-          <div className="max-h-[500px] overflow-y-auto">
-            {loading && notifications.length === 0 ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 text-stone-400 animate-spin" />
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4">
-                <Bell className="w-12 h-12 text-stone-300 mb-3" />
-                <p className="text-stone-500 text-sm font-medium">No notifications yet</p>
-                <p className="text-stone-400 text-xs mt-1">We'll notify you when something happens</p>
-              </div>
-            ) : (
-              <>
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`group relative flex items-start gap-3 p-4 border-b border-stone-50 hover:bg-stone-50 cursor-pointer transition-colors ${
-                      !notification.isRead ? 'bg-blue-50/50' : ''
-                    }`}
-                  >
-                    {/* Unread Indicator */}
-                    {!notification.isRead && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r"></div>
-                    )}
-
-                    {/* Avatar */}
-                    <div className="relative shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-stone-200 overflow-hidden">
-                        {notification.actor?.profilePictureUrl ? (
-                          <img
-                            src={getProfilePictureUrl(notification.actor.profilePictureUrl)}
-                            alt={notification.actor?.firstName || 'User'}
-                            className="w-full h-full object-cover"
-                          />
+          {loading && notifications.length === 0 ? (
+            <p className="panel-empty" role="status">Bildirişlər yüklənir…</p>
+          ) : notifications.length === 0 ? (
+            <p className="panel-empty">Hələ bildiriş yoxdur. Kimsə rəyinizi bəyənəndə və ya sizi izləyəndə burada görəcəksiniz.</p>
+          ) : (
+            <>
+              {notifications.map((notification) => {
+                const actor = notification.actor;
+                const name = actor ? displayName(actor) : '';
+                const text = actionText[notification.type];
+                return (
+                  <div className={`notice ${!notification.isRead ? 'unread' : ''}`} key={notification.id}>
+                    <button className="notice-main" onClick={() => handleNotificationClick(notification)} type="button">
+                      <Avatar name={name || 'Bookla'} size="small" src={actor?.profilePictureUrl} />
+                      <p>
+                        {text && name ? (
+                          <>
+                            <strong>{name}</strong> {text}
+                          </>
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-stone-600 font-medium text-sm">
-                            {notification.actor?.firstName?.[0]?.toUpperCase() || 'U'}
-                          </div>
+                          notification.title || notification.message
                         )}
-                      </div>
-                      {/* Icon Badge */}
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                        {getNotificationIcon(notification.type)}
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-stone-900 leading-relaxed">
-                        <span className="font-semibold">
-                          {notification.actor?.firstName} {notification.actor?.lastName}
-                        </span>{' '}
-                        <span dangerouslySetInnerHTML={{ __html: notification.message || notification.title }} />
+                        <span>
+                          {!notification.isRead && <span className="sr-only">Oxunmamış. </span>}
+                          {timeAgo(notification.createdAt)}
+                        </span>
                       </p>
-                      <p className="text-xs text-stone-500 mt-1">
-                        {formatRelativeTime(notification.createdAt)}
-                      </p>
-                    </div>
-
-                    {/* Delete Button */}
+                    </button>
                     <button
-                      onClick={(e) => handleDelete(e, notification.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-stone-200 transition-all"
+                      aria-label="Bildirişi sil"
+                      className="notice-remove"
+                      onClick={() => handleDelete(notification.id)}
+                      type="button"
                     >
-                      <X className="w-4 h-4 text-stone-500" />
+                      <Icon name="close" size={14} />
                     </button>
                   </div>
-                ))}
+                );
+              })}
 
-                {/* Load More Button */}
-                {hasMore && (
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={loading}
-                    className="w-full py-3 text-sm text-blue-600 hover:text-blue-700 font-medium hover:bg-stone-50 transition-colors disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Loading...
-                      </span>
-                    ) : (
-                      'Load more'
-                    )}
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+              {hasMore && (
+                <Button className="panel-more" disabled={loading} onClick={handleLoadMore} variant="quiet">
+                  {loading ? 'Yüklənir…' : 'Daha çox göstər'}
+                </Button>
+              )}
+            </>
+          )}
+
+          {unreadCount > 0 && (
+            <Button onClick={handleMarkAllAsRead} variant="secondary">
+              Hamısını oxunmuş et
+            </Button>
+          )}
+        </aside>
       )}
     </div>
   );
