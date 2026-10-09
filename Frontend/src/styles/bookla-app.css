@@ -133,19 +133,19 @@
 .bk-app .book-cover::after { position: absolute; right: 10%; bottom: 9%; width: 35%; height: 1px; background: currentColor; content: ""; opacity: .4; }
 .bk-app .book-cover strong { position: relative; z-index: 1; max-width: 95%; font-family: var(--font-editorial-semibold); font-size: clamp(15px, 1.45vw, 23px); line-height: 1.08; }
 .bk-app .book-cover small { position: relative; z-index: 1; max-width: 82%; font-size: 8px; letter-spacing: .09em; text-transform: uppercase; }
-.bk-app .book-cover .cover-mark { position: relative; z-index: 1; font-family: "Lora:Italic"; font-size: 9px; opacity: .75; }
+.bk-app .book-cover .cover-mark { position: relative; z-index: 1; font-family: "Lora:Italic"; font-size: 9px; } /* Bookla: full opacity (Make .75) for AA contrast. */
 .bk-app .book-cover i { position: absolute; right: -15%; bottom: 12%; width: 65%; height: 35%; border: 1px solid currentColor; border-radius: 50%; opacity: .18; transform: rotate(-20deg); }
 .bk-app .book-cover-large { width: min(320px, 85vw); }
 .bk-app .book-cover-large strong { font-size: clamp(31px, 4vw, 48px); }
 .bk-app .cover-emerald { background: #174d43; color: #f4e7cf; }
-.bk-app .cover-ochre { background: #b56f39; color: #fff3df; }
+.bk-app .cover-ochre { background: #9c6031; /* Bookla: Make #b56f39, darkened for AA text contrast */ color: #fff3df; }
 .bk-app .cover-night { background: #233642; color: #f6dfaf; }
 .bk-app .cover-rose { background: #c98e81; color: #34241f; }
 .bk-app .cover-sand { background: #d8c8a9; color: #35382e; }
-.bk-app .cover-blue { background: #59778a; color: #f6eee2; }
+.bk-app .cover-blue { background: #536f81; /* Bookla: Make #59778a, darkened for AA text contrast */ color: #f6eee2; }
 .bk-app .cover-forest { background: #324e3b; color: #ede0c2; }
 .bk-app .cover-clay { background: #9a4d39; color: #f8e6cc; }
-.bk-app .cover-moss { background: #7f8d6b; color: #fff8e8; }
+.bk-app .cover-moss { background: #697458; /* Bookla: Make #7f8d6b, darkened for AA text contrast */ color: #fff8e8; }
 .bk-app .cover-ink { background: #333b3d; color: #f2d9b9; }
 .bk-app .cover-wine { background: #683c3d; color: #f5e1cc; }
 .bk-app .cover-sage { background: #a7b9a8; color: #213a34; }
