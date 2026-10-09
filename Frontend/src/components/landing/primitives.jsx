@@ -8,6 +8,16 @@ import { avatarGroups, icons } from './assets';
 export const stroke = 'shadow-[inset_0_0_0_1px_var(--color-bookla-line)]';
 export const strokeTop = 'shadow-[inset_0_1px_0_0_var(--color-bookla-line)]';
 
+// Interaction states. The Figma file defines no hover/focus variants, so these only add a hover
+// colour/underline and a keyboard focus outline; the resting appearance is unchanged.
+export const focusRing = 'outline-offset-2 focus-visible:outline-2 focus-visible:outline-bookla-forest';
+export const focusRingOnDark = 'outline-offset-2 focus-visible:outline-2 focus-visible:outline-bookla-paper';
+export const textLink = 'underline-offset-4 hover:underline';
+export const mutedLink = 'transition-colors hover:text-bookla-forest';
+export const forestButton = 'transition-colors hover:bg-bookla-forest/90';
+export const outlineButton = 'transition-colors hover:bg-bookla-sand';
+export const paperButton = 'transition-colors hover:bg-bookla-sage';
+
 export const Icon = ({ src, width, height = width, className = '' }) => (
   <img
     src={src}

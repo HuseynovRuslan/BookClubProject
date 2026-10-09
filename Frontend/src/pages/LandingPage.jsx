@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '@fontsource-variable/inter';
 import '@fontsource-variable/lora';
@@ -15,8 +15,15 @@ import {
   PollCard,
   ProgressBlock,
   SampleCard,
+  focusRing,
+  focusRingOnDark,
+  forestButton,
+  mutedLink,
+  outlineButton,
+  paperButton,
   stroke,
   strokeTop,
+  textLink,
 } from '../components/landing/primitives';
 
 // Layout follows the three Figma frames: base = "Bookla — Mobil" (390),
@@ -45,33 +52,70 @@ const NavItem = ({ link, className = '', onClick }) =>
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const headerRef = useRef(null);
+  const menuButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const close = () => setMenuOpen(false);
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        close();
+        menuButtonRef.current?.focus();
+      }
+    };
+    const onPointerDown = (event) => {
+      if (!headerRef.current?.contains(event.target)) close();
+    };
+    // The menu only exists below the desktop breakpoint, where the full nav takes over.
+    const desktop = window.matchMedia('(min-width: 80rem)');
+    const onBreakpoint = (event) => event.matches && close();
+
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    desktop.addEventListener('change', onBreakpoint);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+      desktop.removeEventListener('change', onBreakpoint);
+    };
+  }, [menuOpen]);
 
   return (
-    <header className="relative bg-bookla-paper shadow-[inset_0_-1px_0_0_var(--color-bookla-line)]">
-      <nav className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between overflow-hidden px-6 md:h-[88px] md:px-10 xl:px-[88px]">
-        <a href="#top" className="flex" aria-label="Bookla — ana səhifə">
+    <header ref={headerRef} className="relative bg-bookla-paper shadow-[inset_0_-1px_0_0_var(--color-bookla-line)]">
+      <nav
+        aria-label="Əsas naviqasiya"
+        className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-6 md:h-[88px] md:px-10 xl:px-[88px]"
+      >
+        <a href="#top" className={`flex rounded-[4px] ${focusRing}`} aria-label="Bookla — ana səhifə">
           <Logo />
         </a>
 
         <div className="hidden items-center gap-7 text-[13px]/[16px] whitespace-nowrap xl:flex">
           {navLinks.map((link) => (
-            <NavItem key={link.label} link={link} className={link.active ? 'font-semibold' : ''} />
+            <NavItem
+              key={link.label}
+              link={link}
+              className={`${textLink} ${focusRing} ${link.active ? 'font-semibold' : ''}`}
+            />
           ))}
         </div>
 
         <div className="flex items-center gap-4 md:gap-6">
-          <Link to="/login" className="hidden text-[13px]/[16px] whitespace-nowrap md:block">
+          <Link to="/login" className={`hidden text-[13px]/[16px] whitespace-nowrap md:block ${textLink} ${focusRing}`}>
             Daxil ol
           </Link>
           <Link
             to="/register"
-            className="flex h-[42px] items-center justify-center rounded-[8px] bg-bookla-forest px-[18px] text-[13px]/[16px] font-semibold whitespace-nowrap text-bookla-paper"
+            className={`flex h-[42px] items-center justify-center rounded-[8px] bg-bookla-forest px-[18px] text-[13px]/[16px] font-semibold whitespace-nowrap text-bookla-paper max-[340px]:hidden ${forestButton} ${focusRing}`}
           >
             Klub yarat
           </Link>
           <button
+            ref={menuButtonRef}
             type="button"
-            className="cursor-pointer xl:hidden"
+            className={`shrink-0 cursor-pointer rounded-[4px] xl:hidden ${focusRing}`}
             aria-label={menuOpen ? 'Menyunu bağla' : 'Menyunu aç'}
             aria-expanded={menuOpen}
             aria-controls="landing-menu"
@@ -83,31 +127,46 @@ const Header = () => {
       </nav>
 
       {menuOpen && (
-        <div
+        <nav
           id="landing-menu"
-          className="absolute inset-x-0 top-full z-20 flex flex-col gap-4 bg-bookla-paper px-6 py-5 text-[13px]/[16px] shadow-[inset_0_-1px_0_0_var(--color-bookla-line)] md:px-10 xl:hidden"
+          aria-label="Menyu"
+          className="absolute inset-x-0 top-full z-20 flex flex-col items-start gap-4 bg-bookla-paper px-6 py-5 text-[13px]/[16px] shadow-[inset_0_-1px_0_0_var(--color-bookla-line)] md:px-10 xl:hidden"
         >
           {navLinks.map((link) => (
             <NavItem
               key={link.label}
               link={link}
-              className={link.active ? 'font-semibold' : ''}
+              className={`${textLink} ${focusRing} ${link.active ? 'font-semibold' : ''}`}
               onClick={() => setMenuOpen(false)}
             />
           ))}
-          <Link to="/login" className="md:hidden" onClick={() => setMenuOpen(false)}>
+          <Link to="/login" className={`md:hidden ${textLink} ${focusRing}`} onClick={() => setMenuOpen(false)}>
             Daxil ol
           </Link>
-        </div>
+          {/* Shown only where the header is too narrow for the "Klub yarat" button (< 340px). */}
+          <Link
+            to="/register"
+            className={`font-semibold min-[340px]:hidden ${textLink} ${focusRing}`}
+            onClick={() => setMenuOpen(false)}
+          >
+            Klub yarat
+          </Link>
+        </nav>
       )}
     </header>
   );
 };
 
 const HeroPreview = () => (
-  <div className="relative h-[734px] w-full shrink-0 overflow-hidden rounded-[24px] bg-bookla-sage md:h-[614px] xl:w-[624px]">
-    {/* Absolute composition from Figma; centred when the card is wider than the frame it was drawn in. */}
-    <div className="absolute top-0 left-[max(0px,calc(50%-171px))] h-full w-[342px] md:left-[max(0px,calc(50%-344px))] md:w-[688px] xl:left-0 xl:w-[624px]">
+  <div
+    role="img"
+    aria-label="Bookla nümunə görünüşü"
+    className="relative h-[734px] w-full shrink-0 overflow-hidden rounded-[24px] bg-bookla-sage max-[390px]:@container max-[390px]:aspect-[342/734] max-[390px]:h-auto md:h-[614px] xl:w-[624px]"
+  >
+    {/* Absolute composition from Figma; centred when the card is wider than the frame it was drawn in.
+        Below the 390px frame the card keeps its 342×734 proportions and the composition is scaled to
+        fit (tan(atan2(a, b)) = a / b turns the container width into a unitless scale factor). */}
+    <div className="absolute top-0 left-[max(0px,calc(50%-171px))] h-full w-[342px] max-[390px]:h-[734px] max-[390px]:origin-top-left max-[390px]:[scale:min(1,tan(atan2(100cqw,342px)))] md:left-[max(0px,calc(50%-344px))] md:w-[688px] xl:left-0 xl:w-[624px]">
       <p className="absolute top-5 left-6 text-[9px]/[11px] whitespace-nowrap">
         BOOKLA · NÜMUNƏ GÖRÜNÜŞ
       </p>
@@ -151,7 +210,7 @@ const HeroPreview = () => (
 const Hero = () => (
   <>
     <section className="mx-auto flex max-w-[1440px] flex-col items-start justify-center gap-9 overflow-hidden px-6 pt-12 pb-10 md:px-10 xl:flex-row xl:items-center xl:justify-start xl:gap-10 xl:px-[88px] xl:pt-16 xl:pb-14">
-      <div className="flex w-full flex-col items-start gap-6 overflow-hidden xl:w-auto xl:max-w-[600px] xl:min-w-0 xl:flex-1">
+      <div className="flex w-full flex-col items-start gap-6 xl:w-auto xl:max-w-[600px] xl:min-w-0 xl:flex-1">
         <div className="flex items-center gap-2.5 overflow-hidden">
           <span className="h-px w-6 shrink-0 bg-bookla-clay" />
           <Eyebrow>Oxumağın yeni sosial məkanı</Eyebrow>
@@ -162,17 +221,17 @@ const Hero = () => (
         <p className="w-full text-[15px]/[25px] text-bookla-muted md:text-[17px]/[28px]">
           Öz kitab klubunu yarat, dostlarınla birlikdə oxu, fikirlərini paylaş və yeni hekayələr kəşf et.
         </p>
-        <div className="flex w-full flex-col items-start gap-3 overflow-hidden md:flex-row">
+        <div className="flex w-full flex-col items-start gap-3 md:flex-row">
           <Link
             to="/register"
-            className="flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] bg-bookla-forest px-[22px] md:w-auto"
+            className={`flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] bg-bookla-forest px-[22px] md:w-auto ${forestButton} ${focusRing}`}
           >
             <span className="text-[14px]/[17px] font-semibold whitespace-nowrap text-bookla-paper">Pulsuz klub yarat</span>
             <Icon src={icons.arrowUpRight17Light} width={17} />
           </Link>
           <Link
             to="/books"
-            className={`flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] px-[22px] md:w-auto md:min-w-[180px] ${stroke}`}
+            className={`flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] px-[22px] md:w-auto md:min-w-[180px] ${stroke} ${outlineButton} ${focusRing}`}
           >
             <span className="text-[14px]/[17px] font-semibold whitespace-nowrap">Kitabları kəşf et</span>
             <Icon src={icons.arrowUpRight17} width={17} />
@@ -258,7 +317,10 @@ const HowItWorks = () => (
               {step.text}
             </p>
           </div>
-          <div className="flex h-[188px] w-full shrink-0 flex-col items-start justify-center overflow-hidden md:w-[300px] xl:w-full">
+          <div
+            aria-hidden="true"
+            className="flex h-[188px] w-full shrink-0 flex-col items-start justify-center overflow-hidden md:w-[300px] xl:w-full"
+          >
             {step.preview}
           </div>
         </div>
@@ -319,10 +381,12 @@ const ClubCard = ({ club }) => (
           {club.book.title} · {club.book.author}
         </p>
       </div>
-      <div className="flex w-full items-center justify-between overflow-hidden pt-1">
+      <div className="flex w-full items-center justify-between pt-1">
         <AvatarStack group="club" size={26} />
-        <Link to="/register" className="flex items-center gap-2.5 overflow-hidden">
-          <span className="text-[12px]/[15px] font-semibold whitespace-nowrap">Kluba bax</span>
+        <Link to="/register" className={`group flex items-center gap-2.5 rounded-[2px] ${focusRing}`}>
+          <span className={`text-[12px]/[15px] font-semibold whitespace-nowrap ${textLink} group-hover:underline`}>
+            Kluba bax
+          </span>
           <Icon src={icons.arrowUpRight16} width={16} />
         </Link>
       </div>
@@ -461,7 +525,9 @@ const ReadingTools = () => (
             <h3 className="w-full font-lora text-[25px]/[31px]">{feature.title}</h3>
             <p className="w-full text-[13px]/[21px] text-bookla-muted">{feature.text}</p>
           </div>
-          <div className="flex min-h-[176px] w-full flex-col items-start justify-center">{feature.preview}</div>
+          <div aria-hidden="true" className="flex min-h-[176px] w-full flex-col items-start justify-center">
+            {feature.preview}
+          </div>
         </div>
       ))}
     </div>
@@ -502,7 +568,10 @@ const ReadingCard = () => (
 );
 
 const ProductPreview = () => (
-  <div className="relative flex w-full flex-col items-start overflow-hidden rounded-[16px] bg-white shadow-[0px_16px_40px_0px_rgba(24,61,53,0.11)] after:pointer-events-none after:absolute after:inset-0 after:rounded-[16px] after:border after:border-[rgba(24,61,53,0.13)] after:content-['']">
+  <div
+    role="img"
+    aria-label="Bookla məhsul görünüşü"
+    className="relative flex w-full flex-col items-start overflow-hidden rounded-[16px] bg-white shadow-[0px_16px_40px_0px_rgba(24,61,53,0.11)] after:pointer-events-none after:absolute after:inset-0 after:rounded-[16px] after:border after:border-[rgba(24,61,53,0.13)] after:content-['']">
     <div className="flex h-[38px] w-full shrink-0 items-center justify-between overflow-hidden bg-bookla-paper px-4 shadow-[inset_0_-1px_0_0_var(--color-bookla-line)] md:px-6">
       <div className="flex items-start gap-[5px] overflow-hidden">
         {[0, 1, 2].map((dot) => (
@@ -633,7 +702,7 @@ const ReadingCommunity = () => (
   <section
     className={`mx-auto flex max-w-[1440px] flex-col items-start justify-center gap-8 xl:flex-row xl:items-center xl:justify-start xl:gap-[72px] ${sectionPadding}`}
   >
-    <div className="flex w-full flex-col items-start gap-6 overflow-hidden xl:w-[552px] xl:shrink-0">
+    <div className="flex w-full flex-col items-start gap-6 xl:w-[552px] xl:shrink-0">
       <Eyebrow>Səhifələrin o tayında</Eyebrow>
       <h2 className={`${sectionHeading} text-[32px]/[39px] md:text-[44px]/[54px]`}>
         Tək oxumaq gözəldir. Birlikdə oxumaq isə başqa dünyadır.
@@ -646,8 +715,10 @@ const ReadingCommunity = () => (
         Bookla həmin söhbətə yer açır. Tanış dostlarla və hələ tanımadığın oxucularla yeni hekayələrə birlikdə başlamaq
         üçün.
       </p>
-      <Link to="/register" className="flex items-center gap-3 overflow-hidden">
-        <span className="text-[13px]/[16px] font-semibold whitespace-nowrap">Öz oxu dairəni tap</span>
+      <Link to="/community" className={`group flex items-center gap-3 rounded-[2px] ${focusRing}`}>
+        <span className={`text-[13px]/[16px] font-semibold whitespace-nowrap ${textLink} group-hover:underline`}>
+          Öz oxu dairəni tap
+        </span>
         <Icon src={icons.arrowUpRight18} width={18} />
       </Link>
     </div>
@@ -683,10 +754,10 @@ const Invitation = () => (
         </h2>
         <p className="w-full text-[16px]/[26px] text-bookla-sage">Öz oxu icmanı yaratmağa bu gün başla.</p>
       </div>
-      <div className="flex w-full flex-col items-start gap-3.5 overflow-hidden xl:w-[240px] xl:shrink-0">
+      <div className="flex w-full flex-col items-start gap-3.5 xl:w-[240px] xl:shrink-0">
         <Link
           to="/register"
-          className="flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] bg-bookla-paper px-[22px] md:w-auto"
+          className={`flex h-[52px] w-full items-center justify-center gap-3 overflow-hidden rounded-[8px] bg-bookla-paper px-[22px] md:w-auto ${paperButton} ${focusRingOnDark}`}
         >
           <span className="text-[14px]/[17px] font-semibold whitespace-nowrap">Bookla-ya qoşul</span>
           <Icon src={icons.arrowUpRight17} width={17} />
@@ -723,7 +794,7 @@ const socialLinks = [
 
 const Footer = () => (
   <footer className="mx-auto flex max-w-[1440px] flex-col items-start gap-10 overflow-hidden px-6 pt-14 pb-7 md:px-10 xl:px-[88px]">
-    <div className="flex w-full flex-col items-start gap-8 overflow-hidden md:gap-14 xl:flex-row">
+    <div className="flex w-full flex-col items-start gap-8 md:gap-14 xl:flex-row">
       <div className="flex w-full flex-col items-start gap-[18px] overflow-hidden xl:w-[460px] xl:shrink-0">
         <Logo />
         <p className="w-full text-[13px]/[21px] text-bookla-muted">
@@ -743,13 +814,17 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="flex w-full items-start gap-6 overflow-hidden text-[12px]/[15px] md:gap-14 xl:w-auto xl:min-w-px xl:flex-1">
+      <div className="flex w-full items-start gap-6 text-[12px]/[15px] md:gap-14 xl:w-auto xl:min-w-px xl:flex-1">
         {footerColumns.map((column) => (
-          <div key={column.title} className="flex min-w-px flex-1 flex-col items-start gap-3.5 overflow-hidden">
+          <div key={column.title} className="flex min-w-px flex-1 flex-col items-start gap-3.5">
             <p className="font-semibold whitespace-nowrap">{column.title}</p>
             {column.links.map((link) =>
               link.to || link.href ? (
-                <NavItem key={link.label} link={link} className="block w-full leading-[18px] text-bookla-muted" />
+                <NavItem
+                  key={link.label}
+                  link={link}
+                  className={`block w-fit rounded-[2px] leading-[18px] text-bookla-muted ${mutedLink} ${focusRing}`}
+                />
               ) : (
                 <p key={link.label} className="w-full leading-[18px] text-bookla-muted">
                   {link.label}
@@ -771,20 +846,32 @@ const Footer = () => (
   </footer>
 );
 
-const LandingPage = () => (
-  <div id="top" className="min-h-screen bg-bookla-paper font-inter text-bookla-forest antialiased">
-    <Header />
-    <main>
-      <Hero />
-      <HowItWorks />
-      <BookClubs />
-      <ReadingTools />
-      <InsideBookla />
-      <ReadingCommunity />
-      <Invitation />
-    </main>
-    <Footer />
-  </div>
-);
+const pageTitle = 'Bookla — Hər kitab yeni bir söhbətin başlanğıcıdır.';
+
+const LandingPage = () => {
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = pageTitle;
+    return () => {
+      document.title = previousTitle;
+    };
+  }, []);
+
+  return (
+    <div id="top" className="min-h-screen bg-bookla-paper font-inter text-bookla-forest antialiased">
+      <Header />
+      <main>
+        <Hero />
+        <HowItWorks />
+        <BookClubs />
+        <ReadingTools />
+        <InsideBookla />
+        <ReadingCommunity />
+        <Invitation />
+      </main>
+      <Footer />
+    </div>
+  );
+};
 
 export default LandingPage;
