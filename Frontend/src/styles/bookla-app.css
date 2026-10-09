@@ -525,6 +525,7 @@
 .bk-app .activity-name { color: var(--forest); font-family: var(--font-semibold); text-decoration: none; }
 .bk-app .activity-name:hover { text-decoration: underline; text-underline-offset: 3px; }
 .bk-app .pagination button:disabled { opacity: .35; }
+.bk-app .empty-state p { margin-bottom: 24px; } /* Bookla: Make leaves no gap between the text and the action button. */
 .bk-app .form-error { margin: 8px 0 0; color: var(--danger); font-size: 12px; }
 .bk-app .modal .form-error { padding: 12px 14px; border-radius: 9px; background: #f6e5df; }
 @media (max-width: 540px) {
