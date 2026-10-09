@@ -1,5 +1,33 @@
 @import "tailwindcss";
 
+/* Bookla landing page tokens (Figma: Bookla — Masaüstü / Planşet / Mobil) */
+@theme {
+  --font-lora: "Lora Variable", ui-serif, Georgia, serif;
+  --font-inter: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-bookla-forest: #183d35;
+  --color-bookla-paper: #f8f6f0;
+  --color-bookla-line: #d9ded3;
+  --color-bookla-clay: #c97959;
+  --color-bookla-muted: #69736a;
+  --color-bookla-sage: #dde7dd;
+  --color-bookla-sand: #eeece3;
+  --color-bookla-blush: #f1e3d8;
+  --color-bookla-bark: #866147;
+  --color-bookla-slate: #414d56;
+  --color-bookla-ink: #242824;
+}
+
+/* The Inter subsets don't ship "→"; this one-glyph Inter 4.001 subset fills the gap. */
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./assets/landing/fonts/inter-arrow-500.woff2") format("woff2");
+  unicode-range: U+2192;
+}
+
 /* Shake animation for notification bell */
 @keyframes shake {
   0%, 100% { transform: rotate(0deg); }
